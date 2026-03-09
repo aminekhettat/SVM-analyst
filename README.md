@@ -14,6 +14,11 @@ Educational simulator for PWM and space-vector modulations focused on PMSM drive
   - PWM waveform vs filtered (fundamental) waveform
   - Optional switching-edge markers for PWM transitions
   - SVM sector highlighting and active sector indicator
+- Realistic voltage scaling:
+  - Phase outputs are shown between 0 V and battery voltage (VBATT)
+  - CPWM/SVM waveforms are centered at VBATT/2
+  - DPWM modes show top/bottom clamping as in real inverters
+- Real-time modulation amplitude control (0–100%)
 - Config save/load (JSON) for sharing or reproducing simulations
 - Selectable LPF cutoff frequency (or auto 3× electrical frequency)
 - Oscilloscope-style scrolling (pause/step/hold)
