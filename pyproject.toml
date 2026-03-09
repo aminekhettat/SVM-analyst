@@ -1,0 +1,29 @@
+[project]
+name = "svm-shaper"
+version = "0.1.0"
+description = "Interactive PWM/SVM modulation simulator for educational use."
+authors = [
+  { name = "Amine KHETTAT" }
+]
+readme = "README.md"
+requires-python = ">=3.10"
+
+[project.dependencies]
+numpy = "*"
+scipy = "*"
+matplotlib = "*"
+PyQt6 = "*"
+PyPDF2 = "*"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+target-version = ["py312"]
+
+[tool.isort]
+profile = "black"
+
+[tool.ruff]
+line-length = 88

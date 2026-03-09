@@ -1,0 +1,8 @@
+numpy
+scipy
+matplotlib
+PyQt6
+PyPDF2
+sphinx
+pytest
+pytest-qt

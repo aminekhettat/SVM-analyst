@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>API Reference &#8212; SVM Shaper 0.1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="_static/basic.css?v=686e5160" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=27fed22d" />
+    <script src="_static/documentation_options.js?v=01f34227"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Welcome to SVM Shaper’s documentation!" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-svm_shaper.core">
+<span id="api-reference"></span><h1>API Reference<a class="headerlink" href="#module-svm_shaper.core" title="Link to this heading">¶</a></h1>
+<p>Core simulation helpers for PWM and SVM modulation.</p>
+<p>This module defines the configuration data structures and the main entry point
+for generating signals and performing analysis based on user-configurable system
+parameters.</p>
+<p>Author: Amine KHETTAT
+Date: 2026-03-09
+License: See LICENSE</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="svm_shaper.core.SimulationResult">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">svm_shaper.core.</span></span><span class="sig-name descname"><span class="pre">SimulationResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_c</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line_ab</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line_bc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line_ca</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filtered_phase_a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filtered_phase_b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filtered_phase_c</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_freqs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_magnitude</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thd_percent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">top_harmonics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pulses_per_electrical_cycle</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">degrees_per_pwm_pulse</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description_text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#svm_shaper.core.SimulationResult" title="Link to this definition">¶</a></dt>
+<dd><p>Container for computed waveform and analysis results.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="svm_shaper.core.SimulatorConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">svm_shaper.core.</span></span><span class="sig-name descname"><span class="pre">SimulatorConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">motor_pole_pairs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pwm_frequency_hz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speed_rpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">battery_voltage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">240.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modulation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#svm_shaper.modulations.ModulationMode" title="svm_shaper.modulations.ModulationMode"><span class="pre">ModulationMode</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">ModulationMode.SVM</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_line_voltages</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_filtered</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_switching_edges</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_cutoff_hz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_cycles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">display_cycles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oversample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#svm_shaper.core.SimulatorConfig" title="Link to this definition">¶</a></dt>
+<dd><p>User-editable simulation configuration.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="svm_shaper.core.run_simulation">
+<span class="sig-prename descclassname"><span class="pre">svm_shaper.core.</span></span><span class="sig-name descname"><span class="pre">run_simulation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#svm_shaper.core.SimulatorConfig" title="svm_shaper.core.SimulatorConfig"><span class="pre">SimulatorConfig</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#svm_shaper.core.SimulationResult" title="svm_shaper.core.SimulationResult"><span class="pre">SimulationResult</span></a></span></span><a class="headerlink" href="#svm_shaper.core.run_simulation" title="Link to this definition">¶</a></dt>
+<dd><p>Run the core simulation and return waveforms and analysis.</p>
+<p>The returned values are ready for plotting.</p>
+</dd></dl>
+
+<p id="module-svm_shaper.modulations">Modulation algorithms for PWM waveforms.</p>
+<p>This module contains implementations of the modulation techniques presented in
+“A comparison of modulation techniques and motor performance evaluation” (Chalmers 2018).</p>
+<p>Each modulation function produces three phase PWM waveforms (A/B/C) normalized
+between -1 and +1 (where +1 corresponds to +Vdc/2 and -1 corresponds to -Vdc/2).</p>
+<p>All functions are implemented in a deterministic, vectorized manner to support
+interactive plotting and unit testing.</p>
+<p>Author: Amine KHETTAT
+Date: 2026-03-09
+License: See LICENSE</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="svm_shaper.modulations.ModulationMode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">svm_shaper.modulations.</span></span><span class="sig-name descname"><span class="pre">ModulationMode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qualname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#svm_shaper.modulations.ModulationMode" title="Link to this definition">¶</a></dt>
+<dd><p>Supported modulation methods.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="svm_shaper.modulations.generate_modulated_pwm">
+<span class="sig-prename descclassname"><span class="pre">svm_shaper.modulations.</span></span><span class="sig-name descname"><span class="pre">generate_modulated_pwm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">modulation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#svm_shaper.modulations.ModulationMode" title="svm_shaper.modulations.ModulationMode"><span class="pre">ModulationMode</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">pole_pairs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speed_rpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pwm_frequency_hz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_cycles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oversample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#svm_shaper.modulations.generate_modulated_pwm" title="Link to this definition">¶</a></dt>
+<dd><p>Generate three-phase PWM waveforms for a given modulation mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>modulation</strong> – The modulation technique to simulate.</p></li>
+<li><p><strong>pole_pairs</strong> – Number of motor pole pairs. Used to calculate electrical frequency.</p></li>
+<li><p><strong>speed_rpm</strong> – Rotor speed in RPM.</p></li>
+<li><p><strong>pwm_frequency_hz</strong> – PWM carrier frequency in Hz.</p></li>
+<li><p><strong>num_cycles</strong> – Number of electrical cycles to generate.</p></li>
+<li><p><strong>oversample</strong> – Samples per PWM period (must be &gt;= 3).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><em>time</em> – Time vector (s).</p></li>
+<li><p><em>phase_a, phase_b, phase_c</em> – Normalized PWM waveforms for each phase (range [-1, +1]).</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="svm_shaper.modulations.get_modulation_description">
+<span class="sig-prename descclassname"><span class="pre">svm_shaper.modulations.</span></span><span class="sig-name descname"><span class="pre">get_modulation_description</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">modulation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#svm_shaper.modulations.ModulationMode" title="svm_shaper.modulations.ModulationMode"><span class="pre">ModulationMode</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#svm_shaper.modulations.get_modulation_description" title="Link to this definition">¶</a></dt>
+<dd><p>Return a short, user-facing description of the selected modulation.</p>
+</dd></dl>
+
+<p id="module-svm_shaper.analysis">Analysis utilities for waveform processing.</p>
+<p>This module provides FFT, THD and other helper functions used by the GUI and
+unit tests.</p>
+<p>Author: Amine KHETTAT
+Date: 2026-03-09
+License: See LICENSE</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="svm_shaper.analysis.compute_fft">
+<span class="sig-prename descclassname"><span class="pre">svm_shaper.analysis.</span></span><span class="sig-name descname"><span class="pre">compute_fft</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signal</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampling_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_cycles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">electrical_frequency_hz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#svm_shaper.analysis.compute_fft" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the single-sided magnitude FFT of a time-domain signal.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>signal</strong> – Time-domain signal samples.</p></li>
+<li><p><strong>sampling_rate</strong> – Sampling rate in Hz.</p></li>
+<li><p><strong>num_cycles</strong> – Number of electrical cycles included in the signal.</p></li>
+<li><p><strong>electrical_frequency_hz</strong> – Fundamental electrical frequency in Hz.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><em>freqs</em> – Frequency axis values.</p></li>
+<li><p><em>magnitude</em> – Single-sided magnitude spectrum.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="svm_shaper.analysis.compute_thd">
+<span class="sig-prename descclassname"><span class="pre">svm_shaper.analysis.</span></span><span class="sig-name descname"><span class="pre">compute_thd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">magnitude</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fundamental_hz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freqs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#svm_shaper.analysis.compute_thd" title="Link to this definition">¶</a></dt>
+<dd><p>Compute total harmonic distortion (THD) from an FFT magnitude spectrum.</p>
+<p>If freqs is provided, determines the fundamental component closest to the
+provided frequency. Otherwise, assumes the first nonzero bin is the
+fundamental.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>THD in percent.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>thd_percent</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="svm_shaper.analysis.compute_top_harmonics">
+<span class="sig-prename descclassname"><span class="pre">svm_shaper.analysis.</span></span><span class="sig-name descname"><span class="pre">compute_top_harmonics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">freqs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">magnitude</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">count</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#svm_shaper.analysis.compute_top_harmonics" title="Link to this definition">¶</a></dt>
+<dd><p>Return the top N harmonics from an FFT magnitude spectrum.</p>
+<p>The returned list is sorted by magnitude descending.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List of tuples (frequency, magnitude).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>top_harmonics</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p id="module-svm_shaper.gui">Graphical user interface for the SVM Shaper simulator.</p>
+<p>This module builds a PyQt6 application that allows users to select modulation
+modes, configure system parameters, and visualize the resulting PWM signals and
+harmonics in real time.</p>
+<p>Accessibility notes:
+- All interactive widgets have accessible names and descriptive tooltips.
+- Keyboard navigation is supported through standard Qt focus handling.</p>
+<p>Author: Amine KHETTAT
+Date: 2026-03-09
+License: See LICENSE</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="svm_shaper.gui.PlotCanvas">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">svm_shaper.gui.</span></span><span class="sig-name descname"><span class="pre">PlotCanvas</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#svm_shaper.gui.PlotCanvas" title="Link to this definition">¶</a></dt>
+<dd><p>Matplotlib canvas used for waveform and FFT plots.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="svm_shaper.gui.PlotCanvas.update_fft">
+<span class="sig-name descname"><span class="pre">update_fft</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">freqs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">magnitude</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#svm_shaper.gui.PlotCanvas.update_fft" title="Link to this definition">¶</a></dt>
+<dd><p>Update the FFT plot.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="svm_shaper.gui.PlotCanvas.update_waveform">
+<span class="sig-name descname"><span class="pre">update_waveform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phases</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switch_times</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#svm_shaper.gui.PlotCanvas.update_waveform" title="Link to this definition">¶</a></dt>
+<dd><p>Update the waveform plot with the latest data.</p>
+<p>If <cite>switch_times</cite> is provided, display markers at the PWM switching edges.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="svm_shaper.gui.SimulationWorker">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">svm_shaper.gui.</span></span><span class="sig-name descname"><span class="pre">SimulationWorker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#svm_shaper.core.SimulatorConfig" title="svm_shaper.core.SimulatorConfig"><span class="pre">SimulatorConfig</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#svm_shaper.gui.SimulationWorker" title="Link to this definition">¶</a></dt>
+<dd><p>Worker for running simulation in a background thread.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="svm_shaper.gui.SvmHexagonDialog">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">svm_shaper.gui.</span></span><span class="sig-name descname"><span class="pre">SvmHexagonDialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#svm_shaper.core.SimulatorConfig" title="svm_shaper.core.SimulatorConfig"><span class="pre">SimulatorConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#svm_shaper.gui.SvmHexagonDialog" title="Link to this definition">¶</a></dt>
+<dd><p>Dialog showing the SVM hexagon and a rotating reference vector.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="svm_shaper.gui.SvmShaperApp">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">svm_shaper.gui.</span></span><span class="sig-name descname"><span class="pre">SvmShaperApp</span></span><a class="headerlink" href="#svm_shaper.gui.SvmShaperApp" title="Link to this definition">¶</a></dt>
+<dd><p>Main window for the SVM Shaper application.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="svm_shaper.gui.SvmShaperApp.closeEvent">
+<span class="sig-name descname"><span class="pre">closeEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QCloseEvent</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#svm_shaper.gui.SvmShaperApp.closeEvent" title="Link to this definition">¶</a></dt>
+<dd><p>Ensure the background worker thread stops cleanly on exit.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="svm_shaper.gui.SweepDialog">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">svm_shaper.gui.</span></span><span class="sig-name descname"><span class="pre">SweepDialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#svm_shaper.core.SimulatorConfig" title="svm_shaper.core.SimulatorConfig"><span class="pre">SimulatorConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#svm_shaper.gui.SweepDialog" title="Link to this definition">¶</a></dt>
+<dd><p>Dialog to sweep a parameter and visualize THD results.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="svm_shaper.gui.main">
+<span class="sig-prename descclassname"><span class="pre">svm_shaper.gui.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">argv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#svm_shaper.gui.main" title="Link to this definition">¶</a></dt>
+<dd><p>Launch the SVM Shaper application.</p>
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">SVM Shaper</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.core.SimulationResult"><code class="docutils literal notranslate"><span class="pre">SimulationResult</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.core.SimulatorConfig"><code class="docutils literal notranslate"><span class="pre">SimulatorConfig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.core.run_simulation"><code class="docutils literal notranslate"><span class="pre">run_simulation()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.modulations.ModulationMode"><code class="docutils literal notranslate"><span class="pre">ModulationMode</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.modulations.generate_modulated_pwm"><code class="docutils literal notranslate"><span class="pre">generate_modulated_pwm()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.modulations.get_modulation_description"><code class="docutils literal notranslate"><span class="pre">get_modulation_description()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.analysis.compute_fft"><code class="docutils literal notranslate"><span class="pre">compute_fft()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.analysis.compute_thd"><code class="docutils literal notranslate"><span class="pre">compute_thd()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.analysis.compute_top_harmonics"><code class="docutils literal notranslate"><span class="pre">compute_top_harmonics()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.gui.PlotCanvas"><code class="docutils literal notranslate"><span class="pre">PlotCanvas</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.gui.SimulationWorker"><code class="docutils literal notranslate"><span class="pre">SimulationWorker</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.gui.SvmHexagonDialog"><code class="docutils literal notranslate"><span class="pre">SvmHexagonDialog</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.gui.SvmShaperApp"><code class="docutils literal notranslate"><span class="pre">SvmShaperApp</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.gui.SweepDialog"><code class="docutils literal notranslate"><span class="pre">SweepDialog</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.gui.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to SVM Shaper’s documentation!</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.1.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="_sources/api.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
