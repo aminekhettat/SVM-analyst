@@ -1,4 +1,4 @@
-Welcome to SVM Shaper's documentation!
+Welcome to SVM Analyst's documentation!
 =====================================
 
 .. toctree::
@@ -10,7 +10,7 @@ Welcome to SVM Shaper's documentation!
 Project overview
 ----------------
 
-SVM Shaper is an educational simulator for PWM modulation techniques used in
+SVM Analyst is an educational simulator for PWM modulation techniques used in
 three-phase inverters. It provides an interactive GUI to visualize PWM waveforms
 and harmonic spectra, and includes a small Python API for batch analysis.
 

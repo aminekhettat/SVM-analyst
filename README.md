@@ -1,4 +1,4 @@
-# SVM Shaper
+# SVM Analyst
 
 Educational simulator for PWM and space-vector modulations focused on PMSM drives.
 

@@ -18,7 +18,6 @@ import numpy as np
 
 from .core import SimulatorConfig, run_simulation
 
-
 SweepVariable = Literal["speed_rpm", "pwm_frequency_hz"]
 
 

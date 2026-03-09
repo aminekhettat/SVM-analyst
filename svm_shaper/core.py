@@ -32,6 +32,8 @@ class SimulatorConfig:
     pwm_frequency_hz: float = 10000.0
     speed_rpm: float = 2000.0
     battery_voltage: float = 240.0
+    # Output amplitude scaling (0–100%). This scales the modulation depth while
+    # keeping the signal within the 0..Vbatt range.
     amplitude_percent: float = 100.0
     modulation: ModulationMode = ModulationMode.SVM
     show_line_voltages: bool = True

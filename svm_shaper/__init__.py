@@ -1,4 +1,4 @@
-"""SVM Shaper: educational simulator for PWM modulation techniques.
+"""SVM Analyst: educational simulator for PWM modulation techniques.
 
 This package provides simulation functions, analysis utilities, and a PyQt-based
 GUI to visualize PWM waveforms and their harmonic content.

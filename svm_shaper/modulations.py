@@ -16,18 +16,26 @@ License: See LICENSE
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, List, Tuple
+from typing import Tuple
 
 import numpy as np
+
+try:
+    from numba import njit, prange
+
+    _NUMBA_AVAILABLE = True
+except ImportError:
+    _NUMBA_AVAILABLE = False
 
 
 class ModulationMode(str, Enum):
     """Supported modulation methods."""
 
+    SINUSOIDAL = "Sinusoidal"
     THIPWM_1_6 = "THIPWM 1/6"
     THIPWM_1_4 = "THIPWM 1/4"
+    CUSTOM_THIPWM = "Custom THIPWM"
     SVM = "SVM"
     DPWM_120_MAX = "DPWM 120° (MAX)"
     DPWM_120_MIN = "DPWM 120° (MIN)"
@@ -49,6 +57,21 @@ def get_modulation_description(modulation: ModulationMode) -> str:
         ModulationMode.THIPWM_1_4: (
             "Third harmonic injection PWM (1/4) improves harmonic symmetry by placing "
             "the active vector interval more evenly in each carrier half-cycle."
+        ),
+        ModulationMode.SINUSOIDAL: (
+            "Basic sinusoidal PWM comparison (no third-harmonic injection)."
+        ),
+        ModulationMode.THIPWM_1_6: (
+            "Third harmonic injection PWM (1/6) uses a 3rd harmonic common-mode signal "
+            "to increase DC link utilization by ~15% while keeping the output fundamental "
+            "sinusoidal."
+        ),
+        ModulationMode.THIPWM_1_4: (
+            "Third harmonic injection PWM (1/4) improves harmonic symmetry by placing "
+            "the active vector interval more evenly in each carrier half-cycle."
+        ),
+        ModulationMode.CUSTOM_THIPWM: (
+            "Third harmonic injection PWM with a user-adjustable injection factor (0–100%)."
         ),
         ModulationMode.SVM: (
             "Space vector modulation (SVM) uses the six active inverter states and two "
@@ -102,6 +125,26 @@ def _triangle_carrier(time: np.ndarray, pwm_frequency_hz: float) -> np.ndarray:
     return 2.0 * tri - 1.0
 
 
+def _pwm_compare(ref: np.ndarray, carrier: np.ndarray) -> np.ndarray:
+    """Compare reference and carrier waveforms to create PWM outputs."""
+
+    if _NUMBA_AVAILABLE:
+        return _pwm_compare_numba(ref, carrier)
+
+    return np.where(ref >= carrier, 1.0, -1.0)
+
+
+if _NUMBA_AVAILABLE:
+
+    @njit(parallel=True)
+    def _pwm_compare_numba(ref: np.ndarray, carrier: np.ndarray) -> np.ndarray:
+        n = ref.shape[0]
+        out = np.empty(n, dtype=np.float64)
+        for i in prange(n):
+            out[i] = 1.0 if ref[i] >= carrier[i] else -1.0
+        return out
+
+
 def _phase_reference(theta: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Compute the three-phase sine references for a given electrical angle array."""
 
@@ -139,6 +182,20 @@ def _svm_reference(theta: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarra
     return _thipwm_reference(theta, x=1.0 / 6.0)
 
 
+def _custom_thipwm_reference(
+    theta: np.ndarray, injection_percent: float
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Compute a custom third-harmonic injection reference.
+
+    The injection parameter is specified as a percentage of the standard 1/6
+    injection. For example, 100% corresponds to x=1/6, while 0% yields a pure
+    sinusoid.
+    """
+
+    x = (injection_percent / 100.0) * (1.0 / 6.0)
+    return _thipwm_reference(theta, x=x)
+
+
 def _dpwm_clamp(mask: np.ndarray, phase: np.ndarray, clamp_value: float) -> np.ndarray:
     """Apply a clamping mask to a phase waveform.
 
@@ -163,8 +220,40 @@ def generate_modulated_pwm(
     speed_rpm: float,
     pwm_frequency_hz: float,
     num_cycles: int = 3,
-    oversample: int = 10,
+    oversample: int = 50,
+    injection_percent: float = 100.0,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Generate three-phase PWM waveforms for a given modulation mode.
+
+    This function supports a basic sinusoidal PWM reference, third-harmonic
+    injection variations (including adjustable injection factor), space-vector
+    modulation, and a set of discontinuous PWM modes.
+
+    Parameters
+    ----------
+    modulation:
+        The modulation technique to simulate.
+    pole_pairs:
+        Number of motor pole pairs. Used to calculate electrical frequency.
+    speed_rpm:
+        Rotor speed in RPM.
+    pwm_frequency_hz:
+        PWM carrier frequency in Hz.
+    num_cycles:
+        Number of electrical cycles to generate.
+    oversample:
+        Samples per PWM period (higher values give better resolution).
+    injection_percent:
+        Third harmonic injection factor expressed as a percentage of the standard
+        1/6 injection. Only used for CUSTOM_THIPWM mode.
+
+    Returns
+    -------
+    time:
+        Time vector (s).
+    phase_a, phase_b, phase_c:
+        Normalized PWM waveforms for each phase (range [-1, +1]).
+    """
     """Generate three-phase PWM waveforms for a given modulation mode.
 
     Parameters
@@ -203,10 +292,16 @@ def generate_modulated_pwm(
 
     theta = 2.0 * np.pi * electrical_freq * time
 
-    if modulation == ModulationMode.THIPWM_1_6:
+    if modulation == ModulationMode.SINUSOIDAL:
+        va_ref, vb_ref, vc_ref = _phase_reference(theta)
+    elif modulation == ModulationMode.THIPWM_1_6:
         va_ref, vb_ref, vc_ref = _thipwm_reference(theta, x=1.0 / 6.0)
     elif modulation == ModulationMode.THIPWM_1_4:
         va_ref, vb_ref, vc_ref = _thipwm_reference(theta, x=1.0 / 4.0)
+    elif modulation == ModulationMode.CUSTOM_THIPWM:
+        va_ref, vb_ref, vc_ref = _custom_thipwm_reference(
+            theta, injection_percent=injection_percent
+        )
     elif modulation == ModulationMode.SVM:
         va_ref, vb_ref, vc_ref = _svm_reference(theta)
     else:
@@ -216,9 +311,9 @@ def generate_modulated_pwm(
         va_ref, vb_ref, vc_ref = _svm_reference(theta)
 
     carrier = _triangle_carrier(time, pwm_frequency_hz)
-    phase_a = np.where(va_ref >= carrier, 1.0, -1.0)
-    phase_b = np.where(vb_ref >= carrier, 1.0, -1.0)
-    phase_c = np.where(vc_ref >= carrier, 1.0, -1.0)
+    phase_a = _pwm_compare(va_ref, carrier)
+    phase_b = _pwm_compare(vb_ref, carrier)
+    phase_c = _pwm_compare(vc_ref, carrier)
 
     # Apply discontinuous PWM adjustments if requested
     if modulation in (ModulationMode.DPWM_120_MAX, ModulationMode.DPWM_120_MIN):

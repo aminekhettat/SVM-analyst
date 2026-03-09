@@ -1,4 +1,4 @@
-"""Graphical user interface for the SVM Shaper simulator.
+"""Graphical user interface for the SVM Analyst simulator.
 
 This module builds a PyQt6 application that allows users to select modulation
 modes, configure system parameters, and visualize the resulting PWM signals and
@@ -314,11 +314,11 @@ class SvmHexagonDialog(QtWidgets.QDialog):
 
 
 class SvmShaperApp(QtWidgets.QMainWindow):
-    """Main window for the SVM Shaper application."""
+    """Main window for the SVM Analyst application."""
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("SVM Shaper - PWM Modulation Simulator")
+        self.setWindowTitle("SVM Analyst - PWM Modulation Simulator")
 
         # Use the company logo as the application icon when available.
         logo_path = (
@@ -977,7 +977,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
             info_text,
             show_line_voltages=self._config.show_line_voltages,
             plot_figure=self._plot_canvas.figure,
-            app_name="SVM Shaper",
+            app_name="SVM Analyst",
             app_version=None,
             company_name="BLIND SYSTEMS",
             include_hexagon=True,
@@ -1046,8 +1046,8 @@ class SvmShaperApp(QtWidgets.QMainWindow):
     def _show_about(self) -> None:
         QtWidgets.QMessageBox.information(
             self,
-            "About SVM Shaper",
-            "SVM Shaper\n"
+            "About SVM Analyst",
+            "SVM Analyst\n"
             "Educational PWM/SVM modulation visualizer.\n"
             "Developed by Amine KHETTAT.",
         )
@@ -1063,10 +1063,10 @@ class SvmShaperApp(QtWidgets.QMainWindow):
 
 
 def main(argv=None) -> int:
-    """Launch the SVM Shaper application."""
+    """Launch the SVM Analyst application."""
 
     app = QtWidgets.QApplication(argv or sys.argv)
-    app.setApplicationName("SVM Shaper")
+    app.setApplicationName("SVM Analyst")
     window = SvmShaperApp()
     window.resize(1200, 800)
     window.show()

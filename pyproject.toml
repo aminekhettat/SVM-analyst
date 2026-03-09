@@ -1,5 +1,5 @@
 [project]
-name = "svm-shaper"
+name = "svm-analyst"
 version = "0.1.0"
 description = "Interactive PWM/SVM modulation simulator for educational use."
 authors = [

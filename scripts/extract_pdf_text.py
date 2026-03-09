@@ -5,9 +5,9 @@ Date: 2026-03-09
 License: See LICENSE
 """
 
-from PyPDF2 import PdfReader
 import sys
 
+from PyPDF2 import PdfReader
 
 if __name__ == "__main__":
     reader = PdfReader("docs/256161.pdf")

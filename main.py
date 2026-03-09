@@ -1,4 +1,4 @@
-"""Entry point for the SVM Shaper simulator.
+"""Entry point for the SVM Analyst simulator.
 
 This module launches the interactive GUI for exploring PWM and SVM modulation
 waveforms and harmonic analysis.
@@ -9,7 +9,6 @@ License: See LICENSE
 """
 
 from svm_shaper.gui import main
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

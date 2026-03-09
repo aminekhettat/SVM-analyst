@@ -7,10 +7,7 @@ License: See LICENSE
 
 import numpy as np
 
-from svm_shaper.modulations import (
-    ModulationMode,
-    generate_modulated_pwm,
-)
+from svm_shaper.modulations import ModulationMode, generate_modulated_pwm
 
 
 def test_thipwm_peak_normalization():

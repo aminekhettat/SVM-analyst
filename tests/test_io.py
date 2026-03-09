@@ -5,18 +5,13 @@ Date: 2026-03-09
 License: See LICENSE
 """
 
-import os
 from pathlib import Path
 
 import numpy as np
 
-from svm_shaper.core import SimulatorConfig, SimulationResult
-from svm_shaper.io import (
-    export_fft_csv,
-    export_waveform_csv,
-    load_config,
-    save_config,
-)
+from svm_shaper.core import SimulationResult, SimulatorConfig
+from svm_shaper.io import export_fft_csv, export_waveform_csv, load_config, save_config
+from svm_shaper.modulations import ModulationMode
 
 
 def _make_dummy_sim_result() -> SimulationResult:
@@ -40,6 +35,14 @@ def _make_dummy_sim_result() -> SimulationResult:
         top_harmonics=[],
         pulses_per_electrical_cycle=100.0,
         degrees_per_pwm_pulse=3.6,
+        filtered_mean=0.0,
+        filtered_rms=0.0,
+        filtered_min=0.0,
+        filtered_max=0.0,
+        raw_mean=0.0,
+        raw_rms=0.0,
+        raw_min=0.0,
+        raw_max=0.0,
         description_text="test",
     )
 
@@ -76,3 +79,95 @@ def test_save_and_load_config(tmp_path: Path):
 
     loaded = load_config(cfg_file)
     assert loaded == config
+
+
+def test_export_report_pdf(tmp_path: Path):
+    sim = _make_dummy_sim_result()
+    config = SimulatorConfig()
+    out_file = tmp_path / "report.pdf"
+
+    # Ensure no exception is thrown
+    import matplotlib.pyplot as plt
+
+    from svm_shaper.io import export_report_pdf
+
+    # Create a simple figure to pass through to the report
+    fig, ax = plt.subplots()
+    ax.plot(sim.time, sim.phase_a)
+
+    export_report_pdf(
+        out_file,
+        config,
+        sim,
+        info_text="Test report",
+        show_line_voltages=True,
+        plot_figure=fig,
+        app_name="SVM Analyst",
+        app_version="0.1",
+    )
+
+    assert out_file.exists()
+
+
+def test_report_includes_injection_line_only_for_custom_thipwm(tmp_path: Path) -> None:
+    from svm_shaper.io import export_report_pdf
+
+    # Use a simulation result for the report
+    sim = _make_dummy_sim_result()
+
+    # Case 1: custom THIPWM should include Injection in report
+    config = SimulatorConfig(modulation=ModulationMode.CUSTOM_THIPWM)
+    out_file = tmp_path / "report_injection.pdf"
+    export_report_pdf(
+        out_file,
+        config,
+        sim,
+        info_text="Test report",
+        show_line_voltages=False,
+        plot_figure=None,
+        app_name="SVM Analyst",
+        app_version="0.1",
+    )
+    data = out_file.read_bytes()
+    assert b"Injection:" in data
+
+    # Case 2: SVM should not include Injection in the report
+    config = SimulatorConfig(modulation=ModulationMode.SVM)
+    out_file = tmp_path / "report_no_injection.pdf"
+    export_report_pdf(
+        out_file,
+        config,
+        sim,
+        info_text="Test report",
+        show_line_voltages=False,
+        plot_figure=None,
+        app_name="SVM Analyst",
+        app_version="0.1",
+    )
+    data = out_file.read_bytes()
+    assert b"Injection:" not in data
+
+
+def test_report_includes_waveform_statistics(tmp_path: Path) -> None:
+    from svm_shaper.io import export_report_pdf
+
+    sim = _make_dummy_sim_result()
+    config = SimulatorConfig()
+    out_file = tmp_path / "report_stats.pdf"
+
+    export_report_pdf(
+        out_file,
+        config,
+        sim,
+        info_text="Test report",
+        show_line_voltages=False,
+        plot_figure=None,
+        app_name="SVM Analyst",
+        app_version="0.1",
+    )
+
+    data = out_file.read_bytes()
+    assert b"mean" in data.lower()
+    assert b"rms" in data.lower()
+    assert b"min" in data.lower()
+    assert b"max" in data.lower()
