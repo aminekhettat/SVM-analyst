@@ -60,9 +60,10 @@ def compute_thd(
 ) -> float:
     """Compute total harmonic distortion (THD) from an FFT magnitude spectrum.
 
-    If freqs is provided, determines the fundamental component closest to the
-    provided frequency. Otherwise, assumes the first nonzero bin is the
-    fundamental.
+    If freqs and fundamental_hz are provided, the THD numerator is built from
+    integer harmonics only (2*f0, 3*f0, ... up to Nyquist), matching the
+    conventional THD definition. Otherwise, falls back to summing all bins
+    except DC and the fundamental.
 
     Returns
     -------
@@ -85,9 +86,28 @@ def compute_thd(
     if fundamental == 0:
         return 0.0
 
-    # Consider harmonics up to Nyquist, excluding DC and fundamental.
-    harmonic_indices = [i for i in range(len(magnitude)) if i not in (0, idx_fund)]
-    harmonic_sum_sq = float(np.sum(magnitude[harmonic_indices] ** 2))
+    if freqs is not None and fundamental_hz is not None and fundamental_hz > 0.0:
+        nyquist = float(freqs[-1])
+        max_order = int(np.floor(nyquist / fundamental_hz))
+
+        harmonic_indices = []
+        for order in range(2, max_order + 1):
+            target_hz = order * fundamental_hz
+            idx = int(np.argmin(np.abs(freqs - target_hz)))
+            if idx not in (0, idx_fund):
+                harmonic_indices.append(idx)
+
+        # Keep unique bins in case two harmonic targets map to the same FFT bin.
+        if harmonic_indices:
+            harmonic_indices = sorted(set(harmonic_indices))
+            harmonic_sum_sq = float(np.sum(magnitude[harmonic_indices] ** 2))
+        else:
+            harmonic_sum_sq = 0.0
+    else:
+        # Fallback behavior when harmonic order cannot be inferred.
+        harmonic_indices = [i for i in range(len(magnitude)) if i not in (0, idx_fund)]
+        harmonic_sum_sq = float(np.sum(magnitude[harmonic_indices] ** 2))
+
     thd = np.sqrt(harmonic_sum_sq) / fundamental
     return float(thd * 100.0)
 

@@ -61,7 +61,7 @@ def export_report_pdf(
     config: SimulatorConfig,
     sim: SimulationResult,
     info_text: str,
-    show_line_voltages: bool,
+    show_phase_voltages: bool,
     plot_figure=None,
     app_name: str = "SVM Analyst",
     app_version: str | None = None,
@@ -175,9 +175,11 @@ def export_report_pdf(
             f"Modulation: {config.modulation.value}\n"
             f"Pole pairs: {config.motor_pole_pairs}\n"
             f"PWM frequency: {config.pwm_frequency_hz:.0f} Hz\n"
-            f"Speed: {config.speed_rpm:.0f} RPM\n"
+            f"Requested speed: {config.speed_rpm:.2f} RPM\n"
+            f"Real speed: {sim.actual_speed_rpm:.2f} RPM\n"
+            f"Speed deviation: {sim.speed_deviation_rpm:+.2f} RPM ({sim.speed_deviation_percent:+.3f}%)\n"
             f"Battery voltage: {config.battery_voltage:.1f} V\n"
-            f"LPF cutoff: {config.filter_cutoff_hz or (3.0 * (config.speed_rpm / 60.0) * config.motor_pole_pairs):.1f} Hz\n"
+            f"LPF cutoff: {config.filter_cutoff_hz or (3.0 * (sim.actual_speed_rpm / 60.0) * config.motor_pole_pairs):.1f} Hz\n"
             f"Oversampling: {config.oversample}\n",
             fontsize=10,
         )
@@ -217,13 +219,28 @@ def export_report_pdf(
             plt.close(fig)
         else:
             fig, axs = plt.subplots(2, 1, figsize=(8.5, 11))
-            axs[0].plot(sim.time, sim.phase_a, label="Phase A")
-            axs[0].plot(sim.time, sim.phase_b, label="Phase B")
-            axs[0].plot(sim.time, sim.phase_c, label="Phase C")
-            if show_line_voltages:
-                axs[0].plot(sim.time, sim.line_ab, linestyle="--", label="Line AB")
-                axs[0].plot(sim.time, sim.line_bc, linestyle="--", label="Line BC")
-                axs[0].plot(sim.time, sim.line_ca, linestyle="--", label="Line CA")
+            axs[0].plot(sim.time, sim.phase_a, label="Line A (0…Vdc)")
+            axs[0].plot(sim.time, sim.phase_b, label="Line B (0…Vdc)")
+            axs[0].plot(sim.time, sim.phase_c, label="Line C (0…Vdc)")
+            if show_phase_voltages:
+                axs[0].plot(
+                    sim.time,
+                    sim.phase_voltage_ab,
+                    linestyle="--",
+                    label="Phase AB (±Vdc)",
+                )
+                axs[0].plot(
+                    sim.time,
+                    sim.phase_voltage_bc,
+                    linestyle="--",
+                    label="Phase BC (±Vdc)",
+                )
+                axs[0].plot(
+                    sim.time,
+                    sim.phase_voltage_ca,
+                    linestyle="--",
+                    label="Phase CA (±Vdc)",
+                )
             axs[0].set_title("Waveform")
             axs[0].set_xlabel("Time (s)")
             axs[0].set_ylabel("Voltage")
@@ -295,31 +312,37 @@ def export_report_pdf(
         if config.modulation == ModulationMode.CUSTOM_THIPWM:
             injection_line = f"Injection: {config.injection_percent:.1f}%\n"
 
-        # Determine which signal is being displayed in the report and provide stats.
-        if show_line_voltages:
-            if config.show_filtered:
-                display_signal = sim.filtered_phase_a - sim.filtered_phase_b
-                stats_label = "Filtered line AB"
-            else:
-                display_signal = sim.line_ab
-                stats_label = "Line AB"
-        else:
-            if config.show_filtered:
-                display_signal = sim.filtered_phase_a
-                stats_label = "Filtered phase A"
-            else:
-                display_signal = sim.phase_a
-                stats_label = "Phase A"
+        # Keep metrics concise: one line voltage (A) and one phase voltage (AB).
+        line_signal = sim.filtered_phase_a if config.show_filtered else sim.phase_a
+        line_label = (
+            "Filtered line voltage A" if config.show_filtered else "Line voltage A"
+        )
+        line_mean = float(np.mean(line_signal))
+        line_rms = float(np.sqrt(np.mean(line_signal**2)))
+        line_min = float(np.min(line_signal))
+        line_max = float(np.max(line_signal))
 
-        stats_mean = float(np.mean(display_signal))
-        stats_rms = float(np.sqrt(np.mean(display_signal**2)))
-        stats_min = float(np.min(display_signal))
-        stats_max = float(np.max(display_signal))
+        phase_signal = (
+            sim.filtered_phase_a - sim.filtered_phase_b
+            if config.show_filtered
+            else sim.phase_voltage_ab
+        )
+        phase_label = (
+            "Filtered phase voltage AB" if config.show_filtered else "Phase voltage AB"
+        )
+
+        phase_mean = float(np.mean(phase_signal))
+        phase_rms = float(np.sqrt(np.mean(phase_signal**2)))
+        phase_min = float(np.min(phase_signal))
+        phase_max = float(np.max(phase_signal))
 
         stats = (
-            f"{stats_label} mean: {stats_mean:.2f} V\n"
-            f"{stats_label} RMS: {stats_rms:.2f} V\n"
-            f"{stats_label} min/max: {stats_min:.2f} V / {stats_max:.2f} V\n"
+            f"{line_label} mean: {line_mean:.2f} V\n"
+            f"{line_label} RMS: {line_rms:.2f} V\n"
+            f"{line_label} min/max: {line_min:.2f} V / {line_max:.2f} V\n"
+            f"{phase_label} mean: {phase_mean:.2f} V\n"
+            f"{phase_label} RMS: {phase_rms:.2f} V\n"
+            f"{phase_label} min/max: {phase_min:.2f} V / {phase_max:.2f} V\n"
         )
 
         params = (
@@ -327,14 +350,21 @@ def export_report_pdf(
             + injection_line
             + f"Pole pairs: {config.motor_pole_pairs}\n"
             f"PWM frequency: {config.pwm_frequency_hz:.0f} Hz\n"
-            f"Speed: {config.speed_rpm:.0f} RPM\n"
+            f"Requested speed: {config.speed_rpm:.2f} RPM\n"
+            f"Real speed: {sim.actual_speed_rpm:.2f} RPM\n"
+            f"Speed deviation: {sim.speed_deviation_rpm:+.2f} RPM ({sim.speed_deviation_percent:+.3f}%)\n"
             f"Battery voltage: {config.battery_voltage:.1f} V\n"
-            f"Switching events per electrical cycle: {sim.pulses_per_electrical_cycle:.1f}\n"
-            f"Electrical degrees per switch event: {sim.degrees_per_pwm_pulse:.2f}°\n"
-            f"LPF cutoff: {config.filter_cutoff_hz or (3.0 * (config.speed_rpm / 60.0) * config.motor_pole_pairs):.1f} Hz\n"
+            f"Average phase PWM pulses per electrical cycle: {sim.pulses_per_electrical_cycle}\n"
+            f"Electrical degrees per PWM pulse: {sim.degrees_per_pwm_pulse:.2f}°\n"
+            f"LPF cutoff: {config.filter_cutoff_hz or (3.0 * (sim.actual_speed_rpm / 60.0) * config.motor_pole_pairs):.1f} Hz\n"
             f"Oversampling: {config.oversample}\n"
             f"Show switching edges: {config.show_switching_edges}\n"
-            f"Show line voltages: {show_line_voltages}\n\n" + stats
+            f"Show phase voltages: {show_phase_voltages}\n"
+            f"THD line voltage A: {sim.thd_line_percent:.2f}%\n"
+            f"THD phase voltage AB: {sim.thd_phase_percent:.2f}%\n"
+            "THD note: line A includes common-mode (triplen) content, while phase AB cancels it.\n"
+            "Filtering note: filtered waveforms are fundamental envelopes, so they usually do not hit 0 V or Vbatt rails.\n\n"
+            + stats
         )
         _draw_text_page("Parameter summary", params, page_num)
         page_num += 1

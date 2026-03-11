@@ -36,7 +36,7 @@ class SimulatorConfig:
     # keeping the signal within the 0..Vbatt range.
     amplitude_percent: float = 100.0
     modulation: ModulationMode = ModulationMode.SVM
-    show_line_voltages: bool = True
+    show_phase_voltages: bool = False
     show_filtered: bool = False
     show_switching_edges: bool = False
     # Filter cutoff frequency (Hz). Set to 0 to use the default (3× electrical frequency).
@@ -47,7 +47,8 @@ class SimulatorConfig:
     author_name: str = ""
     project_name: str = ""
     # Number of electrical cycles generated in the simulation (should be >= display_cycles)
-    num_cycles: int = 6
+    # Keep at 10 so FFT and reported metrics are based on 10 electrical cycles.
+    num_cycles: int = 10
     # Number of electrical cycles shown at once in the oscilloscope view
     display_cycles: int = 3
     # Fixed oversampling used internally for waveform generation (high precision)
@@ -62,19 +63,25 @@ class SimulationResult:
     phase_a: np.ndarray
     phase_b: np.ndarray
     phase_c: np.ndarray
-    line_ab: np.ndarray
-    line_bc: np.ndarray
-    line_ca: np.ndarray
+    # phase_voltage_ab/bc/ca: voltage across a delta winding (terminal-to-terminal),
+    # bipolar in the range [-Vbatt, +Vbatt].
+    phase_voltage_ab: np.ndarray
+    phase_voltage_bc: np.ndarray
+    phase_voltage_ca: np.ndarray
     filtered_phase_a: np.ndarray
     filtered_phase_b: np.ndarray
     filtered_phase_c: np.ndarray
 
     fft_freqs: np.ndarray
     fft_magnitude: np.ndarray
-    thd_percent: float
+    thd_line_percent: float
+    thd_phase_percent: float
     top_harmonics: list[tuple[float, float]]
-    pulses_per_electrical_cycle: float
+    pulses_per_electrical_cycle: int
     degrees_per_pwm_pulse: float
+    actual_speed_rpm: float
+    speed_deviation_rpm: float
+    speed_deviation_percent: float
     filtered_mean: float
     filtered_rms: float
     filtered_min: float
@@ -94,11 +101,31 @@ def run_simulation(
     The returned values are ready for plotting.
     """
 
-    # Generate PWM waveforms for the selected modulation
+    # Quantize the commanded speed to an integer number of PWM pulses per
+    # electrical cycle. Any started pulse must be completed, so we round up.
+    requested_electrical_freq = (config.speed_rpm / 60.0) * config.motor_pole_pairs
+    if requested_electrical_freq <= 0.0:
+        requested_electrical_freq = 1e-9
+
+    requested_pulses_per_electrical = (
+        config.pwm_frequency_hz / requested_electrical_freq
+    )
+    pulses_per_electrical = max(1, int(np.ceil(requested_pulses_per_electrical)))
+
+    actual_electrical_freq = config.pwm_frequency_hz / pulses_per_electrical
+    actual_speed_rpm = (actual_electrical_freq * 60.0) / config.motor_pole_pairs
+    speed_deviation_rpm = actual_speed_rpm - config.speed_rpm
+    speed_deviation_percent = (
+        (speed_deviation_rpm / config.speed_rpm) * 100.0
+        if abs(config.speed_rpm) > 1e-12
+        else 0.0
+    )
+
+    # Generate PWM waveforms for the selected modulation using the quantized speed.
     time, phase_a, phase_b, phase_c = generate_modulated_pwm(
         modulation=config.modulation,
         pole_pairs=config.motor_pole_pairs,
-        speed_rpm=config.speed_rpm,
+        speed_rpm=actual_speed_rpm,
         pwm_frequency_hz=config.pwm_frequency_hz,
         num_cycles=config.num_cycles,
         oversample=config.oversample,
@@ -120,10 +147,38 @@ def run_simulation(
     phase_b = np.clip(phase_b, 0.0, 1.0)
     phase_c = np.clip(phase_c, 0.0, 1.0)
 
-    # Compute line voltages (phase-to-phase)
-    line_ab = phase_a - phase_b
-    line_bc = phase_b - phase_c
-    line_ca = phase_c - phase_a
+    # Count real generated PWM pulses on phase A and report pulses per electrical
+    # cycle. Use transition pairs for robustness against start/end window
+    # alignment, then ceil so any started pulse contributes.
+    def _count_pwm_pulses(signal: np.ndarray) -> int:
+        if signal.size < 2:
+            return 0
+        threshold = 0.5 * (float(np.min(signal)) + float(np.max(signal)))
+        states = signal > threshold
+        transitions = int(np.count_nonzero(states[1:] != states[:-1]))
+        # Close the analysis window periodically to avoid losing one transition
+        # at the start/end boundary when an integer number of electrical cycles
+        # is simulated.
+        if bool(states[-1]) != bool(states[0]):
+            transitions += 1
+        return int(np.ceil(transitions / 2.0))
+
+    total_phase_a_pulses = _count_pwm_pulses(phase_a)
+    total_phase_b_pulses = _count_pwm_pulses(phase_b)
+    total_phase_c_pulses = _count_pwm_pulses(phase_c)
+    total_avg_phase_pulses = (
+        total_phase_a_pulses + total_phase_b_pulses + total_phase_c_pulses
+    ) / 3.0
+    pulses_per_electrical = int(
+        np.ceil(total_avg_phase_pulses / max(1, config.num_cycles))
+    )
+
+    # Phase voltages: voltage applied across a delta-connected motor winding,
+    # i.e. the voltage between two inverter output terminals.
+    # These are correctly bipolar in the range [-Vbatt, +Vbatt] (after scaling).
+    phase_voltage_ab = phase_a - phase_b
+    phase_voltage_bc = phase_b - phase_c
+    phase_voltage_ca = phase_c - phase_a
 
     # Create filtered signals (and ensure the filtered waveform is centered at 0).
     # The sampling rate is derived from the generated time vector to match the
@@ -131,28 +186,33 @@ def run_simulation(
     sampling_rate = (
         1.0 / (time[1] - time[0]) if time.size > 1 else config.pwm_frequency_hz
     )
+    analysis_phase_a = _lowpass(
+        phase_a,
+        sampling_rate=sampling_rate,
+        speed_rpm=actual_speed_rpm,
+        pole_pairs=config.motor_pole_pairs,
+        cutoff_hz=config.filter_cutoff_hz,
+    )
+    analysis_phase_b = _lowpass(
+        phase_b,
+        sampling_rate=sampling_rate,
+        speed_rpm=actual_speed_rpm,
+        pole_pairs=config.motor_pole_pairs,
+        cutoff_hz=config.filter_cutoff_hz,
+    )
+    analysis_phase_c = _lowpass(
+        phase_c,
+        sampling_rate=sampling_rate,
+        speed_rpm=actual_speed_rpm,
+        pole_pairs=config.motor_pole_pairs,
+        cutoff_hz=config.filter_cutoff_hz,
+    )
+
+    # Keep UI behavior: "show filtered" toggles the displayed line waveforms.
     if config.show_filtered:
-        filtered_phase_a = _lowpass(
-            phase_a,
-            sampling_rate=sampling_rate,
-            speed_rpm=config.speed_rpm,
-            pole_pairs=config.motor_pole_pairs,
-            cutoff_hz=config.filter_cutoff_hz,
-        )
-        filtered_phase_b = _lowpass(
-            phase_b,
-            sampling_rate=sampling_rate,
-            speed_rpm=config.speed_rpm,
-            pole_pairs=config.motor_pole_pairs,
-            cutoff_hz=config.filter_cutoff_hz,
-        )
-        filtered_phase_c = _lowpass(
-            phase_c,
-            sampling_rate=sampling_rate,
-            speed_rpm=config.speed_rpm,
-            pole_pairs=config.motor_pole_pairs,
-            cutoff_hz=config.filter_cutoff_hz,
-        )
+        filtered_phase_a = analysis_phase_a
+        filtered_phase_b = analysis_phase_b
+        filtered_phase_c = analysis_phase_c
     else:
         filtered_phase_a = phase_a
         filtered_phase_b = phase_b
@@ -163,45 +223,53 @@ def run_simulation(
     phase_b = phase_b * config.battery_voltage
     phase_c = phase_c * config.battery_voltage
 
-    line_ab = line_ab * config.battery_voltage
-    line_bc = line_bc * config.battery_voltage
-    line_ca = line_ca * config.battery_voltage
+    phase_voltage_ab = phase_voltage_ab * config.battery_voltage
+    phase_voltage_bc = phase_voltage_bc * config.battery_voltage
+    phase_voltage_ca = phase_voltage_ca * config.battery_voltage
 
     filtered_phase_a = filtered_phase_a * config.battery_voltage
     filtered_phase_b = filtered_phase_b * config.battery_voltage
     filtered_phase_c = filtered_phase_c * config.battery_voltage
 
-    # FFT and THD are computed on the *filtered* waveform to match the effective
-    # motor output waveform rather than the raw PWM edges.
+    # Use the filtered analysis signals consistently for THD on both line and phase voltages.
+    analysis_phase_a = analysis_phase_a * config.battery_voltage
+    analysis_phase_b = analysis_phase_b * config.battery_voltage
+    analysis_phase_c = analysis_phase_c * config.battery_voltage
+    analysis_phase_voltage_ab = analysis_phase_a - analysis_phase_b
+
+    electrical_freq = actual_electrical_freq
+
+    # FFT on line voltage A (terminal A to DC−, 0..Vbatt), using the filtered
+    # analysis waveform so THD reflects motor-relevant harmonics.
     fft_freqs, fft_magnitude = compute_fft(
-        signal=filtered_phase_a,
+        signal=analysis_phase_a,
         sampling_rate=config.pwm_frequency_hz * config.oversample,
         num_cycles=config.num_cycles,
-        electrical_frequency_hz=(config.speed_rpm / 60.0) * config.motor_pole_pairs,
+        electrical_frequency_hz=electrical_freq,
     )
-    electrical_freq = (config.speed_rpm / 60.0) * config.motor_pole_pairs
-    thd_percent = compute_thd(
+    thd_line_percent = compute_thd(
         fft_magnitude,
         fundamental_hz=electrical_freq,
         freqs=fft_freqs,
     )
-    top_harmonics = compute_top_harmonics(fft_freqs, fft_magnitude, count=5)
 
-    # Calculate switching events per electrical cycle by counting transitions
-    # in each phase waveform (PWM edges). DPWM modes reduce switching by clamping
-    # phases for part of the cycle, so the count differs from the raw carrier
-    # frequency.
-    def _count_transitions(x: np.ndarray) -> int:
-        return int(np.count_nonzero(np.diff(x) != 0))
-
-    transitions_a = _count_transitions(phase_a)
-    transitions_b = _count_transitions(phase_b)
-    transitions_c = _count_transitions(phase_c)
-    avg_transitions_per_cycle = (
-        (transitions_a + transitions_b + transitions_c) / 3.0 / config.num_cycles
+    # THD on phase voltage AB (terminal-to-terminal, -Vbatt..+Vbatt), built
+    # from the same filtered analysis basis for consistency with line THD.
+    _, fft_magnitude_phase = compute_fft(
+        signal=analysis_phase_voltage_ab,
+        sampling_rate=config.pwm_frequency_hz * config.oversample,
+        num_cycles=config.num_cycles,
+        electrical_frequency_hz=electrical_freq,
+    )
+    thd_phase_percent = compute_thd(
+        fft_magnitude_phase,
+        fundamental_hz=electrical_freq,
+        freqs=fft_freqs,
     )
 
-    pulses_per_electrical = float(avg_transitions_per_cycle)
+    top_harmonics = compute_top_harmonics(fft_freqs, fft_magnitude, count=5)
+
+    # Electrical angle per PWM pulse based on measured generated pulses.
     degrees_per_pulse = (
         360.0 / pulses_per_electrical if pulses_per_electrical != 0 else float("inf")
     )
@@ -225,18 +293,22 @@ def run_simulation(
         phase_a=phase_a,
         phase_b=phase_b,
         phase_c=phase_c,
-        line_ab=line_ab,
-        line_bc=line_bc,
-        line_ca=line_ca,
+        phase_voltage_ab=phase_voltage_ab,
+        phase_voltage_bc=phase_voltage_bc,
+        phase_voltage_ca=phase_voltage_ca,
         filtered_phase_a=filtered_phase_a,
         filtered_phase_b=filtered_phase_b,
         filtered_phase_c=filtered_phase_c,
         fft_freqs=fft_freqs,
         fft_magnitude=fft_magnitude,
-        thd_percent=thd_percent,
+        thd_line_percent=thd_line_percent,
+        thd_phase_percent=thd_phase_percent,
         top_harmonics=top_harmonics,
         pulses_per_electrical_cycle=pulses_per_electrical,
         degrees_per_pwm_pulse=degrees_per_pulse,
+        actual_speed_rpm=actual_speed_rpm,
+        speed_deviation_rpm=speed_deviation_rpm,
+        speed_deviation_percent=speed_deviation_percent,
         filtered_mean=filtered_mean,
         filtered_rms=filtered_rms,
         filtered_min=filtered_min,

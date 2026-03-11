@@ -546,7 +546,8 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         self._voltage_choice.setAccessibleName("Voltage view")
         self._voltage_choice.addItems(["Line voltages", "Phase voltages"])
         self._voltage_choice.setToolTip(
-            "Choose whether to view line-to-line or phase voltages"
+            "Line voltages: inverter terminal to DC− (0…Vdc). "
+            "Phase voltages: across delta winding, terminal-to-terminal (−Vdc…+Vdc)."
         )
 
         self._filter_checkbox = QtWidgets.QCheckBox("Filtered (fundamental)")
@@ -621,6 +622,8 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         self._filter_checkbox.setChecked(config.show_filtered)
         self._edges_checkbox.setChecked(config.show_switching_edges)
         self._amplitude_spin.setValue(config.amplitude_percent)
+        # index 0 = Line voltages, index 1 = Phase voltages
+        self._voltage_choice.setCurrentIndex(1 if config.show_phase_voltages else 0)
 
         # Select the current modulation in the list
         for idx in range(self._modulation_list.count()):
@@ -644,14 +647,14 @@ class SvmShaperApp(QtWidgets.QMainWindow):
             battery_voltage=self._battery_voltage_spin.value(),
             amplitude_percent=self._amplitude_spin.value(),
             modulation=modulation,
-            show_line_voltages=self._voltage_choice.currentIndex() == 0,
+            show_phase_voltages=self._voltage_choice.currentIndex() == 1,
             show_filtered=self._filter_checkbox.isChecked(),
             show_switching_edges=self._edges_checkbox.isChecked(),
             filter_cutoff_hz=self._filter_cutoff_spin.value(),
             injection_percent=self._injection_spin.value(),
             author_name=self._author_name_edit.text(),
             project_name=self._project_name_edit.text(),
-            num_cycles=6,
+            num_cycles=10,
             display_cycles=3,
         )
 
@@ -707,12 +710,13 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         )
         self._window_samples = max(3, self._window_samples)
 
-        # Choose which signals to show (line or phase)
-        if self._config.show_line_voltages:
+        # Line voltages = inverter terminal to DC− (0…Vdc) = phase_a/b/c.
+        # Phase voltages = across delta winding, terminal-to-terminal = phase_voltage_ab/bc/ca.
+        if self._config.show_phase_voltages:
             self._display_signals = {
-                "A": self._sim_result.line_ab,
-                "B": self._sim_result.line_bc,
-                "C": self._sim_result.line_ca,
+                "A": self._sim_result.phase_voltage_ab,
+                "B": self._sim_result.phase_voltage_bc,
+                "C": self._sim_result.phase_voltage_ca,
             }
         else:
             self._display_signals = {
@@ -797,26 +801,35 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         if self._config.modulation == ModulationMode.CUSTOM_THIPWM:
             injection_line = f"Injection: {self._config.injection_percent:.1f}%\n"
 
-        # Choose the waveform that should be described based on display mode.
-        if self._config.show_line_voltages:
-            if self._config.show_filtered:
-                display_signal = sim.filtered_phase_a - sim.filtered_phase_b
-                stats_label = "Filtered line AB"
-            else:
-                display_signal = sim.line_ab
-                stats_label = "Line AB"
-        else:
-            if self._config.show_filtered:
-                display_signal = sim.filtered_phase_a
-                stats_label = "Filtered phase A"
-            else:
-                display_signal = sim.phase_a
-                stats_label = "Phase A"
+        # Keep metrics concise: one line voltage (A) and one phase voltage (AB).
+        line_signal = (
+            sim.filtered_phase_a if self._config.show_filtered else sim.phase_a
+        )
+        line_label = (
+            "Filtered line voltage A"
+            if self._config.show_filtered
+            else "Line voltage A"
+        )
+        line_mean = float(np.mean(line_signal))
+        line_rms = float(np.sqrt(np.mean(line_signal**2)))
+        line_min = float(np.min(line_signal))
+        line_max = float(np.max(line_signal))
 
-        stats_mean = float(np.mean(display_signal))
-        stats_rms = float(np.sqrt(np.mean(display_signal**2)))
-        stats_min = float(np.min(display_signal))
-        stats_max = float(np.max(display_signal))
+        phase_signal = (
+            sim.filtered_phase_a - sim.filtered_phase_b
+            if self._config.show_filtered
+            else sim.phase_voltage_ab
+        )
+        phase_label = (
+            "Filtered phase voltage AB"
+            if self._config.show_filtered
+            else "Phase voltage AB"
+        )
+
+        phase_mean = float(np.mean(phase_signal))
+        phase_rms = float(np.sqrt(np.mean(phase_signal**2)))
+        phase_min = float(np.min(phase_signal))
+        phase_max = float(np.max(phase_signal))
 
         info_text = (
             f"Project: {self._config.project_name or 'N/A'}\n"
@@ -826,13 +839,20 @@ class SvmShaperApp(QtWidgets.QMainWindow):
             + f"Pole pairs: {self._config.motor_pole_pairs}\n"
             f"Battery voltage: {self._config.battery_voltage:.1f} V\n"
             f"PWM frequency: {self._config.pwm_frequency_hz:.0f} Hz\n"
-            f"Speed: {self._config.speed_rpm:.0f} RPM\n"
-            f"Electrical frequency: {(self._config.speed_rpm / 60.0) * self._config.motor_pole_pairs:.1f} Hz\n"
-            f"Switching events per electrical cycle: {sim.pulses_per_electrical_cycle:.1f}\n"
-            f"Electrical degrees per switch event: {sim.degrees_per_pwm_pulse:.2f}°\n"
-            f"LPF cutoff: {self._config.filter_cutoff_hz or (3.0 * (self._config.speed_rpm / 60.0) * self._config.motor_pole_pairs):.1f} Hz\n"
-            f"THD (filtered phase A): {sim.thd_percent:.2f}%\n\n"
-            f"{stats_label}: mean {stats_mean:.2f} V, RMS {stats_rms:.2f} V, min {stats_min:.2f} V, max {stats_max:.2f} V\n\n"
+            f"Requested speed: {self._config.speed_rpm:.2f} RPM\n"
+            f"Real speed (quantized by PWM pulses): {sim.actual_speed_rpm:.2f} RPM\n"
+            f"Speed deviation: {sim.speed_deviation_rpm:+.2f} RPM ({sim.speed_deviation_percent:+.3f}%)\n"
+            f"Electrical frequency (real): {(sim.actual_speed_rpm / 60.0) * self._config.motor_pole_pairs:.3f} Hz\n"
+            f"Average phase PWM pulses per electrical cycle: {sim.pulses_per_electrical_cycle}\n"
+            f"Electrical degrees per PWM pulse: {sim.degrees_per_pwm_pulse:.2f}°\n"
+            f"LPF cutoff: {self._config.filter_cutoff_hz or (3.0 * (sim.actual_speed_rpm / 60.0) * self._config.motor_pole_pairs):.1f} Hz\n"
+            f"THD line voltage A: {sim.thd_line_percent:.2f}%\n"
+            f"THD phase voltage AB: {sim.thd_phase_percent:.2f}%\n\n"
+            "THD basis: both THD values are computed on filtered analysis waveforms.\n\n"
+            "THD note: line A includes common-mode (triplen) content, while phase AB cancels it.\n"
+            "Filtering note: filtered waveforms are fundamental envelopes, so they usually do not hit 0 V or Vbatt rails.\n\n"
+            f"{line_label}: mean {line_mean:.2f} V, RMS {line_rms:.2f} V, min {line_min:.2f} V, max {line_max:.2f} V\n"
+            f"{phase_label}: mean {phase_mean:.2f} V, RMS {phase_rms:.2f} V, min {phase_min:.2f} V, max {phase_max:.2f} V\n\n"
             f"Top harmonics (freq -> magnitude):\n"
             + "\n".join(top_harmonics_lines)
             + "\n\n"
@@ -895,30 +915,43 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         if not path:
             return
 
-        if self._config.show_line_voltages:
-            labels = ["Line AB", "Line BC", "Line CA"]
+        if self._config.show_phase_voltages:
+            labels = ["Phase voltage AB", "Phase voltage BC", "Phase voltage CA"]
             simulated = self._sim_result
-            # Create a temporary SimulationResult with lines in phase positions
+            # Create a temporary SimulationResult with phase voltages in phase positions
             simulated = type(simulated)(
                 time=simulated.time,
-                phase_a=simulated.line_ab,
-                phase_b=simulated.line_bc,
-                phase_c=simulated.line_ca,
-                line_ab=simulated.line_ab,
-                line_bc=simulated.line_bc,
-                line_ca=simulated.line_ca,
-                filtered_phase_a=simulated.line_ab,
-                filtered_phase_b=simulated.line_bc,
-                filtered_phase_c=simulated.line_ca,
+                phase_a=simulated.phase_voltage_ab,
+                phase_b=simulated.phase_voltage_bc,
+                phase_c=simulated.phase_voltage_ca,
+                phase_voltage_ab=simulated.phase_voltage_ab,
+                phase_voltage_bc=simulated.phase_voltage_bc,
+                phase_voltage_ca=simulated.phase_voltage_ca,
+                filtered_phase_a=simulated.phase_voltage_ab,
+                filtered_phase_b=simulated.phase_voltage_bc,
+                filtered_phase_c=simulated.phase_voltage_ca,
                 fft_freqs=simulated.fft_freqs,
                 fft_magnitude=simulated.fft_magnitude,
-                thd_percent=simulated.thd_percent,
+                thd_line_percent=simulated.thd_line_percent,
+                thd_phase_percent=simulated.thd_phase_percent,
+                top_harmonics=simulated.top_harmonics,
                 pulses_per_electrical_cycle=simulated.pulses_per_electrical_cycle,
                 degrees_per_pwm_pulse=simulated.degrees_per_pwm_pulse,
+                actual_speed_rpm=simulated.actual_speed_rpm,
+                speed_deviation_rpm=simulated.speed_deviation_rpm,
+                speed_deviation_percent=simulated.speed_deviation_percent,
+                filtered_mean=simulated.filtered_mean,
+                filtered_rms=simulated.filtered_rms,
+                filtered_min=simulated.filtered_min,
+                filtered_max=simulated.filtered_max,
+                raw_mean=simulated.raw_mean,
+                raw_rms=simulated.raw_rms,
+                raw_min=simulated.raw_min,
+                raw_max=simulated.raw_max,
                 description_text=simulated.description_text,
             )
         else:
-            labels = ["Phase A", "Phase B", "Phase C"]
+            labels = ["Line A", "Line B", "Line C"]
             simulated = self._sim_result
 
         export_waveform_csv(path, simulated, labels)
@@ -975,7 +1008,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
             self._config,
             self._sim_result,
             info_text,
-            show_line_voltages=self._config.show_line_voltages,
+            show_phase_voltages=self._config.show_phase_voltages,
             plot_figure=self._plot_canvas.figure,
             app_name="SVM Analyst",
             app_version=None,

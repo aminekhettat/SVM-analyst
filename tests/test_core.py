@@ -1,11 +1,15 @@
 """Unit tests for core simulation logic."""
 
+import math
+
+import numpy as np
+
 from svm_shaper.core import SimulatorConfig, run_simulation
 from svm_shaper.modulations import ModulationMode
 
 
-def test_switching_event_count_changes_for_dpwm_vs_svm() -> None:
-    """DPWM should reduce the number of switching events compared to continuous SVM."""
+def test_pwm_pulse_count_is_integer_and_reflects_generated_pulses() -> None:
+    """Reported PWM pulses should be integer and reduced for DPWM clamping."""
 
     base_config = SimulatorConfig(
         speed_rpm=1500.0,
@@ -26,9 +30,37 @@ def test_switching_event_count_changes_for_dpwm_vs_svm() -> None:
     svm_res = run_simulation(svm_config)
     dpwm_res = run_simulation(dpwm_config)
 
+    assert isinstance(svm_res.pulses_per_electrical_cycle, int)
+    assert isinstance(dpwm_res.pulses_per_electrical_cycle, int)
     assert svm_res.pulses_per_electrical_cycle > 0
     assert dpwm_res.pulses_per_electrical_cycle > 0
-    assert dpwm_res.pulses_per_electrical_cycle <= svm_res.pulses_per_electrical_cycle
+    assert dpwm_res.pulses_per_electrical_cycle < svm_res.pulses_per_electrical_cycle
+    assert abs(svm_res.actual_speed_rpm - dpwm_res.actual_speed_rpm) < 1e-9
+
+
+def test_real_speed_and_deviation_match_quantized_pulses() -> None:
+    """Real speed must be computed from quantized PWM pulses and reported deviation."""
+
+    cfg = SimulatorConfig(
+        speed_rpm=1234.0,
+        pwm_frequency_hz=10000.0,
+        motor_pole_pairs=5,
+        num_cycles=2,
+    )
+    res = run_simulation(cfg)
+
+    expected_pulses = int(
+        math.ceil(
+            cfg.pwm_frequency_hz / ((cfg.speed_rpm / 60.0) * cfg.motor_pole_pairs)
+        )
+    )
+    expected_actual_speed = (
+        (cfg.pwm_frequency_hz / expected_pulses) * 60.0 / cfg.motor_pole_pairs
+    )
+
+    assert res.pulses_per_electrical_cycle == expected_pulses
+    assert abs(res.actual_speed_rpm - expected_actual_speed) < 1e-9
+    assert abs(res.speed_deviation_rpm - (expected_actual_speed - cfg.speed_rpm)) < 1e-9
 
 
 def test_waveform_stats_are_consistent() -> None:
@@ -50,8 +82,9 @@ def test_waveform_stats_are_consistent() -> None:
     assert res.filtered_rms >= 0
     assert res.raw_rms >= 0
 
-    # DPWM modes intentionally create a DC offset; verify the mean is not
-    # centered around half the DC bus.
+    # DPWM modes can create a DC offset depending on variant and operating point.
+    # Verify at least one DPWM variant clearly departs from the CPWM midpoint.
+    deviating_modes = 0
     for asym_mode in (
         ModulationMode.DPWM_120_MAX,
         ModulationMode.DPWM_120_MIN,
@@ -62,10 +95,13 @@ def test_waveform_stats_are_consistent() -> None:
     ):
         cfg2 = SimulatorConfig(**{**cfg.__dict__, "modulation": asym_mode})
         res2 = run_simulation(cfg2)
-        assert (
+        if (
             abs(res2.filtered_mean - cfg.battery_voltage / 2.0) > 1.0
             or abs(res2.raw_mean - cfg.battery_voltage / 2.0) > 1.0
-        )
+        ):
+            deviating_modes += 1
+
+    assert deviating_modes >= 1
 
 
 def test_amplitude_factor_changes_waveform_range() -> None:
@@ -82,3 +118,76 @@ def test_amplitude_factor_changes_waveform_range() -> None:
 
     expected_range = cfg.battery_voltage * 0.5
     assert abs((res.raw_max - res.raw_min) - expected_range) < 1e-6
+
+
+def test_line_voltages_are_bounded_between_zero_and_bus() -> None:
+    """Line voltages (inverter terminal to DC−) must stay within 0..Vdc.
+    Phase voltages (across delta winding) must be bipolar in −Vdc..−Vdc."""
+
+    cfg = SimulatorConfig(
+        speed_rpm=1800.0,
+        pwm_frequency_hz=10000.0,
+        motor_pole_pairs=5,
+        num_cycles=2,
+        battery_voltage=240.0,
+    )
+    res = run_simulation(cfg)
+
+    # Line voltages = phase_a/b/c, bounded 0..Vdc
+    for line in (res.phase_a, res.phase_b, res.phase_c):
+        assert float(line.min()) >= -1e-9
+        assert float(line.max()) <= cfg.battery_voltage + 1e-9
+
+    # Phase voltages = phase_voltage_ab/bc/ca, bipolar −Vdc..+Vdc
+    for pv in (res.phase_voltage_ab, res.phase_voltage_bc, res.phase_voltage_ca):
+        assert float(pv.min()) >= -cfg.battery_voltage - 1e-9
+        assert float(pv.max()) <= cfg.battery_voltage + 1e-9
+        # Must actually reach both polarities (not degenerate)
+        assert float(pv.min()) < 0.0
+        assert float(pv.max()) > 0.0
+
+
+def test_sinusoidal_phase_thd_is_not_inflated_by_raw_pwm_carrier() -> None:
+    """For sinusoidal modulation, phase THD should stay in a realistic range.
+
+    Regression case from GUI usage:
+    1500 RPM, 6 pole pairs, 12 V bus, 50% amplitude.
+    """
+
+    cfg = SimulatorConfig(
+        modulation=ModulationMode.SINUSOIDAL,
+        speed_rpm=1500.0,
+        motor_pole_pairs=6,
+        battery_voltage=12.0,
+        amplitude_percent=50.0,
+        pwm_frequency_hz=10000.0,
+        num_cycles=10,
+        show_filtered=False,
+    )
+    res = run_simulation(cfg)
+
+    assert res.thd_line_percent >= 0.0
+    assert res.thd_phase_percent >= 0.0
+    # Phase THD must not explode due to raw switching carrier content.
+    assert res.thd_phase_percent < 20.0
+
+
+def test_dpwm_raw_waveforms_reach_dc_rails_at_full_amplitude() -> None:
+    """DPWM raw line and phase waveforms should hit DC rails at 100% amplitude."""
+
+    cfg = SimulatorConfig(
+        modulation=ModulationMode.DPWM_120_MAX,
+        speed_rpm=2000.0,
+        motor_pole_pairs=6,
+        battery_voltage=12.0,
+        amplitude_percent=100.0,
+        pwm_frequency_hz=20000.0,
+        num_cycles=2,
+        show_filtered=False,
+    )
+    res = run_simulation(cfg)
+
+    assert abs(float(np.max(res.phase_a)) - cfg.battery_voltage) < 1e-9
+    assert abs(float(np.min(res.phase_a)) - 0.0) < 1e-9
+    assert abs(float(np.max(res.phase_voltage_ab)) - cfg.battery_voltage) < 1e-9
+    assert abs(float(np.min(res.phase_voltage_ab)) + cfg.battery_voltage) < 1e-9

@@ -36,3 +36,18 @@ def test_thd_of_pure_sine_is_zero():
     )
     thd = compute_thd(mag, fundamental_hz=f0, freqs=freqs)
     assert thd < 1e-2
+
+
+def test_thd_ignores_non_harmonic_component():
+    fs = 10000.0
+    f0 = 50.0
+    t = np.arange(0, 1.0, 1.0 / fs)
+
+    # 130 Hz is not an integer harmonic of 50 Hz and should not contribute to THD.
+    signal = np.sin(2 * np.pi * f0 * t) + 0.25 * np.sin(2 * np.pi * 130.0 * t)
+
+    freqs, mag = compute_fft(
+        signal, sampling_rate=fs, num_cycles=50, electrical_frequency_hz=f0
+    )
+    thd = compute_thd(mag, fundamental_hz=f0, freqs=freqs)
+    assert thd < 1e-2

@@ -57,6 +57,6 @@ def sweep_thd(
     for i, x in enumerate(xs):
         config = replace(base_config, **{variable: float(x)})
         sim = run_simulation(config)
-        thd_values[i] = sim.thd_percent
+        thd_values[i] = sim.thd_line_percent
 
     return xs, thd_values

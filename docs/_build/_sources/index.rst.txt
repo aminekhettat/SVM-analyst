@@ -19,8 +19,22 @@ Key features:
 - Multiple modulation methods (THIPWM, SVM, DPWM variants)
 - Real-time waveform + FFT plotting with oscilloscope-style scrolling
 - Filtered waveform view with selectable LPF cutoff
-- THD computed on the filtered output with top-harmonics listing
+- Dual THD computation and display:
+
+   - THD for line voltage A (terminal-to-ground)
+   - THD for phase voltage AB (terminal-to-terminal)
+
+- Integer PWM-pulse quantization per electrical cycle, with requested vs real speed reporting
+- FFT and metrics computed over 10 electrical cycles by default
+- Concise metrics display for one line voltage (A) and one phase voltage (AB): mean, RMS, min, max
 - Optional switching-edge markers for PWM gate events
 - SVM hexagon view with active sector highlighting
 - Save/load simulation configuration (JSON)
 - Export waveform/FFT to CSV and plots to PNG
+- Build a standalone Windows executable with PyInstaller
+
+Packaging example:
+
+.. code-block:: sh
+
+   python -m PyInstaller --name svm-analyst --onefile --windowed main.py

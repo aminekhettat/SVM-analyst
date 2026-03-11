@@ -159,13 +159,19 @@ def _thipwm_reference(
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Compute the three-phase THIPWM reference signals using a common third harmonic."""
 
-    va = np.sin(theta) + x * np.sin(3.0 * theta)
-    vb = np.sin(theta - 2.0 * np.pi / 3.0) + x * np.sin(3.0 * theta)
-    vc = np.sin(theta + 2.0 * np.pi / 3.0) + x * np.sin(3.0 * theta)
+    # Thesis Eq. (4.1)-(4.3)/(4.6)-(4.8): 1.15 scaling with third-harmonic
+    # common-mode term. We then apply a common normalization across all phases to
+    # keep the carrier-comparison references in [-1, 1].
+    sin3 = np.sin(3.0 * theta)
+    va = 1.15 * (np.sin(theta) + x * sin3)
+    vb = 1.15 * (np.sin(theta - 2.0 * np.pi / 3.0) + x * sin3)
+    vc = 1.15 * (np.sin(theta + 2.0 * np.pi / 3.0) + x * sin3)
 
-    va = _normalize(va)
-    vb = _normalize(vb)
-    vc = _normalize(vc)
+    peak = float(np.max(np.abs(np.vstack((va, vb, vc)))))
+    if peak > 1.0:
+        va = va / peak
+        vb = vb / peak
+        vc = vc / peak
     return va, vb, vc
 
 
@@ -177,9 +183,16 @@ def _svm_reference(theta: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarra
     carrier-comparison-based SVM.
     """
 
-    # For SVM the equivalent common-mode injection is (Vmax + Vmin)/2. In a
-    # normalized sine reference that is equivalent to injecting 1/6 of the third harmonic.
-    return _thipwm_reference(theta, x=1.0 / 6.0)
+    # Thesis Eq. (4.9): apply common-mode component from instantaneous max/min.
+    va, vb, vc = _phase_reference(theta)
+    vmax = np.maximum(np.maximum(va, vb), vc)
+    vmin = np.minimum(np.minimum(va, vb), vc)
+    ucm = 0.5 * (vmax + vmin)
+
+    va = va - ucm
+    vb = vb - ucm
+    vc = vc - ucm
+    return va, vb, vc
 
 
 def _custom_thipwm_reference(
@@ -311,62 +324,62 @@ def generate_modulated_pwm(
         va_ref, vb_ref, vc_ref = _svm_reference(theta)
 
     carrier = _triangle_carrier(time, pwm_frequency_hz)
-    phase_a = _pwm_compare(va_ref, carrier)
-    phase_b = _pwm_compare(vb_ref, carrier)
-    phase_c = _pwm_compare(vc_ref, carrier)
 
-    # Apply discontinuous PWM adjustments if requested
-    if modulation in (ModulationMode.DPWM_120_MAX, ModulationMode.DPWM_120_MIN):
-        # One phase is clamped for 120 degrees (2 sectors). In this implementation,
-        # we clamp the phase that is highest in the reference at each time.
-        clamp_value = +1.0 if modulation == ModulationMode.DPWM_120_MAX else -1.0
-        sector = np.floor((theta % (2 * np.pi)) / (np.pi / 3.0)).astype(int)
-        # Choose which phase to clamp by sector (each pair of sectors clamps a different phase)
-        clamp_phase = (sector // 2) % 3
-        for i in range(time.size):
-            if clamp_phase[i] == 0:
-                phase_a[i] = clamp_value
-            elif clamp_phase[i] == 1:
-                phase_b[i] = clamp_value
-            else:
-                phase_c[i] = clamp_value
-
-    elif modulation in (
+    if modulation in (
+        ModulationMode.DPWM_120_MAX,
+        ModulationMode.DPWM_120_MIN,
         ModulationMode.DPWM_60_1,
         ModulationMode.DPWM_60_0,
         ModulationMode.DPWM_60_2,
+        ModulationMode.DPWM_30_3,
     ):
-        # 60° DPWM: clamp one phase for 60° (one sector) and rotate the clamped phase.
-        # The variants differ in which phase is clamped first.
-        sector = np.floor((theta % (2 * np.pi)) / (np.pi / 3.0)).astype(int)
-        if modulation == ModulationMode.DPWM_60_1:
-            clamp_map = [0, 1, 2, 0, 1, 2]
-        elif modulation == ModulationMode.DPWM_60_0:
-            clamp_map = [1, 2, 0, 1, 2, 0]
-        else:
-            clamp_map = [2, 0, 1, 2, 0, 1]
-        clamp_phase = [clamp_map[s % 6] for s in sector]
-        clamp_value = -1.0  # clamp to -Vdc to reduce switching losses
-        for i in range(time.size):
-            if clamp_phase[i] == 0:
-                phase_a[i] = clamp_value
-            elif clamp_phase[i] == 1:
-                phase_b[i] = clamp_value
-            else:
-                phase_c[i] = clamp_value
+        # Unified voltage modulation (thesis Eq. 4.15-4.26): compute shifted gate
+        # times via a single Toffset degree of freedom.
+        tas = 0.5 * (va_ref + 1.0)
+        tbs = 0.5 * (vb_ref + 1.0)
+        tcs = 0.5 * (vc_ref + 1.0)
 
-    elif modulation == ModulationMode.DPWM_30_3:
-        # 30° DPWM: clamp each phase for 30° increments.
-        # For simplicity, we clamp the phase that has the largest instantaneous
-        # reference magnitude to reduce switching.
-        ref_mag = np.vstack((np.abs(va_ref), np.abs(vb_ref), np.abs(vc_ref)))
-        clamp_phase = np.argmax(ref_mag, axis=0)
-        for i in range(time.size):
-            if clamp_phase[i] == 0:
-                phase_a[i] = -1.0
-            elif clamp_phase[i] == 1:
-                phase_b[i] = -1.0
-            else:
-                phase_c[i] = -1.0
+        tmax = np.maximum(np.maximum(tas, tbs), tcs)
+        tmin = np.minimum(np.minimum(tas, tbs), tcs)
+        ts = 1.0
+
+        cond_60 = (tmin + tmax) >= ts
+        cond_60_shift_m30 = np.sin(theta - np.pi / 6.0) >= 0.0
+        cond_30 = np.sin(6.0 * theta) >= 0.0
+
+        if modulation == ModulationMode.DPWM_120_MAX:
+            toffset = ts - tmax
+        elif modulation == ModulationMode.DPWM_120_MIN:
+            toffset = -tmin
+        elif modulation == ModulationMode.DPWM_60_1:
+            # Thesis Eq. (4.21)-(4.22)
+            toffset = np.where(cond_60, ts - tmax, -tmin)
+        elif modulation == ModulationMode.DPWM_60_0:
+            # Thesis Eq. (4.23)-(4.24)
+            toffset = np.where(cond_60, -tmin, ts - tmax)
+        elif modulation == ModulationMode.DPWM_60_2:
+            # +/-30° shifted variant: apply a 30° retarded decision boundary.
+            toffset = np.where(cond_60_shift_m30, ts - tmax, -tmin)
+        else:
+            # DPWM3 (30°): alternate DPWM1/DPWM0 every 30° electrical interval.
+            toffset_1 = np.where(cond_60, ts - tmax, -tmin)
+            toffset_0 = np.where(cond_60, -tmin, ts - tmax)
+            toffset = np.where(cond_30, toffset_1, toffset_0)
+
+        tga = np.clip(tas + toffset, 0.0, 1.0)
+        tgb = np.clip(tbs + toffset, 0.0, 1.0)
+        tgc = np.clip(tcs + toffset, 0.0, 1.0)
+
+        va_ref_mod = 2.0 * tga - 1.0
+        vb_ref_mod = 2.0 * tgb - 1.0
+        vc_ref_mod = 2.0 * tgc - 1.0
+
+        phase_a = _pwm_compare(va_ref_mod, carrier)
+        phase_b = _pwm_compare(vb_ref_mod, carrier)
+        phase_c = _pwm_compare(vc_ref_mod, carrier)
+    else:
+        phase_a = _pwm_compare(va_ref, carrier)
+        phase_b = _pwm_compare(vb_ref, carrier)
+        phase_c = _pwm_compare(vc_ref, carrier)
 
     return time, phase_a, phase_b, phase_c

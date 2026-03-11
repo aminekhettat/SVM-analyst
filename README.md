@@ -10,12 +10,13 @@ Educational simulator for PWM and space-vector modulations focused on PMSM drive
   - Discontinuous PWM (DPWM): 120°, 60° variants, 30° (DPWM3)
 - Interactive GUI with real-time waveform and FFT visualization
 - Display options:
-  - Phase voltages vs line voltages
+  - Line voltages (terminal-to-ground, 0..VBATT) vs phase voltages (terminal-to-terminal, +/-VBATT)
   - PWM waveform vs filtered (fundamental) waveform
   - Optional switching-edge markers for PWM transitions
   - SVM sector highlighting and active sector indicator
 - Realistic voltage scaling:
-  - Phase outputs are shown between 0 V and battery voltage (VBATT)
+  - Inverter terminal voltages are shown between 0 V and battery voltage (VBATT)
+  - Phase (delta winding) voltages are shown between -VBATT and +VBATT
   - CPWM/SVM waveforms are centered at VBATT/2
   - DPWM modes show top/bottom clamping as in real inverters
 - Real-time modulation amplitude control (0–100%)
@@ -24,7 +25,16 @@ Educational simulator for PWM and space-vector modulations focused on PMSM drive
 - Oscilloscope-style scrolling (pause/step/hold)
 - Export waveform/FFT to CSV; export plots to PNG
 - Parameter sweep mode to plot THD vs speed or PWM frequency
-- Real-time THD computation (on filtered waveform) and top harmonics display
+- Dual THD display:
+  - THD for line voltage A
+  - THD for phase voltage AB
+- Simulation speed quantization:
+  - Uses an integer number of PWM pulses per electrical cycle
+  - Displays requested speed, realizable speed, and speed deviation
+- FFT and metrics computed over 10 electrical cycles by default
+- Concise voltage metrics display:
+  - One line-voltage metric (A) and one phase-voltage metric (AB)
+  - Mean, RMS, min, and max for each
 - Accessibility: keyboard navigation, screen-reader-friendly labels
 
 ## Running
@@ -40,6 +50,14 @@ Install dependencies:
 ```sh
 python -m pip install -r requirements.txt
 ```
+
+Build a Windows executable (GUI, one-file):
+
+```sh
+python -m PyInstaller --name svm-analyst --onefile --windowed main.py
+```
+
+The generated executable will be available in `dist/svm-analyst.exe`.
 
 Run tests:
 

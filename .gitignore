@@ -1,0 +1,15 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+
+# PyInstaller outputs
+build/
+dist/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
