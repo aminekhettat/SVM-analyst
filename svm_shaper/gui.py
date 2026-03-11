@@ -43,7 +43,7 @@ from .io import (
     load_config,
     save_config,
 )
-from .modulations import ModulationMode
+from .modulations import ModulationMode, PulseAlignment
 from .sweep import sweep_thd
 from .visualization import svm_hexagon_vertices, svm_reference_vector
 
@@ -513,6 +513,23 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         self._injection_spin.setAccessibleName("Third harmonic injection percent")
         self._injection_spin.setEnabled(False)
 
+        self._alignment_choice = QtWidgets.QComboBox()
+        self._alignment_choice.setAccessibleName("PWM alignment mode")
+        self._alignment_choice.setToolTip(
+            "PWM pulse alignment similar to MCU timers: left, right, or center aligned."
+        )
+        for mode in PulseAlignment:
+            self._alignment_choice.addItem(mode.value, mode)
+
+        self._dead_time_spin = QtWidgets.QDoubleSpinBox()
+        self._dead_time_spin.setRange(0.0, 1000.0)
+        self._dead_time_spin.setSingleStep(0.1)
+        self._dead_time_spin.setValue(self._config.dead_time_us)
+        self._dead_time_spin.setToolTip(
+            "Dead time inserted at each PWM edge (microseconds)."
+        )
+        self._dead_time_spin.setAccessibleName("PWM dead time microseconds")
+
         param_layout.addRow("Author:", self._author_name_edit)
         param_layout.addRow("Project:", self._project_name_edit)
         param_layout.addRow("Pole pairs:", self._pole_pairs_spin)
@@ -522,6 +539,8 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         param_layout.addRow("Speed (RPM):", self._speed_spin)
         param_layout.addRow("LPF cutoff (Hz):", self._filter_cutoff_spin)
         param_layout.addRow("Injection (%):", self._injection_spin)
+        param_layout.addRow("PWM alignment:", self._alignment_choice)
+        param_layout.addRow("Dead time (us):", self._dead_time_spin)
 
         # Modulation selection
         modulation_group = QtWidgets.QGroupBox("Modulation selection")
@@ -620,6 +639,11 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         self._project_name_edit.setText(config.project_name)
         self._filter_cutoff_spin.setValue(config.filter_cutoff_hz)
         self._injection_spin.setValue(config.injection_percent)
+        for idx in range(self._alignment_choice.count()):
+            if self._alignment_choice.itemData(idx) == config.alignment:
+                self._alignment_choice.setCurrentIndex(idx)
+                break
+        self._dead_time_spin.setValue(config.dead_time_us)
         self._filter_checkbox.setChecked(config.show_filtered)
         self._edges_checkbox.setChecked(config.show_switching_edges)
         self._amplitude_spin.setValue(config.amplitude_percent)
@@ -653,6 +677,8 @@ class SvmShaperApp(QtWidgets.QMainWindow):
             show_switching_edges=self._edges_checkbox.isChecked(),
             filter_cutoff_hz=self._filter_cutoff_spin.value(),
             injection_percent=self._injection_spin.value(),
+            alignment=self._alignment_choice.currentData(),
+            dead_time_us=self._dead_time_spin.value(),
             author_name=self._author_name_edit.text(),
             project_name=self._project_name_edit.text(),
             num_cycles=10,
@@ -847,6 +873,8 @@ class SvmShaperApp(QtWidgets.QMainWindow):
             f"Average phase PWM pulses per electrical cycle: {sim.pulses_per_electrical_cycle}\n"
             f"Electrical degrees per PWM pulse: {sim.degrees_per_pwm_pulse:.2f}°\n"
             f"LPF cutoff: {self._config.filter_cutoff_hz or (3.0 * (sim.actual_speed_rpm / 60.0) * self._config.motor_pole_pairs):.1f} Hz\n"
+            f"PWM alignment: {self._config.alignment.value}\n"
+            f"Dead time: {self._config.dead_time_us:.2f} us\n"
             f"THD line voltage A: {sim.thd_line_percent:.2f}%\n"
             f"THD phase voltage AB: {sim.thd_phase_percent:.2f}%\n\n"
             "THD basis: both THD values are computed on filtered analysis waveforms.\n\n"

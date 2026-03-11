@@ -19,6 +19,7 @@ from scipy.signal import butter, filtfilt
 from .analysis import compute_fft, compute_thd, compute_top_harmonics
 from .modulations import (
     ModulationMode,
+    PulseAlignment,
     generate_modulated_pwm,
     get_modulation_description,
 )
@@ -43,6 +44,10 @@ class SimulatorConfig:
     filter_cutoff_hz: float = 0.0
     # Injection percentage for third harmonic injection (0–100%).
     injection_percent: float = 100.0
+    # PWM alignment mode used for carrier comparison.
+    alignment: PulseAlignment = PulseAlignment.CENTER
+    # Dead time inserted around switching events (microseconds).
+    dead_time_us: float = 0.0
     # Author/project metadata for reports
     author_name: str = ""
     project_name: str = ""
@@ -130,6 +135,8 @@ def run_simulation(
         num_cycles=config.num_cycles,
         oversample=config.oversample,
         injection_percent=config.injection_percent,
+        alignment=config.alignment,
+        dead_time_s=max(0.0, config.dead_time_us) * 1e-6,
     )
 
     # Convert normalized PWM outputs (-1..+1) to 0..1 (ground..Vbatt) and apply

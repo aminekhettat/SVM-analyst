@@ -5,7 +5,7 @@ import math
 import numpy as np
 
 from svm_shaper.core import SimulatorConfig, run_simulation
-from svm_shaper.modulations import ModulationMode
+from svm_shaper.modulations import ModulationMode, PulseAlignment
 
 
 def test_pwm_pulse_count_is_integer_and_reflects_generated_pulses() -> None:
@@ -191,3 +191,36 @@ def test_dpwm_raw_waveforms_reach_dc_rails_at_full_amplitude() -> None:
     assert abs(float(np.min(res.phase_a)) - 0.0) < 1e-9
     assert abs(float(np.max(res.phase_voltage_ab)) - cfg.battery_voltage) < 1e-9
     assert abs(float(np.min(res.phase_voltage_ab)) + cfg.battery_voltage) < 1e-9
+
+
+def test_alignment_setting_changes_waveform_shape() -> None:
+    base = dict(
+        modulation=ModulationMode.SINUSOIDAL,
+        speed_rpm=1500.0,
+        motor_pole_pairs=4,
+        pwm_frequency_hz=8000.0,
+        num_cycles=2,
+    )
+    left = run_simulation(
+        SimulatorConfig(**base, alignment=PulseAlignment.LEFT, dead_time_us=0.0)
+    )
+    center = run_simulation(
+        SimulatorConfig(**base, alignment=PulseAlignment.CENTER, dead_time_us=0.0)
+    )
+
+    assert not np.array_equal(left.phase_a, center.phase_a)
+
+
+def test_dead_time_influences_switching_statistics() -> None:
+    base = dict(
+        modulation=ModulationMode.SINUSOIDAL,
+        speed_rpm=1500.0,
+        motor_pole_pairs=4,
+        pwm_frequency_hz=8000.0,
+        num_cycles=2,
+        alignment=PulseAlignment.CENTER,
+    )
+    no_dead = run_simulation(SimulatorConfig(**base, dead_time_us=0.0))
+    with_dead = run_simulation(SimulatorConfig(**base, dead_time_us=5.0))
+
+    assert with_dead.pulses_per_electrical_cycle <= no_dead.pulses_per_electrical_cycle

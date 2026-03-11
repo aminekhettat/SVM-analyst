@@ -45,6 +45,14 @@ class ModulationMode(str, Enum):
     DPWM_30_3 = "DPWM 30° (DPWM3)"
 
 
+class PulseAlignment(str, Enum):
+    """PWM pulse alignment modes used by MCU timers."""
+
+    LEFT = "Left"
+    RIGHT = "Right"
+    CENTER = "Center"
+
+
 def get_modulation_description(modulation: ModulationMode) -> str:
     """Return a short, user-facing description of the selected modulation."""
 
@@ -115,14 +123,57 @@ def _normalize(signal: np.ndarray) -> np.ndarray:
     return signal / peak
 
 
-def _triangle_carrier(time: np.ndarray, pwm_frequency_hz: float) -> np.ndarray:
-    """Triangular carrier waveform from -1 to +1 at the PWM frequency."""
+def _carrier_waveform(
+    time: np.ndarray,
+    pwm_frequency_hz: float,
+    alignment: PulseAlignment,
+) -> np.ndarray:
+    """Carrier waveform from -1 to +1 for the selected PWM alignment."""
 
     period = 1.0 / pwm_frequency_hz
-    # Generate a triangle wave in [0,1] then map to [-1,1]
     phase = (time % period) / period
+
+    if alignment == PulseAlignment.LEFT:
+        # Edge-aligned up-count equivalent.
+        return 2.0 * phase - 1.0
+
+    if alignment == PulseAlignment.RIGHT:
+        # Edge-aligned down-count equivalent.
+        return 1.0 - 2.0 * phase
+
+    # Center-aligned up-down timer equivalent.
     tri = np.abs(2.0 * phase - 1.0)
     return 2.0 * tri - 1.0
+
+
+def _apply_dead_time(signal: np.ndarray, dead_samples: int) -> np.ndarray:
+    """Delay each switching event by a fixed number of samples."""
+
+    if dead_samples <= 0 or signal.size < 2:
+        return signal
+
+    out = np.empty_like(signal)
+    current_state = signal[0]
+    desired_prev = signal[0]
+    pending_state = None
+    pending_apply_index = -1
+    out[0] = current_state
+
+    for i in range(1, signal.size):
+        desired = signal[i]
+
+        if pending_state is not None and i >= pending_apply_index:
+            current_state = pending_state
+            pending_state = None
+
+        if desired != desired_prev:
+            pending_state = desired
+            pending_apply_index = i + dead_samples
+
+        desired_prev = desired
+        out[i] = current_state
+
+    return out
 
 
 def _pwm_compare(ref: np.ndarray, carrier: np.ndarray) -> np.ndarray:
@@ -235,6 +286,8 @@ def generate_modulated_pwm(
     num_cycles: int = 3,
     oversample: int = 50,
     injection_percent: float = 100.0,
+    alignment: PulseAlignment = PulseAlignment.CENTER,
+    dead_time_s: float = 0.0,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Generate three-phase PWM waveforms for a given modulation mode.
 
@@ -259,6 +312,10 @@ def generate_modulated_pwm(
     injection_percent:
         Third harmonic injection factor expressed as a percentage of the standard
         1/6 injection. Only used for CUSTOM_THIPWM mode.
+    alignment:
+        PWM pulse alignment mode (left, right, center).
+    dead_time_s:
+        Dead-time delay applied to each phase switching event in seconds.
 
     Returns
     -------
@@ -323,7 +380,7 @@ def generate_modulated_pwm(
         # the electrical cycle.
         va_ref, vb_ref, vc_ref = _svm_reference(theta)
 
-    carrier = _triangle_carrier(time, pwm_frequency_hz)
+    carrier = _carrier_waveform(time, pwm_frequency_hz, alignment)
 
     if modulation in (
         ModulationMode.DPWM_120_MAX,
@@ -381,5 +438,12 @@ def generate_modulated_pwm(
         phase_a = _pwm_compare(va_ref, carrier)
         phase_b = _pwm_compare(vb_ref, carrier)
         phase_c = _pwm_compare(vc_ref, carrier)
+
+    if dead_time_s > 0.0:
+        dt = 1.0 / (pwm_frequency_hz * oversample)
+        dead_samples = int(np.round(dead_time_s / dt))
+        phase_a = _apply_dead_time(phase_a, dead_samples)
+        phase_b = _apply_dead_time(phase_b, dead_samples)
+        phase_c = _apply_dead_time(phase_c, dead_samples)
 
     return time, phase_a, phase_b, phase_c

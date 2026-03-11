@@ -52,6 +52,20 @@ Select the PWM strategy to simulate:
 
 Defines the switching frequency in hertz. Higher values reduce visible ripple in the filtered waveform but increase switching events.
 
+### PWM Alignment
+
+Defines how pulses are aligned in each PWM period:
+
+- Left-aligned
+- Right-aligned
+- Center-aligned
+
+This mirrors common MCU timer modes and changes switching instant placement.
+
+### Dead Time
+
+Dead time inserts a short non-switching interval around commutations to emulate real gate-driver timing constraints. Increasing dead time affects switching behavior and can impact THD.
+
 ### Speed
 
 Defines the requested mechanical speed in RPM. The simulator quantizes operation to an integer number of PWM pulses per electrical cycle and reports the realizable speed and deviation.

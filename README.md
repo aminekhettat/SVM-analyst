@@ -31,6 +31,9 @@ Educational simulator for PWM and space-vector modulations focused on PMSM drive
 - Simulation speed quantization:
   - Uses an integer number of PWM pulses per electrical cycle
   - Displays requested speed, realizable speed, and speed deviation
+- PWM timing realism:
+  - Pulse alignment modes: left-aligned, right-aligned, center-aligned
+  - Configurable dead time insertion (microcontroller-like switching behavior)
 - FFT and metrics computed over 10 electrical cycles by default
 - Concise voltage metrics display:
   - One line-voltage metric (A) and one phase-voltage metric (AB)

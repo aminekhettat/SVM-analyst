@@ -7,7 +7,11 @@ License: See LICENSE
 
 import numpy as np
 
-from svm_shaper.modulations import ModulationMode, generate_modulated_pwm
+from svm_shaper.modulations import (
+    ModulationMode,
+    PulseAlignment,
+    generate_modulated_pwm,
+)
 
 
 def test_thipwm_peak_normalization():
@@ -146,3 +150,60 @@ def test_dpwm_generated_phase_a_pulses_are_reduced_vs_svm() -> None:
         _, a_dpwm, _, _ = generate_modulated_pwm(modulation=mode, **kwargs)
         pulses_dpwm = _count_phase_a_pulses(a_dpwm)
         assert pulses_dpwm < pulses_svm
+
+
+def _edge_indices(signal: np.ndarray) -> np.ndarray:
+    return np.where(np.diff(signal) != 0)[0] + 1
+
+
+def test_alignment_modes_produce_distinct_edge_placement() -> None:
+    kwargs = dict(
+        modulation=ModulationMode.SINUSOIDAL,
+        pole_pairs=2,
+        speed_rpm=1800,
+        pwm_frequency_hz=4000,
+        num_cycles=1,
+        oversample=20,
+    )
+    _, a_left, _, _ = generate_modulated_pwm(
+        alignment=PulseAlignment.LEFT,
+        **kwargs,
+    )
+    _, a_right, _, _ = generate_modulated_pwm(
+        alignment=PulseAlignment.RIGHT,
+        **kwargs,
+    )
+    _, a_center, _, _ = generate_modulated_pwm(
+        alignment=PulseAlignment.CENTER,
+        **kwargs,
+    )
+
+    left_edges = _edge_indices(a_left)
+    right_edges = _edge_indices(a_right)
+    center_edges = _edge_indices(a_center)
+
+    assert left_edges.size > 0
+    assert right_edges.size > 0
+    assert center_edges.size > 0
+    assert not np.array_equal(left_edges, right_edges)
+    assert not np.array_equal(left_edges, center_edges)
+
+
+def test_dead_time_reduces_switching_event_count() -> None:
+    kwargs = dict(
+        modulation=ModulationMode.SINUSOIDAL,
+        pole_pairs=2,
+        speed_rpm=1200,
+        pwm_frequency_hz=8000,
+        num_cycles=1,
+        oversample=20,
+        alignment=PulseAlignment.CENTER,
+    )
+    _, a_no_dead, _, _ = generate_modulated_pwm(dead_time_s=0.0, **kwargs)
+    _, a_dead, _, _ = generate_modulated_pwm(dead_time_s=5e-6, **kwargs)
+
+    edges_no_dead = _edge_indices(a_no_dead).size
+    edges_dead = _edge_indices(a_dead).size
+
+    assert edges_dead <= edges_no_dead
+    assert set(np.unique(a_dead)).issubset({-1.0, 1.0})

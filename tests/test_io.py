@@ -11,7 +11,7 @@ import numpy as np
 
 from svm_shaper.core import SimulationResult, SimulatorConfig
 from svm_shaper.io import export_fft_csv, export_waveform_csv, load_config, save_config
-from svm_shaper.modulations import ModulationMode
+from svm_shaper.modulations import ModulationMode, PulseAlignment
 
 
 def _make_dummy_sim_result() -> SimulationResult:
@@ -77,6 +77,8 @@ def test_save_and_load_config(tmp_path: Path):
         pwm_frequency_hz=12345.0,
         speed_rpm=1500.0,
         battery_voltage=48.0,
+        alignment=PulseAlignment.RIGHT,
+        dead_time_us=2.5,
     )
     cfg_file = tmp_path / "svm_shaper_config.json"
     save_config(cfg_file, config)

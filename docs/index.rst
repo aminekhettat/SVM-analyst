@@ -25,6 +25,8 @@ Key features:
    - THD for phase voltage AB (terminal-to-terminal)
 
 - Integer PWM-pulse quantization per electrical cycle, with requested vs real speed reporting
+- PWM alignment modes (left, right, center) for MCU-like timer behavior
+- Configurable dead time insertion to emulate real switching constraints
 - FFT and metrics computed over 10 electrical cycles by default
 - Concise metrics display for one line voltage (A) and one phase voltage (AB): mean, RMS, min, max
 - Optional switching-edge markers for PWM gate events
