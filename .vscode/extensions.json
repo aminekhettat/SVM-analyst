@@ -1,0 +1,14 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "ms-python.black-formatter",
+    "ms-python.isort",
+    "charliermarsh.ruff",
+    "GitHub.vscode-pull-request-github",
+    "GitHub.copilot",
+    "ms-python.debugpy",
+    "littlefoxteam.vscode-python-test-adapter",
+    "hbenl.vscode-test-explorer"
+  ]
+}
