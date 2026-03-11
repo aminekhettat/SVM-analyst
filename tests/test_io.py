@@ -79,6 +79,8 @@ def test_save_and_load_config(tmp_path: Path):
         battery_voltage=48.0,
         alignment=PulseAlignment.RIGHT,
         dead_time_us=2.5,
+        diode_forward_voltage_v=0.7,
+        current_phase_deg=20.0,
     )
     cfg_file = tmp_path / "svm_shaper_config.json"
     save_config(cfg_file, config)

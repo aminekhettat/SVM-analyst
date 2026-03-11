@@ -48,6 +48,11 @@ class SimulatorConfig:
     alignment: PulseAlignment = PulseAlignment.CENTER
     # Dead time inserted around switching events (microseconds).
     dead_time_us: float = 0.0
+    # Body diode forward voltage used during dead-time freewheeling (volts).
+    diode_forward_voltage_v: float = 0.6
+    # Synthetic phase current angle offset relative to phase voltage (degrees).
+    # Used only for dead-time diode conduction polarity estimation.
+    current_phase_deg: float = 30.0
     # Author/project metadata for reports
     author_name: str = ""
     project_name: str = ""
@@ -98,6 +103,69 @@ class SimulationResult:
     description_text: str
 
 
+def _apply_leg_dead_time_with_diode(
+    commanded_pwm: np.ndarray,
+    current_sign: np.ndarray,
+    dead_samples: int,
+    battery_voltage: float,
+    diode_forward_voltage_v: float,
+) -> np.ndarray:
+    """Apply non-overlap dead time and map open-leg state through body diodes.
+
+    Commanded PWM is expected in {-1, +1}, where +1 means upper switch ON and
+    -1 means lower switch ON in ideal conditions.
+    """
+
+    n = commanded_pwm.size
+    if n == 0:
+        return np.array([], dtype=np.float64)
+
+    if dead_samples <= 0:
+        return np.where(commanded_pwm >= 0.0, battery_voltage, 0.0).astype(np.float64)
+
+    # Switch state encoding: +1 upper ON, -1 lower ON, 0 both OFF (dead time).
+    switch_state = np.empty(n, dtype=np.int8)
+    desired_prev = 1 if commanded_pwm[0] >= 0.0 else -1
+    active_state = desired_prev
+    pending_state = 0
+    pending_apply_index = -1
+    switch_state[0] = active_state
+
+    for i in range(1, n):
+        desired = 1 if commanded_pwm[i] >= 0.0 else -1
+
+        # Apply pending turn-on at the scheduled sample.
+        if pending_apply_index >= 0 and i >= pending_apply_index:
+            active_state = pending_state
+            pending_apply_index = -1
+
+        # On each commanded transition, turn current device OFF immediately,
+        # and delay the opposite device turn-ON by dead_samples.
+        if desired != desired_prev:
+            active_state = 0
+            pending_state = desired
+            pending_apply_index = i + dead_samples
+
+        desired_prev = desired
+        switch_state[i] = active_state
+
+    vf = max(0.0, diode_forward_voltage_v)
+    phase_voltage = np.empty(n, dtype=np.float64)
+    for i in range(n):
+        state = switch_state[i]
+        if state > 0:
+            phase_voltage[i] = battery_voltage
+        elif state < 0:
+            phase_voltage[i] = 0.0
+        else:
+            # During dead time, output depends on current direction via diode conduction:
+            # i > 0  -> lower diode conducts -> -Vf
+            # i < 0  -> upper diode conducts -> Vdc + Vf
+            phase_voltage[i] = -vf if current_sign[i] >= 0.0 else (battery_voltage + vf)
+
+    return phase_voltage
+
+
 def run_simulation(
     config: SimulatorConfig,
 ) -> SimulationResult:  # pylint: disable=too-many-locals,too-many-statements
@@ -126,8 +194,9 @@ def run_simulation(
         else 0.0
     )
 
-    # Generate PWM waveforms for the selected modulation using the quantized speed.
-    time, phase_a, phase_b, phase_c = generate_modulated_pwm(
+    # Generate commanded PWM waveforms for the selected modulation using the
+    # quantized speed. Dead-time voltage effects are applied below at leg level.
+    time, phase_a_cmd, phase_b_cmd, phase_c_cmd = generate_modulated_pwm(
         modulation=config.modulation,
         pole_pairs=config.motor_pole_pairs,
         speed_rpm=actual_speed_rpm,
@@ -136,23 +205,50 @@ def run_simulation(
         oversample=config.oversample,
         injection_percent=config.injection_percent,
         alignment=config.alignment,
-        dead_time_s=max(0.0, config.dead_time_us) * 1e-6,
+        dead_time_s=0.0,
     )
 
-    # Convert normalized PWM outputs (-1..+1) to 0..1 (ground..Vbatt) and apply
-    # the user-configurable amplitude scaling.
-    #
-    # In a real inverter, the half-bridge output can never go below ground (0V)
-    # or above the DC bus voltage. CPWM modes are centered around Vbatt/2, while
-    # DPWM modes can introduce a DC offset due to clamping.
-    amplitude = max(0.0, min(config.amplitude_percent / 100.0, 1.0))
-    phase_a = 0.5 + (phase_a * amplitude) / 2.0
-    phase_b = 0.5 + (phase_b * amplitude) / 2.0
-    phase_c = 0.5 + (phase_c * amplitude) / 2.0
+    electrical_freq = actual_electrical_freq
+    theta = 2.0 * np.pi * electrical_freq * time
+    current_phase_deg = float(np.clip(config.current_phase_deg, -45.0, 45.0))
+    current_phase_rad = np.deg2rad(current_phase_deg)
+    phase_a_current_sign = np.sin(theta + current_phase_rad)
+    phase_b_current_sign = np.sin(theta - 2.0 * np.pi / 3.0 + current_phase_rad)
+    phase_c_current_sign = np.sin(theta + 2.0 * np.pi / 3.0 + current_phase_rad)
 
-    phase_a = np.clip(phase_a, 0.0, 1.0)
-    phase_b = np.clip(phase_b, 0.0, 1.0)
-    phase_c = np.clip(phase_c, 0.0, 1.0)
+    dt = 1.0 / (config.pwm_frequency_hz * config.oversample)
+    dead_samples = int(np.round(max(0.0, config.dead_time_us) * 1e-6 / dt))
+
+    phase_a = _apply_leg_dead_time_with_diode(
+        commanded_pwm=phase_a_cmd,
+        current_sign=phase_a_current_sign,
+        dead_samples=dead_samples,
+        battery_voltage=config.battery_voltage,
+        diode_forward_voltage_v=config.diode_forward_voltage_v,
+    )
+    phase_b = _apply_leg_dead_time_with_diode(
+        commanded_pwm=phase_b_cmd,
+        current_sign=phase_b_current_sign,
+        dead_samples=dead_samples,
+        battery_voltage=config.battery_voltage,
+        diode_forward_voltage_v=config.diode_forward_voltage_v,
+    )
+    phase_c = _apply_leg_dead_time_with_diode(
+        commanded_pwm=phase_c_cmd,
+        current_sign=phase_c_current_sign,
+        dead_samples=dead_samples,
+        battery_voltage=config.battery_voltage,
+        diode_forward_voltage_v=config.diode_forward_voltage_v,
+    )
+
+    # Apply user-configurable amplitude scaling around Vdc/2. This preserves the
+    # requested PWM period while dead time reduces the effective +Vdc (or 0V)
+    # on-time by inserting an open-leg interval.
+    amplitude = max(0.0, min(config.amplitude_percent / 100.0, 1.0))
+    center = 0.5 * config.battery_voltage
+    phase_a = center + (phase_a - center) * amplitude
+    phase_b = center + (phase_b - center) * amplitude
+    phase_c = center + (phase_c - center) * amplitude
 
     # Count real generated PWM pulses on phase A and report pulses per electrical
     # cycle. Use transition pairs for robustness against start/end window
@@ -170,9 +266,9 @@ def run_simulation(
             transitions += 1
         return int(np.ceil(transitions / 2.0))
 
-    total_phase_a_pulses = _count_pwm_pulses(phase_a)
-    total_phase_b_pulses = _count_pwm_pulses(phase_b)
-    total_phase_c_pulses = _count_pwm_pulses(phase_c)
+    total_phase_a_pulses = _count_pwm_pulses(phase_a_cmd)
+    total_phase_b_pulses = _count_pwm_pulses(phase_b_cmd)
+    total_phase_c_pulses = _count_pwm_pulses(phase_c_cmd)
     total_avg_phase_pulses = (
         total_phase_a_pulses + total_phase_b_pulses + total_phase_c_pulses
     ) / 3.0
@@ -180,9 +276,7 @@ def run_simulation(
         np.ceil(total_avg_phase_pulses / max(1, config.num_cycles))
     )
 
-    # Phase voltages: voltage applied across a delta-connected motor winding,
-    # i.e. the voltage between two inverter output terminals.
-    # These are correctly bipolar in the range [-Vbatt, +Vbatt] (after scaling).
+    # Phase voltages: terminal-to-terminal voltage across a delta winding.
     phase_voltage_ab = phase_a - phase_b
     phase_voltage_bc = phase_b - phase_c
     phase_voltage_ca = phase_c - phase_a
@@ -225,26 +319,8 @@ def run_simulation(
         filtered_phase_b = phase_b
         filtered_phase_c = phase_c
 
-    # Scale from normalized waveform (0..1) to actual voltage (0..Vbatt).
-    phase_a = phase_a * config.battery_voltage
-    phase_b = phase_b * config.battery_voltage
-    phase_c = phase_c * config.battery_voltage
-
-    phase_voltage_ab = phase_voltage_ab * config.battery_voltage
-    phase_voltage_bc = phase_voltage_bc * config.battery_voltage
-    phase_voltage_ca = phase_voltage_ca * config.battery_voltage
-
-    filtered_phase_a = filtered_phase_a * config.battery_voltage
-    filtered_phase_b = filtered_phase_b * config.battery_voltage
-    filtered_phase_c = filtered_phase_c * config.battery_voltage
-
     # Use the filtered analysis signals consistently for THD on both line and phase voltages.
-    analysis_phase_a = analysis_phase_a * config.battery_voltage
-    analysis_phase_b = analysis_phase_b * config.battery_voltage
-    analysis_phase_c = analysis_phase_c * config.battery_voltage
     analysis_phase_voltage_ab = analysis_phase_a - analysis_phase_b
-
-    electrical_freq = actual_electrical_freq
 
     # FFT on line voltage A (terminal A to DC−, 0..Vbatt), using the filtered
     # analysis waveform so THD reflects motor-relevant harmonics.

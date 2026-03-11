@@ -221,6 +221,43 @@ def test_dead_time_influences_switching_statistics() -> None:
         alignment=PulseAlignment.CENTER,
     )
     no_dead = run_simulation(SimulatorConfig(**base, dead_time_us=0.0))
-    with_dead = run_simulation(SimulatorConfig(**base, dead_time_us=5.0))
+    with_dead = run_simulation(
+        SimulatorConfig(**base, dead_time_us=5.0, diode_forward_voltage_v=0.6)
+    )
 
-    assert with_dead.pulses_per_electrical_cycle <= no_dead.pulses_per_electrical_cycle
+    # Dead time must not change PWM period/frequency quantization.
+    assert with_dead.pulses_per_electrical_cycle == no_dead.pulses_per_electrical_cycle
+
+
+def test_dead_time_uses_diode_conduction_voltage_levels() -> None:
+    cfg = SimulatorConfig(
+        modulation=ModulationMode.SINUSOIDAL,
+        speed_rpm=1500.0,
+        motor_pole_pairs=4,
+        pwm_frequency_hz=8000.0,
+        num_cycles=2,
+        alignment=PulseAlignment.CENTER,
+        dead_time_us=6.0,
+        diode_forward_voltage_v=0.6,
+    )
+    res = run_simulation(cfg)
+
+    assert float(np.min(res.phase_a)) < 0.0
+    assert float(np.max(res.phase_a)) > cfg.battery_voltage
+
+
+def test_current_phase_parameter_changes_dead_time_voltage_distribution() -> None:
+    base = dict(
+        modulation=ModulationMode.SINUSOIDAL,
+        speed_rpm=1500.0,
+        motor_pole_pairs=4,
+        pwm_frequency_hz=8000.0,
+        num_cycles=2,
+        alignment=PulseAlignment.CENTER,
+        dead_time_us=6.0,
+        diode_forward_voltage_v=0.6,
+    )
+    lead = run_simulation(SimulatorConfig(**base, current_phase_deg=45.0))
+    lag = run_simulation(SimulatorConfig(**base, current_phase_deg=-45.0))
+
+    assert not np.array_equal(lead.phase_a, lag.phase_a)

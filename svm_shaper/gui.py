@@ -442,6 +442,12 @@ class SvmShaperApp(QtWidgets.QMainWindow):
     def _create_control_panel(self) -> QtWidgets.QHBoxLayout:
         layout = QtWidgets.QHBoxLayout()
 
+        def _lock_numeric_entry(widget: QtWidgets.QAbstractSpinBox) -> None:
+            # Keep arrow-button interaction but prevent free text entry.
+            line_edit = widget.lineEdit()
+            if line_edit is not None:
+                line_edit.setReadOnly(True)
+
         # Left side: parameter controls
         param_group = QtWidgets.QGroupBox("System parameters")
         param_layout = QtWidgets.QFormLayout(param_group)
@@ -451,6 +457,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         self._pole_pairs_spin.setValue(self._config.motor_pole_pairs)
         self._pole_pairs_spin.setToolTip("Number of pole pairs in the PMSM")
         self._pole_pairs_spin.setAccessibleName("Motor pole pairs")
+        _lock_numeric_entry(self._pole_pairs_spin)
 
         self._pwm_freq_spin = QtWidgets.QDoubleSpinBox()
         self._pwm_freq_spin.setRange(100.0, 200000.0)
@@ -458,6 +465,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         self._pwm_freq_spin.setValue(self._config.pwm_frequency_hz)
         self._pwm_freq_spin.setToolTip("PWM carrier frequency in Hz")
         self._pwm_freq_spin.setAccessibleName("PWM frequency")
+        _lock_numeric_entry(self._pwm_freq_spin)
 
         self._battery_voltage_spin = QtWidgets.QDoubleSpinBox()
         self._battery_voltage_spin.setRange(1.0, 1000.0)
@@ -465,6 +473,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         self._battery_voltage_spin.setValue(self._config.battery_voltage)
         self._battery_voltage_spin.setToolTip("DC bus voltage (battery) in volts")
         self._battery_voltage_spin.setAccessibleName("Battery voltage")
+        _lock_numeric_entry(self._battery_voltage_spin)
 
         self._amplitude_spin = QtWidgets.QDoubleSpinBox()
         self._amplitude_spin.setRange(0.0, 100.0)
@@ -474,6 +483,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
             "Modulation amplitude as a percentage of full scale (0-100%)."
         )
         self._amplitude_spin.setAccessibleName("Modulation amplitude percent")
+        _lock_numeric_entry(self._amplitude_spin)
 
         self._speed_spin = QtWidgets.QDoubleSpinBox()
         self._speed_spin.setRange(0.0, 20000.0)
@@ -481,6 +491,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         self._speed_spin.setValue(self._config.speed_rpm)
         self._speed_spin.setToolTip("Motor speed in RPM")
         self._speed_spin.setAccessibleName("Speed in RPM")
+        _lock_numeric_entry(self._speed_spin)
 
         self._author_name_edit = QLineEdit()
         self._author_name_edit.setAccessibleName("Report author")
@@ -502,6 +513,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
             "Cutoff frequency for the low-pass filter (Hz). Set to 0 for automatic (3× electrical frequency)."
         )
         self._filter_cutoff_spin.setAccessibleName("Filter cutoff frequency")
+        _lock_numeric_entry(self._filter_cutoff_spin)
 
         self._injection_spin = QtWidgets.QDoubleSpinBox()
         self._injection_spin.setRange(0.0, 100.0)
@@ -512,6 +524,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         )
         self._injection_spin.setAccessibleName("Third harmonic injection percent")
         self._injection_spin.setEnabled(False)
+        _lock_numeric_entry(self._injection_spin)
 
         self._alignment_choice = QtWidgets.QComboBox()
         self._alignment_choice.setAccessibleName("PWM alignment mode")
@@ -529,6 +542,29 @@ class SvmShaperApp(QtWidgets.QMainWindow):
             "Dead time inserted at each PWM edge (microseconds)."
         )
         self._dead_time_spin.setAccessibleName("PWM dead time microseconds")
+        _lock_numeric_entry(self._dead_time_spin)
+
+        self._diode_vf_spin = QtWidgets.QDoubleSpinBox()
+        self._diode_vf_spin.setRange(0.0, 10.0)
+        self._diode_vf_spin.setSingleStep(0.01)
+        self._diode_vf_spin.setDecimals(3)
+        self._diode_vf_spin.setValue(self._config.diode_forward_voltage_v)
+        self._diode_vf_spin.setToolTip(
+            "Body diode forward voltage used during dead-time conduction (volts)."
+        )
+        self._diode_vf_spin.setAccessibleName("Body diode forward voltage")
+        _lock_numeric_entry(self._diode_vf_spin)
+
+        self._current_phase_spin = QtWidgets.QDoubleSpinBox()
+        self._current_phase_spin.setRange(-45.0, 45.0)
+        self._current_phase_spin.setSingleStep(1.0)
+        self._current_phase_spin.setDecimals(1)
+        self._current_phase_spin.setValue(self._config.current_phase_deg)
+        self._current_phase_spin.setToolTip(
+            "Synthetic phase-current angle (degrees) used for dead-time diode polarity."
+        )
+        self._current_phase_spin.setAccessibleName("Current phase angle")
+        _lock_numeric_entry(self._current_phase_spin)
 
         param_layout.addRow("Author:", self._author_name_edit)
         param_layout.addRow("Project:", self._project_name_edit)
@@ -541,6 +577,11 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         param_layout.addRow("Injection (%):", self._injection_spin)
         param_layout.addRow("PWM alignment:", self._alignment_choice)
         param_layout.addRow("Dead time (us):", self._dead_time_spin)
+        param_layout.addRow("Diode Vf (V):", self._diode_vf_spin)
+        param_layout.addRow("Current phase (deg):", self._current_phase_spin)
+
+        self._pwm_freq_spin.valueChanged.connect(self._update_dynamic_constraints)
+        self._update_dynamic_constraints()
 
         # Modulation selection
         modulation_group = QtWidgets.QGroupBox("Modulation selection")
@@ -644,6 +685,9 @@ class SvmShaperApp(QtWidgets.QMainWindow):
                 self._alignment_choice.setCurrentIndex(idx)
                 break
         self._dead_time_spin.setValue(config.dead_time_us)
+        self._diode_vf_spin.setValue(config.diode_forward_voltage_v)
+        self._current_phase_spin.setValue(config.current_phase_deg)
+        self._update_dynamic_constraints()
         self._filter_checkbox.setChecked(config.show_filtered)
         self._edges_checkbox.setChecked(config.show_switching_edges)
         self._amplitude_spin.setValue(config.amplitude_percent)
@@ -679,11 +723,24 @@ class SvmShaperApp(QtWidgets.QMainWindow):
             injection_percent=self._injection_spin.value(),
             alignment=self._alignment_choice.currentData(),
             dead_time_us=self._dead_time_spin.value(),
+            diode_forward_voltage_v=self._diode_vf_spin.value(),
+            current_phase_deg=self._current_phase_spin.value(),
             author_name=self._author_name_edit.text(),
             project_name=self._project_name_edit.text(),
             num_cycles=10,
             display_cycles=3,
         )
+
+    def _update_dynamic_constraints(self) -> None:
+        """Update parameter bounds that depend on other parameters."""
+
+        pwm_hz = max(1.0, self._pwm_freq_spin.value())
+        pwm_period_us = 1e6 / pwm_hz
+        # Keep dead time below half-period so pulses keep a meaningful ON interval.
+        dead_time_max_us = 0.49 * pwm_period_us
+        self._dead_time_spin.setRange(0.0, dead_time_max_us)
+        if self._dead_time_spin.value() > dead_time_max_us:
+            self._dead_time_spin.setValue(dead_time_max_us)
 
     def _on_update_clicked(self) -> None:
         self._config = self._read_ui_to_config()
@@ -875,6 +932,8 @@ class SvmShaperApp(QtWidgets.QMainWindow):
             f"LPF cutoff: {self._config.filter_cutoff_hz or (3.0 * (sim.actual_speed_rpm / 60.0) * self._config.motor_pole_pairs):.1f} Hz\n"
             f"PWM alignment: {self._config.alignment.value}\n"
             f"Dead time: {self._config.dead_time_us:.2f} us\n"
+            f"Diode Vf: {self._config.diode_forward_voltage_v:.3f} V\n"
+            f"Current phase: {self._config.current_phase_deg:.1f}°\n"
             f"THD line voltage A: {sim.thd_line_percent:.2f}%\n"
             f"THD phase voltage AB: {sim.thd_phase_percent:.2f}%\n\n"
             "THD basis: both THD values are computed on filtered analysis waveforms.\n\n"

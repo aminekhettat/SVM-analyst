@@ -33,7 +33,10 @@ Educational simulator for PWM and space-vector modulations focused on PMSM drive
   - Displays requested speed, realizable speed, and speed deviation
 - PWM timing realism:
   - Pulse alignment modes: left-aligned, right-aligned, center-aligned
-  - Configurable dead time insertion (microcontroller-like switching behavior)
+  - Configurable dead time insertion without changing the PWM period
+  - Dead-time open-leg diode conduction model using current direction
+  - User-settable diode forward voltage (default 0.6 V)
+  - Synthetic current phase control (default 30 deg, range -45 deg to +45 deg)
 - FFT and metrics computed over 10 electrical cycles by default
 - Concise voltage metrics display:
   - One line-voltage metric (A) and one phase-voltage metric (AB)
@@ -73,6 +76,7 @@ pytest
 - `svm_shaper/` - core simulation modules and GUI
 - `docs/` - documentation (Sphinx)
 - `USER_MANUAL.md` - end-user operating manual for the packaged application
+- `docs/SVM-Analyst-User-Manual-1.0.1.pdf` - PDF export of the user manual
 - `tests/` - unit and integration tests
 
 ## License

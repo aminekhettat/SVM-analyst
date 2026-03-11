@@ -17,7 +17,7 @@ from pathlib import Path
 import numpy as np
 
 from .core import SimulationResult, SimulatorConfig
-from .modulations import ModulationMode
+from .modulations import ModulationMode, PulseAlignment
 
 
 def export_waveform_csv(
@@ -177,6 +177,8 @@ def export_report_pdf(
             f"PWM frequency: {config.pwm_frequency_hz:.0f} Hz\n"
             f"PWM alignment: {config.alignment.value}\n"
             f"Dead time: {config.dead_time_us:.2f} us\n"
+            f"Diode Vf: {config.diode_forward_voltage_v:.3f} V\n"
+            f"Current phase: {config.current_phase_deg:.1f}°\n"
             f"Requested speed: {config.speed_rpm:.2f} RPM\n"
             f"Real speed: {sim.actual_speed_rpm:.2f} RPM\n"
             f"Speed deviation: {sim.speed_deviation_rpm:+.2f} RPM ({sim.speed_deviation_percent:+.3f}%)\n"
@@ -362,6 +364,8 @@ def export_report_pdf(
             f"Oversampling: {config.oversample}\n"
             f"PWM alignment: {config.alignment.value}\n"
             f"Dead time: {config.dead_time_us:.2f} us\n"
+            f"Diode Vf: {config.diode_forward_voltage_v:.3f} V\n"
+            f"Current phase: {config.current_phase_deg:.1f}°\n"
             f"Show switching edges: {config.show_switching_edges}\n"
             f"Show phase voltages: {show_phase_voltages}\n"
             f"THD line voltage A: {sim.thd_line_percent:.2f}%\n"
@@ -412,5 +416,11 @@ def load_config(path: str | Path) -> SimulatorConfig:
         except ValueError:
             # Fallback to default if the saved modulation is unrecognized
             data["modulation"] = ModulationMode.SVM
+
+    if isinstance(data.get("alignment"), str):
+        try:
+            data["alignment"] = PulseAlignment(data["alignment"])
+        except ValueError:
+            data["alignment"] = PulseAlignment.CENTER
 
     return SimulatorConfig(**data)

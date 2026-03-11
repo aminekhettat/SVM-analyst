@@ -1,6 +1,6 @@
 # SVM Analyst User Manual
 
-Version 1.0.0
+Version 1.0.1
 
 ## 1. Purpose
 
@@ -64,7 +64,34 @@ This mirrors common MCU timer modes and changes switching instant placement.
 
 ### Dead Time
 
-Dead time inserts a short non-switching interval around commutations to emulate real gate-driver timing constraints. Increasing dead time affects switching behavior and can impact THD.
+Dead time inserts a short non-switching interval around commutations to emulate real gate-driver timing constraints.
+
+In version 1.0.1, dead time is modeled at inverter leg level with two key behaviors:
+
+- The PWM period remains constant (for example, 20 kHz remains 50 us period).
+- During dead time, the open-leg voltage is set by diode conduction and current direction.
+
+Increasing dead time affects switching behavior and can impact THD.
+
+### Diode Forward Voltage
+
+Defines the diode forward drop used during dead-time conduction. Default is 0.6 V.
+
+Dead-time open-state voltage follows current direction:
+
+- Positive current: approximately -Vf
+- Negative current: approximately Vbatt + Vf
+
+This parameter helps emulate practical bridge-leg behavior during non-overlap intervals.
+
+### Current Phase
+
+Defines the phase of the synthetic current signal used for dead-time polarity selection.
+
+- Default: 30 degrees
+- Range: -45 degrees to +45 degrees
+
+The synthetic current uses the same electrical frequency as the voltage reference and is phase-shifted by this parameter.
 
 ### Speed
 
@@ -86,7 +113,17 @@ Sets the requested modulation depth as a percentage.
 
 Controls the filtered waveform display used for fundamental analysis. Set to zero to use the automatic default.
 
-## 6. Reading the Plots
+## 6. Input Constraints and Validation
+
+The numeric parameter controls are constrained in the GUI to avoid invalid combinations.
+
+- Numeric entries are controlled by spin boxes and constrained to valid ranges.
+- Dead time maximum is auto-limited from the PWM period (kept below half-period).
+- Current phase is limited to -45 to +45 degrees.
+
+When dependent settings change (for example PWM frequency), limits are updated automatically.
+
+## 7. Reading the Plots
 
 ### Waveform Plot
 
@@ -99,7 +136,7 @@ The upper plot shows either PWM terminal voltages or phase-to-phase voltages dep
 
 The spectrum highlights the fundamental component and switching-related harmonics. The reported THD values are computed from the filtered analysis signals.
 
-## 7. Key Metrics
+## 8. Key Metrics
 
 The information panel summarizes the most relevant values:
 
@@ -110,7 +147,7 @@ The information panel summarizes the most relevant values:
 - Requested speed, realizable speed, and deviation
 - Average phase PWM pulses per electrical cycle
 
-## 8. Display Options
+## 9. Display Options
 
 You can switch between several display configurations:
 
@@ -121,7 +158,7 @@ You can switch between several display configurations:
 
 These options are useful when comparing common-mode behavior, clamping behavior, and harmonic tradeoffs across modulation families.
 
-## 9. Exports
+## 10. Exports
 
 ### CSV Export
 
@@ -135,15 +172,17 @@ Use PNG export to save the current visualization for reports or presentations.
 
 The PDF report includes the current configuration, waveform and FFT plots, summary metrics, and explanatory notes.
 
-## 10. Configuration Files
+The exported report also includes PWM alignment, dead time, diode forward voltage, and current phase settings.
+
+## 11. Configuration Files
 
 You can save the current configuration to JSON and reload it later. This is useful for reproducible comparisons between modulation methods.
 
-## 11. Parameter Sweep Mode
+## 12. Parameter Sweep Mode
 
 Sweep mode helps compare how THD changes as speed or PWM frequency varies. Use it to identify operating regions where a given modulation method performs best.
 
-## 12. Troubleshooting
+## 13. Troubleshooting
 
 ### The executable does not start
 
@@ -165,7 +204,11 @@ This is expected. The simulator uses an integer number of PWM pulses per electri
 
 This is expected. DPWM intentionally clamps one phase to the top or bottom rail over part of the electrical cycle to reduce switching losses.
 
-## 13. Recommended First Comparison
+### Dead-time plateaus go slightly below 0 V or above Vbatt
+
+This is expected with the diode conduction model. The dead-time open-leg voltage includes the configured diode drop and depends on the synthetic current direction.
+
+## 14. Recommended First Comparison
 
 For a quick introduction:
 
@@ -175,6 +218,6 @@ For a quick introduction:
 4. Compare the FFT and voltage metrics.
 5. Switch to a DPWM mode and observe the clamped segments and reduced switching activity.
 
-## 14. Support Material
+## 15. Support Material
 
 The repository also includes developer-oriented API documentation in the `docs` folder and generated HTML documentation in `docs/_build`.
