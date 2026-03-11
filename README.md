@@ -69,6 +69,7 @@ pytest
 
 - `svm_shaper/` - core simulation modules and GUI
 - `docs/` - documentation (Sphinx)
+- `USER_MANUAL.md` - end-user operating manual for the packaged application
 - `tests/` - unit and integration tests
 
 ## License

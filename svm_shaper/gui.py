@@ -33,6 +33,7 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
 )
 
+from . import __version__
 from .core import SimulatorConfig, run_simulation
 from .io import (
     export_fft_csv,
@@ -1011,7 +1012,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
             show_phase_voltages=self._config.show_phase_voltages,
             plot_figure=self._plot_canvas.figure,
             app_name="SVM Analyst",
-            app_version=None,
+            app_version=__version__,
             company_name="BLIND SYSTEMS",
             include_hexagon=True,
             include_harmonics_table=True,

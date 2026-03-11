@@ -8,10 +8,13 @@ Date: 2026-03-09
 License: See LICENSE
 """
 
+__version__ = "1.0.0"
+
 from .core import SimulatorConfig, run_simulation
 from .gui import SvmShaperApp
 
 __all__ = [
+    "__version__",
     "SimulatorConfig",
     "run_simulation",
     "SvmShaperApp",
