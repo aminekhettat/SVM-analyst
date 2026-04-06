@@ -1,6 +1,6 @@
 """SVM Analyst: educational simulator for PWM modulation techniques.
 
-This package provides simulation functions, analysis utilities, and a PyQt-based
+This package provides simulation functions, analysis utilities, and a PySide6-based
 GUI to visualize PWM waveforms and their harmonic content.
 
 Author: Amine KHETTAT
@@ -8,10 +8,9 @@ Date: 2026-03-09
 License: See LICENSE
 """
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 
 from .core import SimulatorConfig, run_simulation
-from .gui import SvmShaperApp
 
 __all__ = [
     "__version__",
@@ -19,3 +18,10 @@ __all__ = [
     "run_simulation",
     "SvmShaperApp",
 ]
+
+
+def __getattr__(name: str):
+    if name == "SvmShaperApp":
+        from .gui import SvmShaperApp  # lazy – avoids Qt import at package init
+        return SvmShaperApp
+    raise AttributeError(f"module 'svm_shaper' has no attribute {name!r}")

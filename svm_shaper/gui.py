@@ -1,8 +1,17 @@
 """Graphical user interface for the SVM Analyst simulator.
 
-This module builds a PyQt6 application that allows users to select modulation
+This module builds a PySide6 application that allows users to select modulation
 modes, configure system parameters, and visualize the resulting PWM signals and
-harmonics in real time.
+harmonics in real time using pyqtgraph for interactive plots.
+
+Plot features:
+- Zoom with mouse wheel, rubber-band rectangle selection.
+- Pan with right-click drag.
+- Crosshair cursor with live time/voltage readout.
+- Clickable legend to hide/show individual traces.
+- Per-phase line style panel: color picker, line width, dash pattern, marker.
+- Pause / resume / step oscilloscope scrolling.
+- Right-click context menu on any plot for extra options (ViewBox built-in).
 
 Accessibility notes:
 - All interactive widgets have accessible names and descriptive tooltips.
@@ -15,17 +24,24 @@ License: See LICENSE
 
 from __future__ import annotations
 
+import os
 import sys
+import tempfile
 from pathlib import Path
 from typing import Optional
 
+# Force pyqtgraph to use PySide6 before any Qt import.
+os.environ.setdefault("PYQTGRAPH_QT_LIB", "PySide6")
+
 import numpy as np
+import pyqtgraph as pg
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from matplotlib.patches import Polygon
-from PyQt6 import QtCore, QtGui, QtWidgets
-from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtWidgets import (
+from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import (
+    QColorDialog,
     QFileDialog,
     QLineEdit,
     QPlainTextEdit,
@@ -37,7 +53,6 @@ from . import __version__
 from .core import SimulatorConfig, run_simulation
 from .io import (
     export_fft_csv,
-    export_plot_png,
     export_report_pdf,
     export_waveform_csv,
     load_config,
@@ -48,39 +63,176 @@ from .sweep import sweep_thd
 from .visualization import svm_hexagon_vertices, svm_reference_vector
 
 
-class PlotCanvas(FigureCanvas):
-    """Matplotlib canvas used for waveform and FFT plots."""
+_DASH_STYLES: dict[str, Qt.PenStyle] = {
+    "Solid": Qt.PenStyle.SolidLine,
+    "Dashed": Qt.PenStyle.DashLine,
+    "Dotted": Qt.PenStyle.DotLine,
+    "DashDot": Qt.PenStyle.DashDotLine,
+}
+
+_MARKER_SYMBOLS: dict[str, Optional[str]] = {
+    "None": None,
+    "Circle": "o",
+    "Cross": "x",
+    "Square": "s",
+    "Triangle": "t",
+}
+
+_PHASE_DEFAULTS = {
+    "A": {"color": "#1f77b4", "width": 1.5, "dash": "Solid", "symbol": "None"},
+    "B": {"color": "#ff7f0e", "width": 1.5, "dash": "Solid", "symbol": "None"},
+    "C": {"color": "#2ca02c", "width": 1.5, "dash": "Solid", "symbol": "None"},
+}
+
+
+class PlotCanvas(QtWidgets.QWidget):
+    """pyqtgraph-based oscilloscope + FFT widget.
+
+    Features
+    --------
+    - Zoom: mouse wheel on any plot, or drag a rubber-band rectangle.
+    - Pan: right-click drag.
+    - Crosshair: moves with the mouse over the waveform, shows t / V values.
+    - Legend: click a legend label to hide/show the corresponding trace.
+    - styles: per-phase color, line width, dash pattern and marker.
+    - Right-click context menu (ViewBox built-in) to reset zoom.
+    """
 
     def __init__(self, parent: Optional[QtWidgets.QWidget] = None):
-        fig = Figure(figsize=(10, 6), tight_layout=True)
-        super().__init__(fig)
-        self.setParent(parent)
+        super().__init__(parent)
 
-        self._wave_ax = fig.add_subplot(211)
-        self._fft_ax = fig.add_subplot(212)
+        # Per-phase style state (mutable, driven by PlotStylePanel).
+        self._styles: dict[str, dict] = {
+            phase: dict(cfg) for phase, cfg in _PHASE_DEFAULTS.items()
+        }
 
-        self._wave_line_a = None
-        self._wave_line_b = None
-        self._wave_line_c = None
-        self._fft_line = None
-
-        # Optional switching edge markers (for interactive PWM switching display)
-        self._switch_markers: dict[str, Optional[any]] = {
+        self._wave_curves: dict[str, pg.PlotDataItem] = {}
+        self._fft_curve: Optional[pg.PlotDataItem] = None
+        self._switch_markers: dict[str, Optional[pg.ScatterPlotItem]] = {
             "A": None,
             "B": None,
             "C": None,
         }
+        # Whether the user has manually zoomed/panned the waveform view.
+        self._wave_user_zoomed = False
 
-        self._init_plot()
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
 
-    def _init_plot(self) -> None:
-        self._wave_ax.set_title("Waveform")
-        self._wave_ax.set_ylabel("Normalized voltage")
-        self._wave_ax.set_xlabel("Time (s)")
+        splitter = QtWidgets.QSplitter(Qt.Orientation.Vertical)
 
-        self._fft_ax.set_title("FFT (PWM signal)")
-        self._fft_ax.set_ylabel("Magnitude")
-        self._fft_ax.set_xlabel("Frequency (Hz)")
+        # --- Waveform plot ---
+        self._wave_plot = pg.PlotWidget(title="Waveforms")
+        self._wave_plot.setLabel("left", "Voltage", units="V")
+        self._wave_plot.setLabel("bottom", "Time", units="s")
+        self._wave_plot.showGrid(x=True, y=True, alpha=0.3)
+        self._wave_legend = self._wave_plot.addLegend(offset=(10, 10))
+        # Detect when the user manually moves the view so we stop forcing ranges.
+        self._wave_plot.plotItem.vb.sigRangeChangedManually.connect(
+            self._on_wave_manual_range
+        )
+
+        # Crosshair items
+        _ch_pen = pg.mkPen(color="#888888", width=1, style=Qt.PenStyle.DashLine)
+        self._vline = pg.InfiniteLine(angle=90, movable=False, pen=_ch_pen)
+        self._hline = pg.InfiniteLine(angle=0, movable=False, pen=_ch_pen)
+        self._crosshair_label = pg.TextItem("", anchor=(0.0, 1.0), color="#333333")
+        self._wave_plot.addItem(self._vline, ignoreBounds=True)
+        self._wave_plot.addItem(self._hline, ignoreBounds=True)
+        self._wave_plot.addItem(self._crosshair_label, ignoreBounds=True)
+        self._wave_plot.scene().sigMouseMoved.connect(self._on_mouse_move)
+
+        # --- FFT plot ---
+        self._fft_plot = pg.PlotWidget(title="FFT (PWM signal)")
+        self._fft_plot.setLabel("left", "Magnitude")
+        self._fft_plot.setLabel("bottom", "Frequency", units="Hz")
+        self._fft_plot.showGrid(x=True, y=True, alpha=0.3)
+        self._fft_plot.addLegend(offset=(10, 10))
+
+        splitter.addWidget(self._wave_plot)
+        splitter.addWidget(self._fft_plot)
+        splitter.setStretchFactor(0, 3)
+        splitter.setStretchFactor(1, 2)
+        layout.addWidget(splitter)
+
+        # Expose a fake .figure attribute so io.export_plot_png gracefully
+        # finds None and the caller knows to use grab_pixmap() instead.
+        self.figure = None
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _make_pen(self, phase: str) -> pg.QPen:
+        s = self._styles[phase]
+        return pg.mkPen(
+            color=s["color"],
+            width=s["width"],
+            style=_DASH_STYLES.get(s["dash"], Qt.PenStyle.SolidLine),
+        )
+
+    def _make_symbol(self, phase: str) -> Optional[str]:
+        return _MARKER_SYMBOLS.get(self._styles[phase]["symbol"])
+
+    def _on_wave_manual_range(self) -> None:
+        self._wave_user_zoomed = True
+
+    def _on_mouse_move(self, scene_pos: QtCore.QPointF) -> None:
+        if self._wave_plot.sceneBoundingRect().contains(scene_pos):
+            vb = self._wave_plot.plotItem.vb
+            view_pos = vb.mapSceneToView(scene_pos)
+            self._vline.setPos(view_pos.x())
+            self._hline.setPos(view_pos.y())
+            self._crosshair_label.setPos(view_pos.x(), view_pos.y())
+            self._crosshair_label.setText(
+                f"t = {view_pos.x():.4e} s   V = {view_pos.y():.3f} V"
+            )
+
+    def _update_curve_style(self, phase: str) -> None:
+        """Apply current style state to an already-created curve."""
+        curve = self._wave_curves.get(phase)
+        if curve is None:
+            return
+        sym = self._make_symbol(phase)
+        curve.setPen(self._make_pen(phase))
+        curve.setSymbol(sym)
+        curve.setSymbolSize(6 if sym is not None else 0)
+        curve.setSymbolBrush(pg.mkBrush(self._styles[phase]["color"]))
+        curve.setSymbolPen(pg.mkPen(self._styles[phase]["color"]))
+
+    # ------------------------------------------------------------------
+    # Public API (kept compatible with old matplotlib PlotCanvas)
+    # ------------------------------------------------------------------
+
+    def reset_zoom(self) -> None:
+        """Re-enable auto-range on the waveform plot."""
+        self._wave_user_zoomed = False
+        self._wave_plot.enableAutoRange()
+
+    def update_style(
+        self,
+        phase: str,
+        color: Optional[str] = None,
+        width: Optional[float] = None,
+        dash: Optional[str] = None,
+        symbol: Optional[str] = None,
+    ) -> None:
+        """Update visual style for one phase and redraw."""
+        if color is not None:
+            self._styles[phase]["color"] = color
+        if width is not None:
+            self._styles[phase]["width"] = width
+        if dash is not None:
+            self._styles[phase]["dash"] = dash
+        if symbol is not None:
+            self._styles[phase]["symbol"] = symbol
+        self._update_curve_style(phase)
+
+    def set_phase_visible(self, phase: str, visible: bool) -> None:
+        """Show or hide one phase curve."""
+        curve = self._wave_curves.get(phase)
+        if curve is not None:
+            curve.setVisible(visible)
 
     def update_waveform(
         self,
@@ -88,75 +240,198 @@ class PlotCanvas(FigureCanvas):
         phases: dict[str, np.ndarray],
         switch_times: Optional[dict[str, np.ndarray]] = None,
     ) -> None:
-        """Update the waveform plot with the latest data.
+        """Update the waveform plot (oscilloscope trace)."""
 
-        If `switch_times` is provided, display markers at the PWM switching edges.
-        """
-
-        if self._wave_line_a is None:
-            (self._wave_line_a,) = self._wave_ax.plot(
-                time, phases["A"], label="Phase A"
-            )
-            (self._wave_line_b,) = self._wave_ax.plot(
-                time, phases["B"], label="Phase B"
-            )
-            (self._wave_line_c,) = self._wave_ax.plot(
-                time, phases["C"], label="Phase C"
-            )
-            self._wave_ax.legend(loc="upper right")
-        else:
-            self._wave_line_a.set_data(time, phases["A"])
-            self._wave_line_b.set_data(time, phases["B"])
-            self._wave_line_c.set_data(time, phases["C"])
-
-        # Update switching edge markers when provided
-        if switch_times is not None:
-            # Remove old markers if they exist
+        if not self._wave_curves:
+            # First call – create curves and legend entries.
             for phase in ("A", "B", "C"):
-                if self._switch_markers.get(phase) is not None:
-                    try:
-                        self._switch_markers[phase].remove()
-                    except Exception:
-                        pass
-                    self._switch_markers[phase] = None
-
-            # Add new markers for each phase
-            colors = {"A": "tab:blue", "B": "tab:orange", "C": "tab:green"}
-            for phase, times in switch_times.items():
-                if times is None or len(times) == 0:
-                    continue
-                self._switch_markers[phase] = self._wave_ax.scatter(
-                    times,
-                    np.zeros_like(times),
-                    marker="|",
-                    color=colors.get(phase, "black"),
-                    s=80,
-                    label=f"{phase} switches",
-                    zorder=5,
+                sym = self._make_symbol(phase)
+                curve = self._wave_plot.plot(
+                    time,
+                    phases[phase],
+                    name=f"Phase {phase}",
+                    pen=self._make_pen(phase),
+                    symbol=sym,
+                    symbolSize=6 if sym is not None else 0,
+                    symbolBrush=pg.mkBrush(self._styles[phase]["color"]),
+                    symbolPen=pg.mkPen(self._styles[phase]["color"]),
                 )
+                self._wave_curves[phase] = curve
+        else:
+            for phase in ("A", "B", "C"):
+                self._wave_curves[phase].setData(time, phases[phase])
 
-        self._wave_ax.set_xlim(time[0], time[-1])
-        self._wave_ax.set_ylim(-1.15, 1.15)
-        self._wave_ax.figure.canvas.draw_idle()
+        # Switching edge markers
+        for phase in ("A", "B", "C"):
+            if self._switch_markers[phase] is not None:
+                self._wave_plot.removeItem(self._switch_markers[phase])
+                self._switch_markers[phase] = None
+
+        if switch_times is not None:
+            for phase in ("A", "B", "C"):
+                times = switch_times.get(phase)
+                if times is not None and len(times) > 0:
+                    sc = pg.ScatterPlotItem(
+                        x=times,
+                        y=np.zeros_like(times),
+                        symbol="|",
+                        size=12,
+                        pen=pg.mkPen(self._styles[phase]["color"]),
+                        brush=pg.mkBrush(self._styles[phase]["color"]),
+                    )
+                    self._wave_plot.addItem(sc)
+                    self._switch_markers[phase] = sc
+
+        if not self._wave_user_zoomed:
+            self._wave_plot.setXRange(time[0], time[-1], padding=0)
+            self._wave_plot.setYRange(-1.15, 1.15, padding=0)
 
     def update_fft(self, freqs: np.ndarray, magnitude: np.ndarray) -> None:
         """Update the FFT plot."""
-
-        if self._fft_line is None:
-            (self._fft_line,) = self._fft_ax.plot(freqs, magnitude, label="FFT")
-            self._fft_ax.set_xlim(0, freqs.max())
+        if self._fft_curve is None:
+            self._fft_curve = self._fft_plot.plot(
+                freqs,
+                magnitude,
+                name="FFT",
+                pen=pg.mkPen(color="#1f77b4", width=1.5),
+            )
         else:
-            self._fft_line.set_data(freqs, magnitude)
-            self._fft_ax.set_xlim(0, freqs.max())
+            self._fft_curve.setData(freqs, magnitude)
+        self._fft_plot.setXRange(0, float(freqs.max()), padding=0)
+        self._fft_plot.setYRange(0, max(1e-3, float(magnitude.max()) * 1.1), padding=0)
 
-        self._fft_ax.set_ylim(0, max(1e-3, magnitude.max() * 1.1))
-        self._fft_ax.figure.canvas.draw_idle()
+    def grab_pixmap(self) -> QtGui.QPixmap:
+        """Return a QPixmap screenshot of this widget for export."""
+        return self.grab()
+
+
+class PlotStylePanel(QtWidgets.QGroupBox):
+    """Side panel that lets users customise per-phase plot appearance.
+
+    Controls per phase
+    ------------------
+    - Visibility checkbox
+    - Color picker button
+    - Line width spinbox (0.5 – 5 px)
+    - Dash pattern combobox
+    - Marker shape combobox
+    - Reset button to restore defaults
+    """
+
+    def __init__(self, canvas: PlotCanvas, parent: Optional[QtWidgets.QWidget] = None):
+        super().__init__("Plot style", parent)
+        self._canvas = canvas
+        self._controls: dict[str, dict] = {}
+        self._build_ui()
+
+    def _build_ui(self) -> None:
+        grid = QtWidgets.QGridLayout(self)
+
+        headers = ["Phase", "Visible", "Color", "Width (px)", "Dash", "Marker"]
+        for col, text in enumerate(headers):
+            lbl = QtWidgets.QLabel(f"<b>{text}</b>")
+            grid.addWidget(lbl, 0, col)
+
+        for row, phase in enumerate(("A", "B", "C"), start=1):
+            style = self._canvas._styles[phase]
+
+            # Visibility
+            vis_cb = QtWidgets.QCheckBox()
+            vis_cb.setChecked(True)
+            vis_cb.setAccessibleName(f"Phase {phase} visible")
+            vis_cb.stateChanged.connect(
+                lambda state, p=phase: self._canvas.set_phase_visible(
+                    p, state == Qt.CheckState.Checked.value
+                )
+            )
+
+            # Color
+            color_btn = QtWidgets.QPushButton()
+            color_btn.setFixedSize(28, 22)
+            color_btn.setToolTip(f"Pick color for Phase {phase}")
+            color_btn.setAccessibleName(f"Phase {phase} color picker")
+            color_btn.setStyleSheet(
+                f"background-color: {style['color']}; border: 1px solid #888;"
+            )
+            color_btn.clicked.connect(lambda _=False, p=phase: self._pick_color(p))
+
+            # Width
+            width_spin = QtWidgets.QDoubleSpinBox()
+            width_spin.setRange(0.5, 5.0)
+            width_spin.setSingleStep(0.5)
+            width_spin.setDecimals(1)
+            width_spin.setValue(style["width"])
+            width_spin.setFixedWidth(68)
+            width_spin.setAccessibleName(f"Phase {phase} line width")
+            width_spin.valueChanged.connect(
+                lambda v, p=phase: self._canvas.update_style(p, width=v)
+            )
+
+            # Dash
+            dash_cb = QtWidgets.QComboBox()
+            dash_cb.addItems(list(_DASH_STYLES.keys()))
+            dash_cb.setCurrentText(style["dash"])
+            dash_cb.setAccessibleName(f"Phase {phase} dash pattern")
+            dash_cb.currentTextChanged.connect(
+                lambda s, p=phase: self._canvas.update_style(p, dash=s)
+            )
+
+            # Marker
+            marker_cb = QtWidgets.QComboBox()
+            marker_cb.addItems(list(_MARKER_SYMBOLS.keys()))
+            marker_cb.setCurrentText(style["symbol"])
+            marker_cb.setAccessibleName(f"Phase {phase} marker")
+            marker_cb.currentTextChanged.connect(
+                lambda s, p=phase: self._canvas.update_style(p, symbol=s)
+            )
+
+            grid.addWidget(QtWidgets.QLabel(f"Phase {phase}"), row, 0)
+            grid.addWidget(vis_cb, row, 1)
+            grid.addWidget(color_btn, row, 2)
+            grid.addWidget(width_spin, row, 3)
+            grid.addWidget(dash_cb, row, 4)
+            grid.addWidget(marker_cb, row, 5)
+
+            self._controls[phase] = {
+                "vis": vis_cb,
+                "color_btn": color_btn,
+                "width": width_spin,
+                "dash": dash_cb,
+                "marker": marker_cb,
+            }
+
+        reset_btn = QtWidgets.QPushButton("Reset styles")
+        reset_btn.setToolTip("Restore default colors, widths and dash patterns")
+        reset_btn.clicked.connect(self._reset_styles)
+        grid.addWidget(reset_btn, len(("A", "B", "C")) + 1, 0, 1, 6)
+
+    def _pick_color(self, phase: str) -> None:
+        current = self._canvas._styles[phase]["color"]
+        color = QColorDialog.getColor(QtGui.QColor(current), self, f"Color – Phase {phase}")
+        if color.isValid():
+            hex_color = color.name()
+            self._controls[phase]["color_btn"].setStyleSheet(
+                f"background-color: {hex_color}; border: 1px solid #888;"
+            )
+            self._canvas.update_style(phase, color=hex_color)
+
+    def _reset_styles(self) -> None:
+        for phase, defaults in _PHASE_DEFAULTS.items():
+            ctl = self._controls[phase]
+            ctl["color_btn"].setStyleSheet(
+                f"background-color: {defaults['color']}; border: 1px solid #888;"
+            )
+            ctl["width"].setValue(defaults["width"])
+            ctl["dash"].setCurrentText(defaults["dash"])
+            ctl["marker"].setCurrentText(defaults["symbol"])
+            self._canvas._styles[phase] = dict(defaults)
+            self._canvas._update_curve_style(phase)
 
 
 class SimulationWorker(QtCore.QObject):
     """Worker for running simulation in a background thread."""
 
-    finished = pyqtSignal(object)
+    finished = Signal(object)
 
     def __init__(self, config: SimulatorConfig):
         super().__init__()
@@ -200,11 +475,12 @@ class SweepDialog(QtWidgets.QDialog):
         layout.addLayout(form)
         layout.addWidget(self._run_button)
 
-        self._figure = Figure(figsize=(5, 3), tight_layout=True)
-        self._canvas = FigureCanvas(self._figure)
-        layout.addWidget(self._canvas)
-
-        self._ax = self._figure.add_subplot(111)
+        self._plot_widget = pg.PlotWidget()
+        self._plot_widget.setLabel("left", "THD (%)")
+        self._plot_widget.setLabel("bottom", "Variable value")
+        self._plot_widget.showGrid(x=True, y=True, alpha=0.3)
+        self._plot_widget.setMinimumSize(500, 300)
+        layout.addWidget(self._plot_widget)
 
     def _on_run(self) -> None:
         try:
@@ -219,17 +495,24 @@ class SweepDialog(QtWidgets.QDialog):
             return
 
         xs, thd = sweep_thd(self._base_config, variable, start, stop, steps)
-        self._ax.clear()
-        self._ax.plot(xs, thd, marker="o")
-        self._ax.set_title(f"THD vs {variable}")
-        self._ax.set_xlabel(variable)
-        self._ax.set_ylabel("THD (%)")
-        self._ax.grid(True)
-        self._canvas.draw()
+        self._plot_widget.clear()
+        self._plot_widget.setTitle(f"THD vs {variable}")
+        self._plot_widget.setLabel("bottom", variable)
+        self._plot_widget.plot(
+            xs,
+            thd,
+            symbol="o",
+            symbolSize=7,
+            pen=pg.mkPen(color="#1f77b4", width=2),
+            symbolBrush=pg.mkBrush("#1f77b4"),
+        )
 
 
 class SvmHexagonDialog(QtWidgets.QDialog):
-    """Dialog showing the SVM hexagon and a rotating reference vector."""
+    """Dialog showing the SVM hexagon and a rotating reference vector.
+
+    Uses matplotlib for geometry drawing (Polygon, arrow).
+    """
 
     def __init__(
         self, config: SimulatorConfig, parent: Optional[QtWidgets.QWidget] = None
@@ -361,6 +644,8 @@ class SvmShaperApp(QtWidgets.QMainWindow):
 
         self._control_panel = self._create_control_panel()
         self._plot_canvas = PlotCanvas(parent=central)
+        self._plot_style_panel = PlotStylePanel(self._plot_canvas, parent=central)
+
         self._info_box = QPlainTextEdit(readOnly=True)
         self._info_box.setMinimumHeight(120)
         self._info_box.setAccessibleName("Explanation text")
@@ -382,8 +667,13 @@ class SvmShaperApp(QtWidgets.QMainWindow):
             self._copy_explanation_to_clipboard
         )
 
+        # Plot area: canvas on the left, style panel on the right.
+        plot_row = QtWidgets.QHBoxLayout()
+        plot_row.addWidget(self._plot_canvas, stretch=1)
+        plot_row.addWidget(self._plot_style_panel, stretch=0)
+
         main_layout.addLayout(self._control_panel)
-        main_layout.addWidget(self._plot_canvas, stretch=1)
+        main_layout.addLayout(plot_row, stretch=1)
 
         info_row = QtWidgets.QHBoxLayout()
         info_row.addWidget(self._info_box, stretch=1)
@@ -647,6 +937,13 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         self._step_button.setToolTip("Advance the oscilloscope one frame when paused")
         self._step_button.clicked.connect(self._step_once)
 
+        self._reset_zoom_button = QtWidgets.QPushButton("Reset zoom")
+        self._reset_zoom_button.setAccessibleName("Reset plot zoom")
+        self._reset_zoom_button.setToolTip(
+            "Reset waveform view to full auto-range after manual zoom"
+        )
+        self._reset_zoom_button.clicked.connect(self._reset_zoom)
+
         self._export_csv_button = QtWidgets.QPushButton("Export CSV")
         self._export_csv_button.setAccessibleName("Export waveform CSV")
         self._export_csv_button.setToolTip(
@@ -661,6 +958,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
 
         osc_layout.addWidget(self._pause_button)
         osc_layout.addWidget(self._step_button)
+        osc_layout.addWidget(self._reset_zoom_button)
         osc_layout.addWidget(self._export_csv_button)
         osc_layout.addWidget(self._export_png_button)
 
@@ -964,6 +1262,10 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         # +1 because diff shifts indices by 1
         return time[transitions + 1]
 
+    def _reset_zoom(self) -> None:
+        """Re-enable auto-range on the waveform plot after manual zoom."""
+        self._plot_canvas.reset_zoom()
+
     def _toggle_pause(self) -> None:
         """Toggle pause/resume of the oscilloscope scrolling."""
 
@@ -1073,7 +1375,11 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         if not path:
             return
 
-        export_plot_png(path, self._plot_canvas.figure)
+        pixmap = self._plot_canvas.grab_pixmap()
+        if not pixmap.save(path, "PNG"):
+            QtWidgets.QMessageBox.warning(
+                self, "Export failed", f"Could not save image to:\n{path}"
+            )
 
     def _export_report_pdf(self) -> None:
         """Export a multi-page PDF report including plots and explanation."""
@@ -1091,19 +1397,32 @@ class SvmShaperApp(QtWidgets.QMainWindow):
             return
 
         info_text = self._info_box.toPlainText()
-        export_report_pdf(
-            path,
-            self._config,
-            self._sim_result,
-            info_text,
-            show_phase_voltages=self._config.show_phase_voltages,
-            plot_figure=self._plot_canvas.figure,
-            app_name="SVM Analyst",
-            app_version=__version__,
-            company_name="BLIND SYSTEMS",
-            include_hexagon=True,
-            include_harmonics_table=True,
-        )
+
+        # Grab the pyqtgraph widget as a temporary PNG and pass its path to
+        # the PDF exporter (which uses matplotlib imread to embed the image).
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+            tmp_path = tmp.name
+        try:
+            pixmap = self._plot_canvas.grab_pixmap()
+            pixmap.save(tmp_path, "PNG")
+            export_report_pdf(
+                path,
+                self._config,
+                self._sim_result,
+                info_text,
+                show_phase_voltages=self._config.show_phase_voltages,
+                plot_image_path=tmp_path,
+                app_name="SVM Analyst",
+                app_version=__version__,
+                company_name="BLIND SYSTEMS",
+                include_hexagon=True,
+                include_harmonics_table=True,
+            )
+        finally:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
 
     def _save_configuration(self) -> None:
         """Save the current simulation configuration to disk."""
@@ -1185,6 +1504,11 @@ class SvmShaperApp(QtWidgets.QMainWindow):
 
 def main(argv=None) -> int:
     """Launch the SVM Analyst application."""
+
+    # Configure pyqtgraph appearance before creating any widget.
+    pg.setConfigOption("background", "w")
+    pg.setConfigOption("foreground", "k")
+    pg.setConfigOption("antialias", True)
 
     app = QtWidgets.QApplication(argv or sys.argv)
     app.setApplicationName("SVM Analyst")

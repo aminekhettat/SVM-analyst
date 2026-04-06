@@ -63,6 +63,7 @@ def export_report_pdf(
     info_text: str,
     show_phase_voltages: bool,
     plot_figure=None,
+    plot_image_path: str | Path | None = None,
     app_name: str = "SVM Analyst",
     app_version: str | None = None,
     company_name: str | None = None,
@@ -205,8 +206,20 @@ def export_report_pdf(
         _draw_text_page("Table of contents", toc_text, page_num)
         page_num += 1
 
-        # -- Waveform + FFT (use passed plot figure if provided) -----------------------
-        if plot_figure is not None:
+        # -- Waveform + FFT (use passed plot figure or pre-rendered image) -----------
+        if plot_image_path is not None:
+            # A pre-rendered PNG was provided (e.g. from a pyqtgraph widget grab).
+            img = imread(str(plot_image_path))
+
+            fig = plt.figure(figsize=(8.5, 11))
+            ax = fig.add_subplot(111)
+            ax.axis("off")
+            ax.imshow(img)
+            ax.set_title("Waveform + FFT (from GUI)", pad=20)
+            _add_footer(fig, page_num)
+            pdf.savefig(fig)
+            plt.close(fig)
+        elif plot_figure is not None:
             # Render the provided figure to an image and embed it.
             buf = BytesIO()
             plot_figure.savefig(buf, format="png", dpi=150)

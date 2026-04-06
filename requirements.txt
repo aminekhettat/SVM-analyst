@@ -1,7 +1,8 @@
 numpy
 scipy
 matplotlib
-PyQt6
+PySide6
+pyqtgraph
 PyPDF2
 sphinx
 pytest
