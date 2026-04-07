@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  test:
+    name: Python ${{ matrix.python-version }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.12"]
+
+    env:
+      QT_QPA_PLATFORM: offscreen
+      MPLBACKEND: Agg
+      PYQTGRAPH_QT_LIB: PySide6
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # On Linux install the virtual framebuffer so Qt can run headless.
+      - name: Install X virtual framebuffer (Linux only)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libgl1 libglib2.0-0 \
+            libegl1 libfontconfig1 libxkbcommon0
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install runtime dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install test dependencies
+        run: pip install pytest pytest-qt pytest-cov coverage
+
+      - name: Run tests with coverage (non-GUI modules)
+        run: |
+          python -m pytest tests/ \
+            -v \
+            --ignore=tests/test_accessibility.py \
+            --ignore=tests/test_gui.py \
+            --cov=svm_shaper \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            --tb=short
+
+      - name: Run GUI + accessibility tests (offscreen)
+        run: |
+          python -m pytest tests/test_accessibility.py tests/test_gui.py \
+            -v \
+            --tb=short
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: coverage.xml
+
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ruff
+      - name: Run ruff linter
+        run: ruff check svm_shaper/ tests/ --output-format=github

@@ -8,7 +8,7 @@ Date: 2026-03-09
 License: See LICENSE
 """
 
-__version__ = "1.0.2"
+__version__ = "1.1.0"
 
 from .core import SimulatorConfig, run_simulation
 
@@ -23,5 +23,6 @@ __all__ = [
 def __getattr__(name: str):
     if name == "SvmShaperApp":
         from .gui import SvmShaperApp  # lazy – avoids Qt import at package init
+
         return SvmShaperApp
     raise AttributeError(f"module 'svm_shaper' has no attribute {name!r}")

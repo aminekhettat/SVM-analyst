@@ -3,8 +3,7 @@
 This module launches the interactive GUI for exploring PWM and SVM modulation
 waveforms and harmonic analysis.
 
-
-            Author: Amine KHETTAT
+Author: Amine KHETTAT
 Date: 2026-03-09
 License: See LICENSE
 """

@@ -99,7 +99,14 @@ class PlotCanvas(QtWidgets.QWidget):
     """
 
     def __init__(self, parent: Optional[QtWidgets.QWidget] = None):
+        """Initialise the waveform and FFT plots with default phase styles."""
         super().__init__(parent)
+        self.setAccessibleName("Oscilloscope and FFT display")
+        self.setAccessibleDescription(
+            "Dual-panel plot: upper panel shows the three-phase PWM waveforms with "
+            "crosshair cursor; lower panel shows the FFT spectrum. Use the style panel "
+            "on the right to change line colors, widths, and dash patterns per phase."
+        )
 
         # Per-phase style state (mutable, driven by PlotStylePanel).
         self._styles: dict[str, dict] = {
@@ -319,12 +326,19 @@ class PlotStylePanel(QtWidgets.QGroupBox):
     """
 
     def __init__(self, canvas: PlotCanvas, parent: Optional[QtWidgets.QWidget] = None):
+        """Initialise the style panel linked to *canvas*."""
         super().__init__("Plot style", parent)
+        self.setAccessibleName("Plot style panel")
+        self.setAccessibleDescription(
+            "Controls the visual appearance of each phase curve: visibility toggle, "
+            "color, line width, dash pattern, and marker shape."
+        )
         self._canvas = canvas
         self._controls: dict[str, dict] = {}
         self._build_ui()
 
     def _build_ui(self) -> None:
+        """Populate the grid layout with per-phase style controls."""
         grid = QtWidgets.QGridLayout(self)
 
         headers = ["Phase", "Visible", "Color", "Width (px)", "Dash", "Marker"]
@@ -402,12 +416,19 @@ class PlotStylePanel(QtWidgets.QGroupBox):
 
         reset_btn = QtWidgets.QPushButton("Reset styles")
         reset_btn.setToolTip("Restore default colors, widths and dash patterns")
+        reset_btn.setAccessibleName("Reset all plot styles")
+        reset_btn.setAccessibleDescription(
+            "Restore all per-phase line colors, widths, dash patterns, and markers to their defaults."
+        )
         reset_btn.clicked.connect(self._reset_styles)
         grid.addWidget(reset_btn, len(("A", "B", "C")) + 1, 0, 1, 6)
 
     def _pick_color(self, phase: str) -> None:
+        """Open a color dialog and apply the chosen color to *phase*."""
         current = self._canvas._styles[phase]["color"]
-        color = QColorDialog.getColor(QtGui.QColor(current), self, f"Color – Phase {phase}")
+        color = QColorDialog.getColor(
+            QtGui.QColor(current), self, f"Color – Phase {phase}"
+        )
         if color.isValid():
             hex_color = color.name()
             self._controls[phase]["color_btn"].setStyleSheet(
@@ -416,6 +437,7 @@ class PlotStylePanel(QtWidgets.QGroupBox):
             self._canvas.update_style(phase, color=hex_color)
 
     def _reset_styles(self) -> None:
+        """Restore all phases to their default colors, widths, dash patterns, and markers."""
         for phase, defaults in _PHASE_DEFAULTS.items():
             ctl = self._controls[phase]
             ctl["color_btn"].setStyleSheet(
@@ -429,40 +451,65 @@ class PlotStylePanel(QtWidgets.QGroupBox):
 
 
 class SimulationWorker(QtCore.QObject):
-    """Worker for running simulation in a background thread."""
+    """Worker that runs the PWM simulation in a background thread.
 
+    Emits :attr:`finished` with the :class:`~svm_shaper.core.SimulationResult`
+    once the computation completes, so the GUI thread can update plots without
+    blocking the event loop.
+    """
+
+    #: Emitted when the simulation finishes; carries the SimulationResult.
     finished = Signal(object)
 
     def __init__(self, config: SimulatorConfig):
+        """Initialise the worker with the given simulation configuration."""
         super().__init__()
         self._config = config
 
     def run(self) -> None:
+        """Execute the simulation and emit the result signal."""
         result = run_simulation(self._config)
         self.finished.emit(result)
 
 
 class SweepDialog(QtWidgets.QDialog):
-    """Dialog to sweep a parameter and visualize THD results."""
+    """Dialog that sweeps one simulation parameter and plots the resulting THD.
+
+    The user selects the variable to sweep (speed or PWM frequency), enters a
+    range and step count, then presses *Run* to compute and display the
+    THD-vs-parameter curve via pyqtgraph.
+    """
 
     def __init__(
         self, base_config: SimulatorConfig, parent: Optional[QtWidgets.QWidget] = None
     ):
+        """Initialise the sweep dialog with *base_config* as the reference configuration."""
         super().__init__(parent)
         self.setWindowTitle("Sweep THD")
+        self.setAccessibleName("Sweep THD dialog")
+        self.setAccessibleDescription(
+            "Sweeps a scalar simulation parameter over a range and plots the resulting "
+            "Total Harmonic Distortion curve."
+        )
         self._base_config = base_config
 
         self._build_ui()
 
     def _build_ui(self) -> None:
+        """Populate the sweep-dialog layout with form inputs and a plot widget."""
         layout = QVBoxLayout(self)
 
         form = QtWidgets.QFormLayout()
         self._variable_choice = QtWidgets.QComboBox()
+        self._variable_choice.setAccessibleName("Sweep variable")
+        self._variable_choice.setToolTip("Select the parameter to sweep")
         self._variable_choice.addItems(["speed_rpm", "pwm_frequency_hz"])
         self._min_edit = QLineEdit("0")
+        self._min_edit.setAccessibleName("Sweep minimum value")
         self._max_edit = QLineEdit("1000")
+        self._max_edit.setAccessibleName("Sweep maximum value")
         self._steps_edit = QLineEdit("20")
+        self._steps_edit.setAccessibleName("Sweep steps count")
 
         form.addRow("Variable:", self._variable_choice)
         form.addRow("Min:", self._min_edit)
@@ -470,6 +517,8 @@ class SweepDialog(QtWidgets.QDialog):
         form.addRow("Steps:", self._steps_edit)
 
         self._run_button = QPushButton("Run")
+        self._run_button.setAccessibleName("Run sweep")
+        self._run_button.setToolTip("Run the parameter sweep and update the THD plot")
         self._run_button.clicked.connect(self._on_run)
 
         layout.addLayout(form)
@@ -480,9 +529,11 @@ class SweepDialog(QtWidgets.QDialog):
         self._plot_widget.setLabel("bottom", "Variable value")
         self._plot_widget.showGrid(x=True, y=True, alpha=0.3)
         self._plot_widget.setMinimumSize(500, 300)
+        self._plot_widget.setAccessibleName("Sweep THD result plot")
         layout.addWidget(self._plot_widget)
 
     def _on_run(self) -> None:
+        """Validate inputs, run the sweep, and update the plot."""
         try:
             variable = self._variable_choice.currentText()
             start = float(self._min_edit.text())
@@ -511,14 +562,25 @@ class SweepDialog(QtWidgets.QDialog):
 class SvmHexagonDialog(QtWidgets.QDialog):
     """Dialog showing the SVM hexagon and a rotating reference vector.
 
+    The hexagon displays the six active space vectors of a three-phase inverter
+    in the alpha-beta (Clarke) plane. The current active sector is highlighted
+    in orange and the rotating reference vector is drawn in red. The animation
+    updates every 100 ms using a QTimer.
+
     Uses matplotlib for geometry drawing (Polygon, arrow).
     """
 
     def __init__(
         self, config: SimulatorConfig, parent: Optional[QtWidgets.QWidget] = None
     ):
+        """Initialise the dialog with the current simulation configuration."""
         super().__init__(parent)
-        self.setWindowTitle("SVM Hexagon")
+        self.setWindowTitle("SVM Hexagon – SVM Analyst")
+        self.setAccessibleName("SVM hexagon dialog")
+        self.setAccessibleDescription(
+            "Animated space-vector diagram showing the SVM hexagon, active sector "
+            "highlight, and rotating reference vector."
+        )
         self._config = config
         self._time = 0.0
 
@@ -537,6 +599,7 @@ class SvmHexagonDialog(QtWidgets.QDialog):
         self._refresh()
 
     def _refresh(self) -> None:
+        """Redraw the hexagon animation frame for the current ``_time``."""
         self._ax.clear()
 
         # Draw hexagon vertices
@@ -598,11 +661,19 @@ class SvmHexagonDialog(QtWidgets.QDialog):
 
 
 class SvmShaperApp(QtWidgets.QMainWindow):
-    """Main window for the SVM Analyst application."""
+    """Main window for the SVM Analyst application.
+
+    This QMainWindow hosts the parameter control panel, the pyqtgraph
+    oscilloscope/FFT canvas, the per-phase style panel, and the explanation
+    text box.  A background :class:`SimulationWorker` thread is used so that
+    the GUI remains responsive while the simulation runs.
+    """
 
     def __init__(self):
+        """Initialise the main window, build the UI, and start the simulation loop."""
         super().__init__()
         self.setWindowTitle("SVM Analyst - PWM Modulation Simulator")
+        self.setAccessibleName("SVM Analyst main window")
 
         # Use the company logo as the application icon when available.
         logo_path = (
@@ -634,6 +705,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         self._start_simulation_worker()
 
     def _build_ui(self) -> None:
+        """Build the main window layout: control panel, plots, style panel, info box."""
         central = QtWidgets.QWidget()
         self.setCentralWidget(central)
 
@@ -681,6 +753,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         main_layout.addLayout(info_row)
 
     def _build_menu(self) -> None:
+        """Build the application menu bar with File, View, Tools, and Help menus."""
         file_menu = self._menu_bar.addMenu("&File")
 
         config_menu = file_menu.addMenu("&Config")
@@ -730,6 +803,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         help_menu.addAction(about_action)
 
     def _create_control_panel(self) -> QtWidgets.QHBoxLayout:
+        """Create the horizontal control strip with four groups: system params, modulation, display, oscilloscope."""
         layout = QtWidgets.QHBoxLayout()
 
         def _lock_numeric_entry(widget: QtWidgets.QAbstractSpinBox) -> None:
@@ -740,6 +814,11 @@ class SvmShaperApp(QtWidgets.QMainWindow):
 
         # Left side: parameter controls
         param_group = QtWidgets.QGroupBox("System parameters")
+        param_group.setAccessibleName("System parameters group")
+        param_group.setAccessibleDescription(
+            "Motor and inverter parameters: pole pairs, PWM frequency, bus voltage, "
+            "speed, dead time, diode forward voltage, and current phase."
+        )
         param_layout = QtWidgets.QFormLayout(param_group)
 
         self._pole_pairs_spin = QtWidgets.QSpinBox()
@@ -875,9 +954,18 @@ class SvmShaperApp(QtWidgets.QMainWindow):
 
         # Modulation selection
         modulation_group = QtWidgets.QGroupBox("Modulation selection")
+        modulation_group.setAccessibleName("Modulation selection group")
+        modulation_group.setAccessibleDescription(
+            "List of available PWM and SVM modulation modes. "
+            "Select a mode to configure and simulate."
+        )
         modulation_layout = QtWidgets.QVBoxLayout(modulation_group)
         self._modulation_list = QtWidgets.QListWidget()
         self._modulation_list.setAccessibleName("Modulation list")
+        self._modulation_list.setAccessibleDescription(
+            "Scrollable list of modulation techniques: SPWM, THIPWM, SVM, DPWM, and custom variants. "
+            "Use arrow keys to move between entries; press Enter to select."
+        )
         self._modulation_list.setToolTip("Select the modulation technique to simulate")
 
         for mode in ModulationMode:
@@ -891,10 +979,19 @@ class SvmShaperApp(QtWidgets.QMainWindow):
 
         # Display options
         display_group = QtWidgets.QGroupBox("Display options")
+        display_group.setAccessibleName("Display options group")
+        display_group.setAccessibleDescription(
+            "Controls what is shown in the plot: line or phase voltages, "
+            "LPF-filtered curve overlay, and switching-edge markers."
+        )
         display_layout = QtWidgets.QVBoxLayout(display_group)
 
         self._voltage_choice = QtWidgets.QComboBox()
         self._voltage_choice.setAccessibleName("Voltage view")
+        self._voltage_choice.setAccessibleDescription(
+            "Line voltages show inverter terminal to DC-minus (0 to Vdc). "
+            "Phase voltages show terminal-to-terminal across delta winding."
+        )
         self._voltage_choice.addItems(["Line voltages", "Phase voltages"])
         self._voltage_choice.setToolTip(
             "Line voltages: inverter terminal to DC− (0…Vdc). "
@@ -923,10 +1020,17 @@ class SvmShaperApp(QtWidgets.QMainWindow):
 
         # Oscilloscope controls
         osc_group = QtWidgets.QGroupBox("Oscilloscope")
+        osc_group.setAccessibleName("Oscilloscope controls group")
+        osc_group.setAccessibleDescription(
+            "Controls for the live waveform display: pause/resume, single-step, zoom reset, and CSV/PNG export."
+        )
         osc_layout = QtWidgets.QVBoxLayout(osc_group)
 
         self._pause_button = QtWidgets.QPushButton("Pause")
         self._pause_button.setAccessibleName("Pause oscilloscope")
+        self._pause_button.setAccessibleDescription(
+            "Pause or resume the automatic waveform scrolling."
+        )
         self._pause_button.setToolTip(
             "Pause or resume the oscilloscope waveform scrolling"
         )
@@ -934,11 +1038,17 @@ class SvmShaperApp(QtWidgets.QMainWindow):
 
         self._step_button = QtWidgets.QPushButton("Step")
         self._step_button.setAccessibleName("Step oscilloscope")
+        self._step_button.setAccessibleDescription(
+            "Advance the waveform display by one scroll step when the oscilloscope is paused."
+        )
         self._step_button.setToolTip("Advance the oscilloscope one frame when paused")
         self._step_button.clicked.connect(self._step_once)
 
         self._reset_zoom_button = QtWidgets.QPushButton("Reset zoom")
         self._reset_zoom_button.setAccessibleName("Reset plot zoom")
+        self._reset_zoom_button.setAccessibleDescription(
+            "Return the waveform and FFT views to auto-range after a manual zoom."
+        )
         self._reset_zoom_button.setToolTip(
             "Reset waveform view to full auto-range after manual zoom"
         )
@@ -946,6 +1056,9 @@ class SvmShaperApp(QtWidgets.QMainWindow):
 
         self._export_csv_button = QtWidgets.QPushButton("Export CSV")
         self._export_csv_button.setAccessibleName("Export waveform CSV")
+        self._export_csv_button.setAccessibleDescription(
+            "Save the current three-phase waveform to a comma-separated values file."
+        )
         self._export_csv_button.setToolTip(
             "Export the current waveform data to a CSV file"
         )
@@ -953,6 +1066,9 @@ class SvmShaperApp(QtWidgets.QMainWindow):
 
         self._export_png_button = QtWidgets.QPushButton("Export PNG")
         self._export_png_button.setAccessibleName("Export plot PNG")
+        self._export_png_button.setAccessibleDescription(
+            "Save a screenshot of the current waveform and FFT plots to a PNG image file."
+        )
         self._export_png_button.setToolTip("Export the current plots as a PNG image")
         self._export_png_button.clicked.connect(self._export_plot_png)
 
@@ -970,6 +1086,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         return layout
 
     def _apply_config_to_ui(self, config: SimulatorConfig) -> None:
+        """Populate all widget values from the given configuration object."""
         self._pole_pairs_spin.setValue(config.motor_pole_pairs)
         self._pwm_freq_spin.setValue(config.pwm_frequency_hz)
         self._speed_spin.setValue(config.speed_rpm)
@@ -1000,6 +1117,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
                 break
 
     def _read_ui_to_config(self) -> SimulatorConfig:
+        """Read all widget values and return a populated SimulatorConfig."""
         modulation_item = self._modulation_list.currentItem()
         modulation = (
             modulation_item.data(QtCore.Qt.ItemDataRole.UserRole)
@@ -1041,6 +1159,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
             self._dead_time_spin.setValue(dead_time_max_us)
 
     def _on_update_clicked(self) -> None:
+        """Handle the Update button click: re-read UI and trigger a new simulation."""
         self._config = self._read_ui_to_config()
         self._update_simulation()
 
@@ -1054,6 +1173,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         self._injection_spin.setEnabled(mode == ModulationMode.CUSTOM_THIPWM)
 
     def _start_simulation_loop(self) -> None:
+        """Create and start the QTimer that drives oscilloscope scrolling."""
         self._timer = QtCore.QTimer(self)
         self._timer.setInterval(80)
         self._timer.timeout.connect(self._scroll_plot)
@@ -1299,7 +1419,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         path, _ = QFileDialog.getSaveFileName(
             self,
             "Export waveform CSV",
-            "svm_shaper_waveform.csv",
+            "svm-analyst_waveform.csv",
             "CSV files (*.csv)",
         )
         if not path:
@@ -1355,7 +1475,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         path, _ = QFileDialog.getSaveFileName(
             self,
             "Export FFT CSV",
-            "svm_shaper_fft.csv",
+            "svm-analyst_fft.csv",
             "CSV files (*.csv)",
         )
         if not path:
@@ -1369,7 +1489,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         path, _ = QFileDialog.getSaveFileName(
             self,
             "Export plot image",
-            "svm_shaper_plot.png",
+            "svm-analyst_plot.png",
             "PNG files (*.png)",
         )
         if not path:
@@ -1390,7 +1510,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         path, _ = QFileDialog.getSaveFileName(
             self,
             "Export report",
-            "svm_shaper_report.pdf",
+            "svm-analyst_report.pdf",
             "PDF files (*.pdf)",
         )
         if not path:
@@ -1430,7 +1550,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         path, _ = QFileDialog.getSaveFileName(
             self,
             "Save configuration",
-            "svm_shaper_config.json",
+            "svm-analyst_config.json",
             "JSON files (*.json)",
         )
         if not path:
