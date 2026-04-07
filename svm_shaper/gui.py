@@ -91,6 +91,13 @@ _MIN_ASPECT_RATIO: float = 4.0 / 3.0  # ~1.333 – narrower than 4:3 looks broke
 _MAX_ASPECT_RATIO: float = 8.0 / 3.0  # ~2.667 – wider than ultrawide monitor
 
 
+class _DutyPercentAxisItem(pg.AxisItem):
+    """Y-axis for the duty cycle plot that formats tick labels as XX.XX %."""
+
+    def tickStrings(self, values, scale, spacing):  # noqa: N802
+        return [f"{v:.2f}" for v in values]
+
+
 class PlotCanvas(QtWidgets.QWidget):
     """pyqtgraph-based oscilloscope + FFT widget.
 
@@ -125,6 +132,11 @@ class PlotCanvas(QtWidgets.QWidget):
 
         self._wave_curves: dict[str, pg.PlotDataItem] = {}
         self._fft_curve: Optional[pg.PlotDataItem] = None
+        self._duty_curves: dict[str, Optional[pg.PlotDataItem]] = {
+            "A": None,
+            "B": None,
+            "C": None,
+        }
         self._switch_markers: dict[str, Optional[pg.ScatterPlotItem]] = {
             "A": None,
             "B": None,
@@ -166,10 +178,55 @@ class PlotCanvas(QtWidgets.QWidget):
         self._fft_plot.showGrid(x=True, y=True, alpha=0.3)
         self._fft_plot.addLegend(offset=(10, 10))
 
+        # --- Duty Cycle Envelope plot ---
+        self._duty_plot = pg.PlotWidget(
+            title="Duty Cycle Envelope",
+            axisItems={"left": _DutyPercentAxisItem("left")},
+        )
+        self._duty_plot.setLabel("left", "Duty Cycle (%)")
+        self._duty_plot.setLabel("bottom", "Time", units="s")
+        self._duty_plot.showGrid(x=True, y=True, alpha=0.3)
+        self._duty_plot.addLegend(offset=(10, 10))
+        self._duty_plot.setAccessibleName("Duty cycle envelope plot")
+        self._duty_plot.setAccessibleDescription(
+            "Shows the per-PWM-period duty cycle (0-100 %) for each phase over time. "
+            "The shape of the curve reveals the modulating reference waveform "
+            "(sinusoid, SVM envelope, or DPWM clamped segments)."
+        )
+
+        # Checkbox row so the user can show/hide individual phase curves.
+        self._duty_check: dict[str, QtWidgets.QCheckBox] = {}
+        _duty_filter_row = QtWidgets.QWidget()
+        _duty_filter_layout = QtWidgets.QHBoxLayout(_duty_filter_row)
+        _duty_filter_layout.setContentsMargins(4, 2, 4, 0)
+        _duty_filter_layout.addWidget(QtWidgets.QLabel("Show:"))
+        for _phase in ("A", "B", "C"):
+            _cb = QtWidgets.QCheckBox(f"Phase {_phase}")
+            _cb.setChecked(True)
+            _cb.setAccessibleName(f"Duty cycle Phase {_phase} visible")
+            _cb.setToolTip(f"Show or hide the duty cycle curve for Phase {_phase}")
+            _cb.stateChanged.connect(
+                lambda state, p=_phase: self.set_duty_phase_visible(
+                    p, state == Qt.CheckState.Checked.value
+                )
+            )
+            self._duty_check[_phase] = _cb
+            _duty_filter_layout.addWidget(_cb)
+        _duty_filter_layout.addStretch(1)
+
+        _duty_container = QtWidgets.QWidget()
+        _duty_ctr_layout = QtWidgets.QVBoxLayout(_duty_container)
+        _duty_ctr_layout.setContentsMargins(0, 0, 0, 0)
+        _duty_ctr_layout.setSpacing(0)
+        _duty_ctr_layout.addWidget(_duty_filter_row)
+        _duty_ctr_layout.addWidget(self._duty_plot, stretch=1)
+
         splitter.addWidget(self._wave_plot)
+        splitter.addWidget(_duty_container)
         splitter.addWidget(self._fft_plot)
         splitter.setStretchFactor(0, 3)
         splitter.setStretchFactor(1, 2)
+        splitter.setStretchFactor(2, 2)
         layout.addWidget(splitter)
 
         # Expose a fake .figure attribute so io.export_plot_png gracefully
@@ -316,6 +373,42 @@ class PlotCanvas(QtWidgets.QWidget):
             self._fft_curve.setData(freqs, magnitude)
         self._fft_plot.setXRange(0, float(freqs.max()), padding=0)
         self._fft_plot.setYRange(0, max(1e-3, float(magnitude.max()) * 1.1), padding=0)
+
+    def update_duty_cycle(
+        self,
+        time: np.ndarray,
+        duty: dict[str, np.ndarray],
+    ) -> None:
+        """Update the duty cycle envelope plot.
+
+        Parameters
+        ----------
+        time:
+            Time axis (one point per PWM period, at period mid-points).
+        duty:
+            Mapping from phase label (``"A"``, ``"B"``, ``"C"``) to duty cycle
+            arrays in [0, 1].  Values are converted to percent (× 100) before
+            plotting so the Y axis reads in % with two decimal places.
+        """
+        for phase in ("A", "B", "C"):
+            duty_pct = duty[phase] * 100.0
+            if self._duty_curves[phase] is None:
+                self._duty_curves[phase] = self._duty_plot.plot(
+                    time,
+                    duty_pct,
+                    name=f"Phase {phase}",
+                    pen=self._make_pen(phase),
+                )
+            else:
+                self._duty_curves[phase].setData(time, duty_pct)
+        if time.size > 0:
+            self._duty_plot.setYRange(0.0, 100.0, padding=0.05)
+
+    def set_duty_phase_visible(self, phase: str, visible: bool) -> None:
+        """Show or hide one phase curve in the duty cycle plot."""
+        curve = self._duty_curves.get(phase)
+        if curve is not None:
+            curve.setVisible(visible)
 
     def grab_pixmap(self) -> QtGui.QPixmap:
         """Return a QPixmap screenshot of this widget for export."""
@@ -1341,9 +1434,17 @@ class SvmShaperApp(QtWidgets.QMainWindow):
                 ),
             }
 
-        # Update the static plots (FFT and info) as they do not scroll.
+        # Update the static plots (FFT, duty cycle, and info) as they do not scroll.
         self._plot_canvas.update_fft(
             self._sim_result.fft_freqs, self._sim_result.fft_magnitude
+        )
+        self._plot_canvas.update_duty_cycle(
+            self._sim_result.duty_cycle_time,
+            {
+                "A": self._sim_result.duty_cycle_a,
+                "B": self._sim_result.duty_cycle_b,
+                "C": self._sim_result.duty_cycle_c,
+            },
         )
         self._update_info_text()
 
@@ -1734,6 +1835,7 @@ _SINGLE_INSTANCE_LOCK_FILE = Path(tempfile.gettempdir()) / "svm_analyst.lock"
 # ---------------------------------------------------------------------------
 # Auto-update helpers (Qt workers + orchestrator)
 # ---------------------------------------------------------------------------
+
 
 class _UpdateCheckWorker(QtCore.QThread):
     """Background thread: queries GitHub for a newer release.

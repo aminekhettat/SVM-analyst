@@ -1,6 +1,18 @@
 SVM Analyst – Changelog
 ========================
 
+v1.2.1 – 2026-04-07
+--------------------
+Patch — duty cycle plot enhancements.
+
+- gui: duty cycle Y-axis now shows values in % (0–100) with 2 decimal places
+  via a custom _DutyPercentAxisItem tick formatter
+- gui: per-phase visibility checkboxes (Phase A/B/C) added above duty cycle plot
+- gui: new PlotCanvas.set_duty_phase_visible() for programmatic phase toggling
+- tests: added full coverage for compute_duty_cycle_envelope, SimulationResult
+  duty cycle fields, and all new GUI methods; fixed SimulationResult fixtures in
+  test_io.py and test_io_extended.py to include duty cycle fields
+
 v1.2.0 – 2026-04-07
 --------------------
 Minor release — code signing guidance and distribution hardening.

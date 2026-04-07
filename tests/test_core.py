@@ -261,3 +261,30 @@ def test_current_phase_parameter_changes_dead_time_voltage_distribution() -> Non
     lag = run_simulation(SimulatorConfig(**base, current_phase_deg=-45.0))
 
     assert not np.array_equal(lead.phase_a, lag.phase_a)
+
+
+def test_simulation_result_has_duty_cycle_fields() -> None:
+    """SimulationResult must expose per-PWM-period duty cycle arrays for all 3 phases."""
+    cfg = SimulatorConfig(
+        speed_rpm=1200.0,
+        pwm_frequency_hz=8000.0,
+        motor_pole_pairs=4,
+        num_cycles=2,
+    )
+    res = run_simulation(cfg)
+    assert hasattr(res, "duty_cycle_time")
+    assert hasattr(res, "duty_cycle_a")
+    assert hasattr(res, "duty_cycle_b")
+    assert hasattr(res, "duty_cycle_c")
+    expected_len = res.phase_a.size // cfg.oversample
+    assert len(res.duty_cycle_time) == expected_len
+    assert len(res.duty_cycle_a) == expected_len
+    assert len(res.duty_cycle_b) == expected_len
+    assert len(res.duty_cycle_c) == expected_len
+    # Duty values are fractions — must stay in [0, 1].
+    assert float(np.min(res.duty_cycle_a)) >= 0.0
+    assert float(np.max(res.duty_cycle_a)) <= 1.0
+    assert float(np.min(res.duty_cycle_b)) >= 0.0
+    assert float(np.max(res.duty_cycle_b)) <= 1.0
+    assert float(np.min(res.duty_cycle_c)) >= 0.0
+    assert float(np.max(res.duty_cycle_c)) <= 1.0

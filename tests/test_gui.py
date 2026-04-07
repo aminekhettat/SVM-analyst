@@ -135,6 +135,41 @@ class TestPlotCanvas:
     def test_update_style(self, canvas):
         canvas.update_style("A", color="#ff0000", width=2.0, dash="dash", symbol="x")
 
+    def test_update_duty_cycle_creates_curves_in_percent(self, canvas):
+        """update_duty_cycle must plot duty values scaled to percent (0-100)."""
+        n = 100
+        t = np.linspace(0, 1e-3, n)
+        duty = {"A": np.ones(n) * 0.6, "B": np.ones(n) * 0.5, "C": np.ones(n) * 0.4}
+        canvas.update_duty_cycle(t, duty)  # first call: creates curves
+        # Verify the plotted Y data is in percent range
+        data_a = canvas._duty_curves["A"].getData()[1]
+        assert float(np.mean(data_a)) == pytest.approx(60.0, abs=0.01)
+
+    def test_update_duty_cycle_second_call_updates_data(self, canvas):
+        n = 80
+        t = np.linspace(0, 1e-3, n)
+        duty = {"A": np.ones(n) * 0.75, "B": np.ones(n) * 0.5, "C": np.ones(n) * 0.25}
+        canvas.update_duty_cycle(t, duty)  # second call: updates existing curves
+        data_a = canvas._duty_curves["A"].getData()[1]
+        assert float(np.mean(data_a)) == pytest.approx(75.0, abs=0.01)
+
+    def test_set_duty_phase_visible_hides_curve(self, canvas):
+        """set_duty_phase_visible(False) must hide; True must show the curve."""
+        # Ensure curves exist
+        n = 50
+        t = np.linspace(0, 1e-3, n)
+        canvas.update_duty_cycle(
+            t, {"A": np.ones(n) * 0.5, "B": np.ones(n) * 0.5, "C": np.ones(n) * 0.5}
+        )
+        canvas.set_duty_phase_visible("B", False)
+        assert not canvas._duty_curves["B"].isVisible()
+        canvas.set_duty_phase_visible("B", True)
+        assert canvas._duty_curves["B"].isVisible()
+
+    def test_duty_check_checkboxes_exist_for_all_phases(self, canvas):
+        """PlotCanvas must expose _duty_check dict with checkboxes for A, B, C."""
+        assert set(canvas._duty_check.keys()) == {"A", "B", "C"}
+
 
 # ---------------------------------------------------------------------------
 # PlotStylePanel

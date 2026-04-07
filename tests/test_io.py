@@ -48,6 +48,10 @@ def _make_dummy_sim_result() -> SimulationResult:
         raw_min=0.0,
         raw_max=0.0,
         description_text="test",
+        duty_cycle_time=np.linspace(0, 0.01, 5),
+        duty_cycle_a=np.ones(5) * 0.5,
+        duty_cycle_b=np.ones(5) * 0.5,
+        duty_cycle_c=np.ones(5) * 0.5,
     )
 
 
