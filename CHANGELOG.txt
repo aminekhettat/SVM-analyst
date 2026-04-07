@@ -1,6 +1,29 @@
 SVM Analyst – Changelog
 ========================
 
+v1.1.4 – 2026-04-07
+--------------------
+- Administrative: version number bumped from 1.1.3 to 1.1.4 to obtain a
+  clean GitHub release tag (the v1.1.3 tag was consumed by an immutable
+  auto-release stub and could not be reused). No functional changes.
+
+v1.1.3 – 2026-04-07
+--------------------
+- UI: window now opens maximized on launch for an optimal graph view.
+- UI: graph (PlotCanvas) uses Expanding/Expanding size policy so it fills all
+  available space when the window is maximized or resized.
+- UI: control panel uses QWidget with Maximum vertical policy; groups no
+  longer steal vertical space from the graph on wide/tall windows.
+- UI: info-box height capped at 180 px; minimum window size raised to 1280×720.
+- UI: resizeEvent aspect-ratio guard (4:3 – 8:3) prevents broken portrait or
+  extreme ultrawide layouts when the window is manually resized.
+- UI: single-instance lock – attempting to open a second instance shows a
+  warning dialog and exits immediately (Windows named mutex; POSIX flock).
+- Accessibility: explicit Tab-key order set across all 23 interactive widgets;
+  initial keyboard focus lands on the Author field when the window opens.
+- Tooling: added .github/agents/check-ci.agent.md VS Code agent.
+- Tests: 33 GUI tests (up from 24), 48 accessibility tests; full suite 212 tests.
+
 v1.1.2 – 2026-04-07
 --------------------
 - Fix: scipy was excluded from the PyInstaller bundle, causing the EXE to crash

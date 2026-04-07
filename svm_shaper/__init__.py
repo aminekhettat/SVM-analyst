@@ -8,7 +8,7 @@ Date: 2026-03-09
 License: See LICENSE
 """
 
-__version__ = "1.1.3"
+__version__ = "1.1.4"
 
 from .core import SimulatorConfig, run_simulation
 
