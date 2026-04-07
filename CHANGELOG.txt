@@ -1,6 +1,15 @@
 SVM Analyst – Changelog
 ========================
 
+v1.2.0 – 2026-04-07
+--------------------
+Minor release — code signing guidance and distribution hardening.
+
+- docs: documented Windows code-signing options for the distributed EXE;
+  recommended SignPath Foundation (free for open-source) as the path to a
+  SmartScreen-trusted binary without hardware cost.
+- chore: minor version bump; no functional changes to application code.
+
 v1.1.5 – 2026-04-07
 --------------------
 - feat: auto-update on launch — at startup the application silently queries
