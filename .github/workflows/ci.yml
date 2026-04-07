@@ -21,6 +21,10 @@ jobs:
       MPLBACKEND: Agg
       PYQTGRAPH_QT_LIB: PySide6
 
+    defaults:
+      run:
+        shell: bash
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
