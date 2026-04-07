@@ -434,17 +434,30 @@ class PlotCanvas(QtWidgets.QWidget):
             horizontal reference lines are drawn at the effective D_min and
             D_max boundaries.
         """
+        # Build period-edge x-array (N+1 edges from N period mid-points) so that
+        # stepMode=True draws a proper zero-order hold staircase: each duty cycle
+        # value is held constant from the start to the end of its PWM period.
+        if time.size > 1:
+            dt = time[1] - time[0]
+        elif time.size == 1:
+            dt = 1.0
+        else:
+            dt = 1.0
+        step_edges = np.empty(time.size + 1)
+        step_edges[:-1] = time - dt / 2.0
+        step_edges[-1] = time[-1] + dt / 2.0
         for phase in ("A", "B", "C"):
             duty_pct = duty[phase] * 100.0
             if self._duty_curves[phase] is None:
                 self._duty_curves[phase] = self._duty_plot.plot(
-                    time,
+                    step_edges,
                     duty_pct,
                     name=f"Phase {phase}",
                     pen=self._make_pen(phase),
+                    stepMode=True,
                 )
             else:
-                self._duty_curves[phase].setData(time, duty_pct)
+                self._duty_curves[phase].setData(step_edges, duty_pct)
         if time.size > 0:
             self._duty_plot.setYRange(0.0, 100.0, padding=0.05)
 

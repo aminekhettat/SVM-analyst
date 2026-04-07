@@ -147,6 +147,17 @@ class TestPlotCanvas:
         data_a = canvas._duty_curves["A"].getData()[1]
         assert float(np.mean(data_a)) == pytest.approx(60.0, abs=0.01)
 
+    def test_update_duty_cycle_staircase_edges(self, canvas):
+        """Duty cycle curves must use stepMode=True with N+1 x-edges for N periods."""
+        n = 40
+        t = np.linspace(0, 1e-3, n)
+        duty = {"A": np.ones(n) * 0.5, "B": np.ones(n) * 0.5, "C": np.ones(n) * 0.5}
+        canvas.update_duty_cycle(t, duty)
+        curve_a = canvas._duty_curves["A"]
+        x_data, y_data = curve_a.getData()
+        # stepMode=True: x must have one more point than y (bin edges)
+        assert len(x_data) == len(y_data) + 1
+
     def test_update_duty_cycle_second_call_updates_data(self, canvas):
         n = 80
         t = np.linspace(0, 1e-3, n)
