@@ -28,9 +28,10 @@ from typing import Callable, Optional, Tuple
 
 from svm_shaper import __version__
 
-_GITHUB_API = (
-    "https://api.github.com/repos/aminekhettat/SVM-analyst/releases/latest"
-)
+# CREATE_NO_WINDOW is only available on Windows; fall back to 0 elsewhere.
+_CREATE_NO_WINDOW: int = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+
+_GITHUB_API = "https://api.github.com/repos/aminekhettat/SVM-analyst/releases/latest"
 _EXE_ASSET = "svm-analyst.exe"
 _USER_AGENT = "svm-analyst-updater"
 
@@ -38,6 +39,7 @@ _USER_AGENT = "svm-analyst-updater"
 # ---------------------------------------------------------------------------
 # Version helpers
 # ---------------------------------------------------------------------------
+
 
 def _parse_version(v: str) -> tuple:
     """Convert *v* (``'v1.2.3'`` or ``'1.2.3'``) to a comparable tuple.
@@ -53,6 +55,7 @@ def _parse_version(v: str) -> tuple:
 # ---------------------------------------------------------------------------
 # Network helpers
 # ---------------------------------------------------------------------------
+
 
 def fetch_latest_release(timeout: int = 8) -> Optional[Tuple[str, str]]:
     """Query the GitHub releases API for the latest release.
@@ -101,6 +104,7 @@ def is_update_available() -> Optional[Tuple[str, str]]:
 # Download
 # ---------------------------------------------------------------------------
 
+
 def download_update(
     url: str,
     dest_path: str,
@@ -136,6 +140,7 @@ def download_update(
 # ---------------------------------------------------------------------------
 # Apply (Windows EXE swap)
 # ---------------------------------------------------------------------------
+
 
 def apply_update(new_exe_path: str) -> None:
     """Replace the running EXE with *new_exe_path* and relaunch.
@@ -181,6 +186,6 @@ def apply_update(new_exe_path: str) -> None:
 
     subprocess.Popen(
         ["cmd.exe", "/C", bat_path],
-        creationflags=subprocess.CREATE_NO_WINDOW,
+        creationflags=_CREATE_NO_WINDOW,
         close_fds=True,
     )

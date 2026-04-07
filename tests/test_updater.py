@@ -35,6 +35,7 @@ from svm_shaper.updater import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_http_response(payload: bytes, content_length: int | None = None):
     """Return a mock context-manager that mimics urllib.request.urlopen."""
     resp = MagicMock()
@@ -57,8 +58,8 @@ def _github_payload(tag: str, assets: list[dict]) -> bytes:
 # _parse_version
 # ---------------------------------------------------------------------------
 
-class TestParseVersion(unittest.TestCase):
 
+class TestParseVersion(unittest.TestCase):
     def test_simple_triplet(self):
         self.assertEqual(_parse_version("1.2.3"), (1, 2, 3))
 
@@ -91,8 +92,8 @@ class TestParseVersion(unittest.TestCase):
 # fetch_latest_release
 # ---------------------------------------------------------------------------
 
-class TestFetchLatestRelease(unittest.TestCase):
 
+class TestFetchLatestRelease(unittest.TestCase):
     def test_returns_tag_and_exe_url(self):
         assets = [
             {"name": _EXE_ASSET, "browser_download_url": "https://cdn/svm-analyst.exe"},
@@ -104,7 +105,10 @@ class TestFetchLatestRelease(unittest.TestCase):
 
     def test_returns_none_when_exe_asset_absent(self):
         assets = [
-            {"name": "SVM-Analyst-9.9.9.zip", "browser_download_url": "https://cdn/zip"},
+            {
+                "name": "SVM-Analyst-9.9.9.zip",
+                "browser_download_url": "https://cdn/zip",
+            },
         ]
         payload = _github_payload("v9.9.9", assets)
         with patch("urllib.request.urlopen", return_value=_make_http_response(payload)):
@@ -112,7 +116,9 @@ class TestFetchLatestRelease(unittest.TestCase):
         self.assertIsNone(result)
 
     def test_returns_none_on_url_error(self):
-        with patch("urllib.request.urlopen", side_effect=urllib.error.URLError("timeout")):
+        with patch(
+            "urllib.request.urlopen", side_effect=urllib.error.URLError("timeout")
+        ):
             result = fetch_latest_release()
         self.assertIsNone(result)
 
@@ -133,7 +139,9 @@ class TestFetchLatestRelease(unittest.TestCase):
     def test_uses_correct_api_url(self):
         assets = [{"name": _EXE_ASSET, "browser_download_url": "https://cdn/svm.exe"}]
         payload = _github_payload("v1.0.0", assets)
-        with patch("urllib.request.urlopen", return_value=_make_http_response(payload)) as mock_open:
+        with patch(
+            "urllib.request.urlopen", return_value=_make_http_response(payload)
+        ) as mock_open:
             fetch_latest_release()
         req = mock_open.call_args[0][0]
         self.assertEqual(req.full_url, _GITHUB_API)
@@ -141,7 +149,9 @@ class TestFetchLatestRelease(unittest.TestCase):
     def test_sends_accept_header(self):
         assets = [{"name": _EXE_ASSET, "browser_download_url": "https://cdn/svm.exe"}]
         payload = _github_payload("v1.0.0", assets)
-        with patch("urllib.request.urlopen", return_value=_make_http_response(payload)) as mock_open:
+        with patch(
+            "urllib.request.urlopen", return_value=_make_http_response(payload)
+        ) as mock_open:
             fetch_latest_release()
         req = mock_open.call_args[0][0]
         self.assertIn("application/vnd.github", req.headers.get("Accept", ""))
@@ -151,11 +161,13 @@ class TestFetchLatestRelease(unittest.TestCase):
 # is_update_available
 # ---------------------------------------------------------------------------
 
-class TestIsUpdateAvailable(unittest.TestCase):
 
+class TestIsUpdateAvailable(unittest.TestCase):
     def test_newer_tag_returns_tuple(self):
-        with patch("svm_shaper.updater.fetch_latest_release",
-                   return_value=("v99.0.0", "https://cdn/svm.exe")):
+        with patch(
+            "svm_shaper.updater.fetch_latest_release",
+            return_value=("v99.0.0", "https://cdn/svm.exe"),
+        ):
             result = is_update_available()
         self.assertIsNotNone(result)
         self.assertEqual(result[0], "v99.0.0")
@@ -164,14 +176,18 @@ class TestIsUpdateAvailable(unittest.TestCase):
     def test_same_version_returns_none(self):
         from svm_shaper import __version__
 
-        with patch("svm_shaper.updater.fetch_latest_release",
-                   return_value=(f"v{__version__}", "https://cdn/svm.exe")):
+        with patch(
+            "svm_shaper.updater.fetch_latest_release",
+            return_value=(f"v{__version__}", "https://cdn/svm.exe"),
+        ):
             result = is_update_available()
         self.assertIsNone(result)
 
     def test_older_tag_returns_none(self):
-        with patch("svm_shaper.updater.fetch_latest_release",
-                   return_value=("v0.0.1", "https://cdn/svm.exe")):
+        with patch(
+            "svm_shaper.updater.fetch_latest_release",
+            return_value=("v0.0.1", "https://cdn/svm.exe"),
+        ):
             result = is_update_available()
         self.assertIsNone(result)
 
@@ -185,8 +201,8 @@ class TestIsUpdateAvailable(unittest.TestCase):
 # download_update
 # ---------------------------------------------------------------------------
 
-class TestDownloadUpdate(unittest.TestCase):
 
+class TestDownloadUpdate(unittest.TestCase):
     def test_file_content_matches_response(self):
         content = b"fake exe binary data"
         with patch("urllib.request.urlopen", return_value=_make_http_response(content)):
@@ -203,8 +219,10 @@ class TestDownloadUpdate(unittest.TestCase):
         content = b"x" * 200_000
         calls: list[tuple[int, int]] = []
 
-        with patch("urllib.request.urlopen",
-                   return_value=_make_http_response(content, len(content))):
+        with patch(
+            "urllib.request.urlopen",
+            return_value=_make_http_response(content, len(content)),
+        ):
             fd, path = tempfile.mkstemp(suffix=".exe")
             os.close(fd)
             try:
@@ -225,8 +243,9 @@ class TestDownloadUpdate(unittest.TestCase):
         content = b"data"
         calls: list[tuple[int, int]] = []
 
-        with patch("urllib.request.urlopen",
-                   return_value=_make_http_response(content)):  # no content_length arg
+        with patch(
+            "urllib.request.urlopen", return_value=_make_http_response(content)
+        ):  # no content_length arg
             fd, path = tempfile.mkstemp(suffix=".exe")
             os.close(fd)
             try:
@@ -255,8 +274,8 @@ class TestDownloadUpdate(unittest.TestCase):
 # apply_update
 # ---------------------------------------------------------------------------
 
-class TestApplyUpdate(unittest.TestCase):
 
+class TestApplyUpdate(unittest.TestCase):
     def test_raises_when_not_frozen(self):
         """apply_update must raise when sys.frozen is absent / False."""
         with patch.object(sys, "frozen", False, create=True):
@@ -319,7 +338,9 @@ class TestApplyUpdate(unittest.TestCase):
             fd, new_exe = tempfile.mkstemp(suffix=".exe")
             os.close(fd)
             args_captured: list = []
-            with patch("subprocess.Popen", side_effect=lambda a, **kw: args_captured.append(a)):
+            with patch(
+                "subprocess.Popen", side_effect=lambda a, **kw: args_captured.append(a)
+            ):
                 try:
                     apply_update(new_exe)
                 finally:
@@ -332,6 +353,7 @@ class TestApplyUpdate(unittest.TestCase):
             self.assertIn(r"C:\MyApp\svm-analyst.exe", content)
             os.unlink(bat_path)
 
+    @unittest.skipUnless(sys.platform == "win32", "CREATE_NO_WINDOW only exists on Windows")
     def test_popen_uses_create_no_window_flag(self):
         with (
             patch.object(sys, "frozen", True, create=True),
@@ -348,9 +370,7 @@ class TestApplyUpdate(unittest.TestCase):
                     os.unlink(new_exe)
 
             kwargs = mock_popen.call_args[1]
-            self.assertEqual(
-                kwargs.get("creationflags"), subprocess.CREATE_NO_WINDOW
-            )
+            self.assertEqual(kwargs.get("creationflags"), subprocess.CREATE_NO_WINDOW)
 
             # clean up bat
             bat_path = mock_popen.call_args[0][0][2]
