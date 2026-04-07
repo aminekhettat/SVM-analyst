@@ -1731,6 +1731,182 @@ _SINGLE_INSTANCE_MUTEX_NAME = "Global\\SvmAnalyst_SingleInstanceMutex"
 _SINGLE_INSTANCE_LOCK_FILE = Path(tempfile.gettempdir()) / "svm_analyst.lock"
 
 
+# ---------------------------------------------------------------------------
+# Auto-update helpers (Qt workers + orchestrator)
+# ---------------------------------------------------------------------------
+
+class _UpdateCheckWorker(QtCore.QThread):
+    """Background thread: queries GitHub for a newer release.
+
+    Signals
+    -------
+    update_found(str, str)
+        Emitted when a newer version exists; carries (tag_name, download_url).
+    no_update()
+        Emitted when the running version is already up to date or the network
+        is unavailable.
+    """
+
+    update_found = Signal(str, str)
+    no_update = Signal()
+
+    def run(self) -> None:
+        from .updater import is_update_available
+
+        result = is_update_available()
+        if result is not None:
+            self.update_found.emit(result[0], result[1])
+        else:
+            self.no_update.emit()
+
+
+class _DownloadWorker(QtCore.QThread):
+    """Background thread: streams the new EXE to a temporary file.
+
+    Parameters
+    ----------
+    url:
+        Direct download URL for the new ``svm-analyst.exe``.
+
+    Signals
+    -------
+    progress(int, int)
+        Emitted periodically as ``(bytes_received, total_bytes)``.
+        *total_bytes* is ``0`` when the server omits ``Content-Length``.
+    finished(str)
+        Emitted with the local path of the fully downloaded file.
+    error(str)
+        Emitted when the download fails; carries an error message.
+    """
+
+    progress = Signal(int, int)
+    finished = Signal(str)
+    error = Signal(str)
+
+    def __init__(self, url: str, parent=None) -> None:
+        super().__init__(parent)
+        self._url = url
+        self._dest: Optional[str] = None
+
+    def run(self) -> None:
+        from .updater import download_update
+
+        try:
+            fd, dest = tempfile.mkstemp(suffix=".exe", prefix="svm_update_")
+            os.close(fd)
+            self._dest = dest
+            download_update(self._url, dest, progress_callback=self.progress.emit)
+            self.finished.emit(dest)
+        except Exception as exc:
+            if self._dest and os.path.exists(self._dest):
+                try:
+                    os.unlink(self._dest)
+                except OSError:
+                    pass
+            self.error.emit(str(exc))
+
+
+def _run_update_check(parent: QtWidgets.QWidget) -> None:
+    """Silently check for updates then, if one is found, prompt the user.
+
+    Runs the network request in a background :class:`_UpdateCheckWorker` so
+    startup is never blocked.  If the user confirms the update, a progress
+    dialog is shown while the EXE downloads, then ``apply_update`` is called
+    and the application exits so the replacement script can take over.
+    """
+
+    worker = _UpdateCheckWorker(parent)
+
+    def _on_update_found(tag: str, url: str) -> None:
+        reply = QtWidgets.QMessageBox.question(
+            parent,
+            "Update available – SVM Analyst",
+            f"A new version is available: <b>{tag}</b><br><br>"
+            f"You are currently running <b>v{__version__}</b>.<br><br>"
+            "Would you like to download and install the update now?",
+            QtWidgets.QMessageBox.StandardButton.Yes
+            | QtWidgets.QMessageBox.StandardButton.No,
+            QtWidgets.QMessageBox.StandardButton.Yes,
+        )
+        if reply != QtWidgets.QMessageBox.StandardButton.Yes:
+            return
+
+        _start_download(url)
+
+    def _start_download(url: str) -> None:
+        progress_dlg = QtWidgets.QProgressDialog(
+            "Downloading update…",
+            "Cancel",
+            0,
+            100,
+            parent,
+        )
+        progress_dlg.setWindowTitle("SVM Analyst – Updating")
+        progress_dlg.setWindowModality(Qt.WindowModality.WindowModal)
+        progress_dlg.setMinimumDuration(0)
+        progress_dlg.setValue(0)
+
+        dl_worker = _DownloadWorker(url, parent)
+
+        def _on_progress(received: int, total: int) -> None:
+            if total > 0:
+                progress_dlg.setValue(int(received * 100 / total))
+            else:
+                # Unknown total – pulse the bar
+                progress_dlg.setMaximum(0)
+
+        def _on_finished(dest_path: str) -> None:
+            progress_dlg.close()
+            if not getattr(__import__("sys"), "frozen", False):
+                QtWidgets.QMessageBox.information(
+                    parent,
+                    "Update downloaded",
+                    f"Update downloaded to:\n{dest_path}\n\n"
+                    "(Running from source – automatic replacement skipped.)",
+                )
+                return
+
+            from .updater import apply_update
+
+            try:
+                apply_update(dest_path)
+            except Exception as exc:
+                QtWidgets.QMessageBox.critical(
+                    parent,
+                    "Update failed",
+                    f"Could not apply the update:\n{exc}",
+                )
+                return
+
+            QtWidgets.QMessageBox.information(
+                parent,
+                "Restarting",
+                "The update will be applied after the application closes.\n"
+                "SVM Analyst will restart automatically.",
+            )
+            QtWidgets.QApplication.instance().quit()
+
+        def _on_error(msg: str) -> None:
+            progress_dlg.close()
+            QtWidgets.QMessageBox.critical(
+                parent,
+                "Download failed",
+                f"Could not download the update:\n{msg}",
+            )
+
+        def _on_cancelled() -> None:
+            dl_worker.terminate()
+
+        dl_worker.progress.connect(_on_progress)
+        dl_worker.finished.connect(_on_finished)
+        dl_worker.error.connect(_on_error)
+        progress_dlg.canceled.connect(_on_cancelled)
+        dl_worker.start()
+
+    worker.update_found.connect(_on_update_found)
+    worker.start()
+
+
 def _acquire_single_instance_lock():
     """Acquire a process-wide lock so only one instance can run.
 
@@ -1802,6 +1978,9 @@ def main(argv=None) -> int:
         app.setApplicationName("SVM Analyst")
         window = SvmShaperApp()
         window.showMaximized()
+        # Trigger update check 3 s after launch so startup responsiveness is
+        # not affected.  The worker runs in a background thread.
+        QtCore.QTimer.singleShot(3000, lambda: _run_update_check(window))
         return app.exec()
     finally:
         _release_single_instance_lock(lock)

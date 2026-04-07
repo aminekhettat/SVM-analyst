@@ -1,6 +1,18 @@
 SVM Analyst – Changelog
 ========================
 
+v1.1.5 – 2026-04-07
+--------------------
+- feat: auto-update on launch — at startup the application silently queries
+  the GitHub Releases API; if a newer version is found the user is prompted
+  and, upon confirmation, the update is downloaded in the background with a
+  progress dialog, the replacement batch script is written, and the app
+  exits so the new EXE is swapped in automatically.
+- Added svm_shaper/updater.py (pure-Python, no Qt dependency) with helpers:
+  _parse_version, fetch_latest_release, is_update_available, download_update,
+  apply_update.
+- Added tests/test_updater.py with 29 unit tests covering all updater paths.
+
 v1.1.4 – 2026-04-07
 --------------------
 - Administrative: version number bumped from 1.1.3 to 1.1.4 to obtain a
