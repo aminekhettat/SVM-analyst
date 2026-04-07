@@ -1,0 +1,79 @@
+name: Bug Report
+description: Report a bug or unexpected behaviour in SVM Analyst
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug. Please fill in as much detail as possible so we can reproduce and fix it quickly.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is.
+      placeholder: "When I do X, Y happens instead of Z."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Step-by-step instructions to reproduce the behaviour.
+      placeholder: |
+        1. Launch the application
+        2. Select modulation method "SVM"
+        3. Set PWM frequency to 5000 Hz
+        4. Click "Run" — see error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: What you expected to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: What actually happened. Include any error messages or tracebacks.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: SVM Analyst version
+      description: Found in the window title or CHANGELOG.txt (e.g. v1.1.2).
+      placeholder: "v1.1.2"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows 11
+        - Windows 10
+        - Other (describe in additional context)
+    validations:
+      required: true
+
+  - type: input
+    id: python
+    attributes:
+      label: Python version (if running from source)
+      placeholder: "3.12.2  (or N/A if using the EXE)"
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Screenshots, log files, config JSON, or any other relevant information.

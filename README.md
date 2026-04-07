@@ -1,5 +1,10 @@
 # SVM Analyst
 
+[![CI](https://github.com/aminekhettat/SVM-analyst/actions/workflows/ci.yml/badge.svg)](https://github.com/aminekhettat/SVM-analyst/actions/workflows/ci.yml)
+[![Latest Release](https://img.shields.io/github/v/release/aminekhettat/SVM-analyst)](https://github.com/aminekhettat/SVM-analyst/releases/latest)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/github/license/aminekhettat/SVM-analyst)](LICENSE)
+
 Educational simulator for PWM and space-vector modulations focused on PMSM drives.
 
 ## Features
