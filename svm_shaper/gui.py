@@ -24,6 +24,7 @@ License: See LICENSE
 
 from __future__ import annotations
 
+import ctypes
 import os
 import sys
 import tempfile
@@ -84,6 +85,11 @@ _PHASE_DEFAULTS = {
     "C": {"color": "#2ca02c", "width": 1.5, "dash": "Solid", "symbol": "None"},
 }
 
+# Minimum and maximum width-to-height ratios enforced when the window is not maximized.
+# Prevents the user from resizing to a portrait-like or ultrawide extreme.
+_MIN_ASPECT_RATIO: float = 4.0 / 3.0  # ~1.333 – narrower than 4:3 looks broken
+_MAX_ASPECT_RATIO: float = 8.0 / 3.0  # ~2.667 – wider than ultrawide monitor
+
 
 class PlotCanvas(QtWidgets.QWidget):
     """pyqtgraph-based oscilloscope + FFT widget.
@@ -101,6 +107,10 @@ class PlotCanvas(QtWidgets.QWidget):
     def __init__(self, parent: Optional[QtWidgets.QWidget] = None):
         """Initialise the waveform and FFT plots with default phase styles."""
         super().__init__(parent)
+        self.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+        )
         self.setAccessibleName("Oscilloscope and FFT display")
         self.setAccessibleDescription(
             "Dual-panel plot: upper panel shows the three-phase PWM waveforms with "
@@ -699,6 +709,8 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         self._worker_thread: Optional[QtCore.QThread] = None
         self._worker: Optional[SimulationWorker] = None
 
+        self._constraining_size: bool = False
+
         self._build_ui()
         self._apply_config_to_ui(self._config)
         self._start_simulation_loop()
@@ -708,6 +720,8 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         """Build the main window layout: control panel, plots, style panel, info box."""
         central = QtWidgets.QWidget()
         self.setCentralWidget(central)
+
+        self.setMinimumSize(1280, 720)
 
         main_layout = QtWidgets.QVBoxLayout(central)
 
@@ -720,6 +734,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
 
         self._info_box = QPlainTextEdit(readOnly=True)
         self._info_box.setMinimumHeight(120)
+        self._info_box.setMaximumHeight(180)
         self._info_box.setAccessibleName("Explanation text")
         self._info_box.setAccessibleDescription(
             "Displays a textual summary of the current modulation settings, THD, and harmonics. "
@@ -744,13 +759,88 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         plot_row.addWidget(self._plot_canvas, stretch=1)
         plot_row.addWidget(self._plot_style_panel, stretch=0)
 
-        main_layout.addLayout(self._control_panel)
+        main_layout.addWidget(self._control_panel, stretch=0)
         main_layout.addLayout(plot_row, stretch=1)
 
         info_row = QtWidgets.QHBoxLayout()
         info_row.addWidget(self._info_box, stretch=1)
         info_row.addWidget(self._copy_explanation_button, stretch=0)
         main_layout.addLayout(info_row)
+
+        self._setup_focus_and_tab_order()
+
+    def _setup_focus_and_tab_order(self) -> None:
+        """Establish an explicit Tab-key order and record it for testing.
+
+        The sequence starts at the first field in the System Parameters panel
+        so that screen readers land in the right place as soon as the window
+        opens.  Every interactive widget is added in the logical reading order
+        (left panel top-to-bottom, then modulation list, display options,
+        oscilloscope controls, and finally the Copy explanation button).
+        """
+        self._tab_sequence = [
+            # -- System parameters (left panel, top → bottom) --
+            self._author_name_edit,
+            self._project_name_edit,
+            self._pole_pairs_spin,
+            self._pwm_freq_spin,
+            self._battery_voltage_spin,
+            self._amplitude_spin,
+            self._speed_spin,
+            self._filter_cutoff_spin,
+            self._injection_spin,
+            self._alignment_choice,
+            self._dead_time_spin,
+            self._diode_vf_spin,
+            self._current_phase_spin,
+            # -- Modulation selection --
+            self._modulation_list,
+            # -- Display options --
+            self._voltage_choice,
+            self._filter_checkbox,
+            self._edges_checkbox,
+            self._run_button,
+            # -- Oscilloscope controls --
+            self._pause_button,
+            self._step_button,
+            self._reset_zoom_button,
+            self._export_csv_button,
+            self._export_png_button,
+            # -- Explanation / copy --
+            self._copy_explanation_button,
+        ]
+
+        for first, second in zip(self._tab_sequence, self._tab_sequence[1:]):
+            QtWidgets.QWidget.setTabOrder(first, second)
+
+    def showEvent(self, event: QtGui.QShowEvent) -> None:
+        """Set initial keyboard focus to the first System Parameters input."""
+        super().showEvent(event)
+        self._author_name_edit.setFocus(Qt.FocusReason.OtherFocusReason)
+
+    def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
+        """Constrain window aspect ratio when manually resized.
+
+        Prevents the window from becoming a portrait-like slit or an
+        extreme ultrawide strip that would ruin the graph layout.
+        Skipped whenever the window is maximized or full-screen.
+        """
+        super().resizeEvent(event)
+        if self._constraining_size or self.isMaximized() or self.isFullScreen():
+            return
+        w = self.width()
+        h = self.height()
+        if h <= 0:
+            return
+        ratio = w / h
+        if ratio > _MAX_ASPECT_RATIO:
+            self._constraining_size = True
+            self.resize(w, max(int(w / _MAX_ASPECT_RATIO), self.minimumHeight()))
+            self._constraining_size = False
+        elif ratio < _MIN_ASPECT_RATIO:
+            self._constraining_size = True
+            self.resize(max(int(h * _MIN_ASPECT_RATIO), self.minimumWidth()), h)
+            self._constraining_size = False
 
     def _build_menu(self) -> None:
         """Build the application menu bar with File, View, Tools, and Help menus."""
@@ -802,9 +892,14 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         about_action.triggered.connect(self._show_about)
         help_menu.addAction(about_action)
 
-    def _create_control_panel(self) -> QtWidgets.QHBoxLayout:
+    def _create_control_panel(self) -> QtWidgets.QWidget:
         """Create the horizontal control strip with four groups: system params, modulation, display, oscilloscope."""
-        layout = QtWidgets.QHBoxLayout()
+        cp_widget = QtWidgets.QWidget()
+        cp_widget.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Maximum,
+        )
+        layout = QtWidgets.QHBoxLayout(cp_widget)
 
         def _lock_numeric_entry(widget: QtWidgets.QAbstractSpinBox) -> None:
             # Keep arrow-button interaction but prevent free text entry.
@@ -1078,12 +1173,19 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         osc_layout.addWidget(self._export_csv_button)
         osc_layout.addWidget(self._export_png_button)
 
+        for grp in (param_group, modulation_group, display_group, osc_group):
+            grp.setSizePolicy(
+                QtWidgets.QSizePolicy.Policy.Preferred,
+                QtWidgets.QSizePolicy.Policy.Maximum,
+            )
+
         layout.addWidget(param_group, stretch=0)
         layout.addWidget(modulation_group, stretch=0)
         layout.addWidget(display_group, stretch=0)
         layout.addWidget(osc_group, stretch=0)
+        layout.addStretch(1)
 
-        return layout
+        return cp_widget
 
     def _apply_config_to_ui(self, config: SimulatorConfig) -> None:
         """Populate all widget values from the given configuration object."""
@@ -1622,20 +1724,87 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         super().closeEvent(event)
 
 
+#: Name used for the Windows named mutex that prevents duplicate instances.
+_SINGLE_INSTANCE_MUTEX_NAME = "Global\\SvmAnalyst_SingleInstanceMutex"
+
+#: Fallback lock-file path used on non-Windows platforms.
+_SINGLE_INSTANCE_LOCK_FILE = Path(tempfile.gettempdir()) / "svm_analyst.lock"
+
+
+def _acquire_single_instance_lock():
+    """Acquire a process-wide lock so only one instance can run.
+
+    On Windows a named kernel mutex is created.  On other platforms a lock
+    file is used instead.  Returns the lock handle/file-object on success,
+    or ``None`` if another instance is already holding the lock.
+    """
+    if sys.platform == "win32":
+        kernel32 = ctypes.windll.kernel32  # type: ignore[attr-defined]
+        handle = kernel32.CreateMutexW(None, True, _SINGLE_INSTANCE_MUTEX_NAME)
+        # ERROR_ALREADY_EXISTS == 183
+        if handle and kernel32.GetLastError() != 183:
+            return handle
+        if handle:
+            kernel32.CloseHandle(handle)
+        return None
+    else:
+        import fcntl  # available on Linux / macOS
+
+        try:
+            lock_fh = open(_SINGLE_INSTANCE_LOCK_FILE, "w")  # noqa: WPS515
+            fcntl.flock(lock_fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            return lock_fh
+        except OSError:
+            return None
+
+
+def _release_single_instance_lock(handle) -> None:
+    """Release the lock previously acquired by :func:`_acquire_single_instance_lock`."""
+    if handle is None:
+        return
+    if sys.platform == "win32":
+        ctypes.windll.kernel32.ReleaseMutex(handle)  # type: ignore[attr-defined]
+        ctypes.windll.kernel32.CloseHandle(handle)  # type: ignore[attr-defined]
+    else:
+        import fcntl
+
+        try:
+            fcntl.flock(handle, fcntl.LOCK_UN)
+            handle.close()
+        except OSError:
+            pass
+
+
 def main(argv=None) -> int:
     """Launch the SVM Analyst application."""
 
-    # Configure pyqtgraph appearance before creating any widget.
-    pg.setConfigOption("background", "w")
-    pg.setConfigOption("foreground", "k")
-    pg.setConfigOption("antialias", True)
+    lock = _acquire_single_instance_lock()
+    if lock is None:
+        # Another instance is running — show a minimal Qt message box and exit.
+        _app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(
+            argv or sys.argv
+        )
+        QtWidgets.QMessageBox.warning(
+            None,
+            "SVM Analyst – already running",
+            "An instance of SVM Analyst is already open.\n"
+            "Please use the existing window.",
+        )
+        return 1
 
-    app = QtWidgets.QApplication(argv or sys.argv)
-    app.setApplicationName("SVM Analyst")
-    window = SvmShaperApp()
-    window.resize(1200, 800)
-    window.show()
-    return app.exec()
+    try:
+        # Configure pyqtgraph appearance before creating any widget.
+        pg.setConfigOption("background", "w")
+        pg.setConfigOption("foreground", "k")
+        pg.setConfigOption("antialias", True)
+
+        app = QtWidgets.QApplication(argv or sys.argv)
+        app.setApplicationName("SVM Analyst")
+        window = SvmShaperApp()
+        window.showMaximized()
+        return app.exec()
+    finally:
+        _release_single_instance_lock(lock)
 
 
 if __name__ == "__main__":

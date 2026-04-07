@@ -233,3 +233,91 @@ class TestSvmHexagonDialogAccessibility:
 
     def test_dialog_has_accessible_description(self, dialog):
         assert dialog.accessibleDescription()
+
+
+# ---------------------------------------------------------------------------
+# Tab order and initial focus
+# ---------------------------------------------------------------------------
+
+
+class TestTabOrderAndInitialFocus:
+    """Verify that _tab_sequence is correctly defined and that the window
+    gives initial focus to the first System Parameters widget on show."""
+
+    def test_tab_sequence_exists(self, app_window):
+        assert hasattr(app_window, "_tab_sequence")
+        assert len(app_window._tab_sequence) > 0
+
+    def test_first_widget_is_author_field(self, app_window):
+        assert app_window._tab_sequence[0] is app_window._author_name_edit
+
+    def test_all_param_widgets_in_sequence(self, app_window):
+        seq = app_window._tab_sequence
+        for widget in (
+            app_window._author_name_edit,
+            app_window._project_name_edit,
+            app_window._pole_pairs_spin,
+            app_window._pwm_freq_spin,
+            app_window._battery_voltage_spin,
+            app_window._amplitude_spin,
+            app_window._speed_spin,
+            app_window._filter_cutoff_spin,
+            app_window._injection_spin,
+            app_window._alignment_choice,
+            app_window._dead_time_spin,
+            app_window._diode_vf_spin,
+            app_window._current_phase_spin,
+        ):
+            assert widget in seq
+
+    def test_modulation_list_after_param_group(self, app_window):
+        seq = app_window._tab_sequence
+        modulation_idx = seq.index(app_window._modulation_list)
+        for widget in (
+            app_window._author_name_edit,
+            app_window._project_name_edit,
+            app_window._pole_pairs_spin,
+            app_window._pwm_freq_spin,
+            app_window._battery_voltage_spin,
+            app_window._amplitude_spin,
+            app_window._speed_spin,
+            app_window._filter_cutoff_spin,
+            app_window._injection_spin,
+            app_window._alignment_choice,
+            app_window._dead_time_spin,
+            app_window._diode_vf_spin,
+            app_window._current_phase_spin,
+        ):
+            assert seq.index(widget) < modulation_idx
+
+    def test_display_group_after_modulation_list(self, app_window):
+        seq = app_window._tab_sequence
+        modulation_idx = seq.index(app_window._modulation_list)
+        for widget in (
+            app_window._voltage_choice,
+            app_window._filter_checkbox,
+            app_window._edges_checkbox,
+            app_window._run_button,
+        ):
+            assert seq.index(widget) > modulation_idx
+
+    def test_osc_controls_after_display_group(self, app_window):
+        seq = app_window._tab_sequence
+        run_idx = seq.index(app_window._run_button)
+        for widget in (
+            app_window._pause_button,
+            app_window._step_button,
+            app_window._reset_zoom_button,
+            app_window._export_csv_button,
+            app_window._export_png_button,
+        ):
+            assert seq.index(widget) > run_idx
+
+    def test_copy_button_last_in_sequence(self, app_window):
+        assert app_window._tab_sequence[-1] is app_window._copy_explanation_button
+
+    def test_initial_focus_on_author_field_after_show(self, app_window, qapp):
+        """After show(), focus must land on the first System Parameters widget."""
+        app_window.show()
+        qapp.processEvents()
+        assert app_window.focusWidget() is app_window._author_name_edit

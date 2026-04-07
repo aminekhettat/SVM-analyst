@@ -10,6 +10,9 @@ Atomic features covered:
 - SvmHexagonDialog instantiation and _refresh
 - SimulationWorker.run emits finished signal
 - SvmShaperApp.closeEvent cleans up worker thread
+- Single-instance lock: acquire succeeds first time, fails second time, releases correctly
+- Window layout / auto-resize: PlotCanvas Expanding policy, info_box max height, minimum window size,
+  control panel Maximum vertical policy, aspect ratio enforcement
 """
 
 import os
@@ -209,6 +212,60 @@ class TestSweepDialog:
 
 
 # ---------------------------------------------------------------------------
+# Single-instance lock
+# ---------------------------------------------------------------------------
+
+
+class TestSingleInstanceLock:
+    """Verify that the single-instance guard correctly prevents duplicate launches."""
+
+    def test_first_acquire_succeeds(self):
+        from svm_shaper.gui import (
+            _acquire_single_instance_lock,
+            _release_single_instance_lock,
+        )
+
+        lock = _acquire_single_instance_lock()
+        try:
+            assert lock is not None
+        finally:
+            _release_single_instance_lock(lock)
+
+    def test_second_acquire_fails_while_held(self):
+        from svm_shaper.gui import (
+            _acquire_single_instance_lock,
+            _release_single_instance_lock,
+        )
+
+        lock1 = _acquire_single_instance_lock()
+        try:
+            lock2 = _acquire_single_instance_lock()
+            assert lock2 is None
+        finally:
+            _release_single_instance_lock(lock1)
+
+    def test_acquire_succeeds_after_release(self):
+        from svm_shaper.gui import (
+            _acquire_single_instance_lock,
+            _release_single_instance_lock,
+        )
+
+        lock1 = _acquire_single_instance_lock()
+        _release_single_instance_lock(lock1)
+
+        lock2 = _acquire_single_instance_lock()
+        try:
+            assert lock2 is not None
+        finally:
+            _release_single_instance_lock(lock2)
+
+    def test_release_none_is_safe(self):
+        from svm_shaper.gui import _release_single_instance_lock
+
+        _release_single_instance_lock(None)  # must not raise
+
+
+# ---------------------------------------------------------------------------
 # SvmHexagonDialog
 # ---------------------------------------------------------------------------
 
@@ -232,6 +289,83 @@ class TestSvmHexagonDialog:
 
     def test_refresh_does_not_raise(self, dialog):
         dialog._refresh()
+
+
+# ---------------------------------------------------------------------------
+# Window layout / auto-resize
+# ---------------------------------------------------------------------------
+
+
+class TestWindowLayout:
+    """Verify layout properties that guarantee graphs fill the window when maximized."""
+
+    @pytest.fixture(scope="class")
+    def win(self, qapp):
+        w = _make_window(qapp)
+        yield w
+        w.close()
+
+    def test_plot_canvas_horizontal_size_policy_is_expanding(self, win):
+        from PySide6.QtWidgets import QSizePolicy
+
+        assert (
+            win._plot_canvas.sizePolicy().horizontalPolicy()
+            == QSizePolicy.Policy.Expanding
+        )
+
+    def test_plot_canvas_vertical_size_policy_is_expanding(self, win):
+        from PySide6.QtWidgets import QSizePolicy
+
+        assert (
+            win._plot_canvas.sizePolicy().verticalPolicy()
+            == QSizePolicy.Policy.Expanding
+        )
+
+    def test_info_box_has_max_height(self, win):
+        assert win._info_box.maximumHeight() == 180
+
+    def test_info_box_min_height_respected(self, win):
+        assert win._info_box.minimumHeight() == 120
+
+    def test_minimum_window_size(self, win):
+        from PySide6.QtCore import QSize
+
+        assert win.minimumSize() == QSize(1280, 720)
+
+    def test_control_panel_is_qwidget(self, win):
+        from PySide6.QtWidgets import QWidget
+
+        assert isinstance(win._control_panel, QWidget)
+
+    def test_control_panel_vertical_policy_is_maximum(self, win):
+        from PySide6.QtWidgets import QSizePolicy
+
+        assert (
+            win._control_panel.sizePolicy().verticalPolicy()
+            == QSizePolicy.Policy.Maximum
+        )
+
+    def test_aspect_ratio_too_wide_is_corrected(self, win, qapp):
+        from svm_shaper.gui import _MAX_ASPECT_RATIO
+
+        win.show()
+        qapp.processEvents()
+        win.resize(4000, 400)  # extreme ultrawide — should be constrained
+        qapp.processEvents()
+        h = win.height()
+        assert h > 0
+        assert win.width() / h <= _MAX_ASPECT_RATIO + 0.05
+
+    def test_aspect_ratio_too_tall_is_corrected(self, win, qapp):
+        from svm_shaper.gui import _MIN_ASPECT_RATIO
+
+        win.show()
+        qapp.processEvents()
+        win.resize(800, 2000)  # nearly portrait — should be corrected
+        qapp.processEvents()
+        h = win.height()
+        assert h > 0
+        assert win.width() / h >= _MIN_ASPECT_RATIO - 0.05
 
 
 # ---------------------------------------------------------------------------
