@@ -90,16 +90,18 @@ def compute_thd(
         nyquist = float(freqs[-1])
         max_order = int(np.floor(nyquist / fundamental_hz))
 
-        harmonic_indices = []
-        for order in range(2, max_order + 1):
-            target_hz = order * fundamental_hz
-            idx = int(np.argmin(np.abs(freqs - target_hz)))
-            if idx not in (0, idx_fund):
-                harmonic_indices.append(idx)
-
-        # Keep unique bins in case two harmonic targets map to the same FFT bin.
-        if harmonic_indices:
-            harmonic_indices = sorted(set(harmonic_indices))
+        # Vectorised harmonic bin selection — avoids the O(max_order × bins)
+        # per-order np.argmin loop that hangs at very low fundamental frequencies.
+        # For evenly-spaced rfftfreq bins, the closest bin to n·f0 is simply
+        # round(n·f0 / freq_resolution).
+        freq_resolution = float(freqs[1] - freqs[0]) if freqs.size > 1 else 1.0
+        orders = np.arange(2, max_order + 1)
+        target_bins = np.rint(orders * fundamental_hz / freq_resolution).astype(int)
+        valid = (
+            (target_bins >= 1) & (target_bins < freqs.size) & (target_bins != idx_fund)
+        )
+        harmonic_indices = np.unique(target_bins[valid])
+        if harmonic_indices.size > 0:
             harmonic_sum_sq = float(np.sum(magnitude[harmonic_indices] ** 2))
         else:
             harmonic_sum_sq = 0.0

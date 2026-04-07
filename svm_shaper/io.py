@@ -199,10 +199,11 @@ def export_report_pdf(
             "2. Table of contents\n"
             "3. Waveform + FFT\n"
             "4. Duty Cycle Envelope + FFT\n"
-            + ("5. SVM hexagon\n" if include_hexagon else "")
-            + ("6. Top harmonics\n" if include_harmonics_table else "")
-            + "7. Parameter summary\n"
-            "8. Explanation\n"
+            "5. CMV and DC Bus Ripple\n"
+            + ("6. SVM hexagon\n" if include_hexagon else "")
+            + ("7. Top harmonics\n" if include_harmonics_table else "")
+            + "8. Parameter summary\n"
+            "9. Explanation\n"
         )
         _draw_text_page("Table of contents", toc_text, page_num)
         page_num += 1
@@ -280,21 +281,24 @@ def export_report_pdf(
 
         # -- Duty Cycle Envelope + FFT -----------------------------------------------
         dc_fig, (ax_dc, ax_dc_fft) = plt.subplots(2, 1, figsize=(8.5, 11))
-        ax_dc.plot(
+        ax_dc.step(
             sim.duty_cycle_time,
             sim.duty_cycle_a * 100.0,
+            where="mid",
             label="Phase A",
             color="#5577ff",
         )
-        ax_dc.plot(
+        ax_dc.step(
             sim.duty_cycle_time,
             sim.duty_cycle_b * 100.0,
+            where="mid",
             label="Phase B",
             color="#ff5555",
         )
-        ax_dc.plot(
+        ax_dc.step(
             sim.duty_cycle_time,
             sim.duty_cycle_c * 100.0,
+            where="mid",
             label="Phase C",
             color="#55cc66",
         )
@@ -342,6 +346,66 @@ def export_report_pdf(
         _add_footer(dc_fig, page_num)
         pdf.savefig(dc_fig)
         plt.close(dc_fig)
+        page_num += 1
+
+        # -- CMV and DC Bus Ripple --------------------------------------------------
+        cmvdc_fig, (ax_cmv, ax_dc_bus) = plt.subplots(2, 1, figsize=(8.5, 11))
+
+        # Common Mode Voltage
+        if sim.cmv.size > 0:
+            ax_cmv.plot(sim.time, sim.cmv, color="#9467bd", linewidth=0.7)
+            ax_cmv.axhline(
+                y=sim.cmv_mean,
+                color="gray",
+                linestyle="--",
+                linewidth=0.8,
+                label=f"Mean {sim.cmv_mean:.2f} V",
+            )
+            ax_cmv.legend(loc="upper right", fontsize=8)
+        else:
+            ax_cmv.text(
+                0.5,
+                0.5,
+                "No CMV data",
+                ha="center",
+                va="center",
+                transform=ax_cmv.transAxes,
+            )
+        ax_cmv.set_title("Common Mode Voltage  (Va + Vb + Vc) / 3")
+        ax_cmv.set_xlabel("Time (s)")
+        ax_cmv.set_ylabel("Voltage (V)")
+        ax_cmv.grid(True)
+
+        # DC bus normalised current ripple
+        if sim.dc_bus_current_norm.size > 0:
+            ax_dc_bus.step(
+                sim.duty_cycle_time,
+                sim.dc_bus_current_norm,
+                where="mid",
+                color="#d62728",
+                linewidth=0.9,
+            )
+        else:
+            ax_dc_bus.text(
+                0.5,
+                0.5,
+                "No DC bus ripple data",
+                ha="center",
+                va="center",
+                transform=ax_dc_bus.transAxes,
+            )
+        ax_dc_bus.set_title(
+            "DC Bus Current Ripple  (normalised, I_peak = 1 A)\n"
+            f"pp = {sim.dc_bus_current_norm_pp:.4f} · I_peak"
+        )
+        ax_dc_bus.set_xlabel("Time (s)")
+        ax_dc_bus.set_ylabel("I_dc (A / A_peak)")
+        ax_dc_bus.grid(True)
+
+        cmvdc_fig.tight_layout(rect=[0, 0.05, 1, 0.95])
+        _add_footer(cmvdc_fig, page_num)
+        pdf.savefig(cmvdc_fig)
+        plt.close(cmvdc_fig)
         page_num += 1
 
         # -- SVM hexagon ------------------------------------------------------------

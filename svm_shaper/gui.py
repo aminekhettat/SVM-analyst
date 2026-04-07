@@ -144,6 +144,19 @@ class PlotCanvas(QtWidgets.QWidget):
             "B": None,
             "C": None,
         }
+        self._cmv_curve: Optional[pg.PlotDataItem] = None
+        self._dc_bus_curve: Optional[pg.PlotDataItem] = None
+        self._ref_wave_curves: dict[str, Optional[pg.PlotDataItem]] = {
+            "A": None,
+            "B": None,
+            "C": None,
+        }
+        self._ref_fft_curve: Optional[pg.PlotDataItem] = None
+        self._ref_duty_curves: dict[str, Optional[pg.PlotDataItem]] = {
+            "A": None,
+            "B": None,
+            "C": None,
+        }
         # Whether the user has manually zoomed/panned the waveform view.
         self._wave_user_zoomed = False
 
@@ -259,12 +272,88 @@ class PlotCanvas(QtWidgets.QWidget):
         _duty_ctr_layout.addWidget(_duty_fft_row)
         _duty_ctr_layout.addWidget(self._duty_fft_plot, stretch=1)
 
+        # --- Common Mode Voltage panel -------------------------------------------
+        self._cmv_check = QtWidgets.QCheckBox("Show CMV")
+        self._cmv_check.setChecked(True)
+        self._cmv_check.setAccessibleName("Show common mode voltage panel")
+        self._cmv_check.setToolTip("Show or hide the common-mode voltage panel")
+        self._cmv_check.stateChanged.connect(
+            lambda s: self._cmv_plot.setVisible(s == Qt.CheckState.Checked.value)
+        )
+
+        self._cmv_plot = pg.PlotWidget(title="Common Mode Voltage  (Va+Vb+Vc)/3")
+        self._cmv_plot.setLabel("left", "Voltage", units="V")
+        self._cmv_plot.setLabel("bottom", "Time", units="s")
+        self._cmv_plot.showGrid(x=True, y=True, alpha=0.3)
+        self._cmv_plot.setAccessibleName("Common mode voltage plot")
+        self._cmv_plot.setAccessibleDescription(
+            "Shows the common-mode voltage CMV = (Va+Vb+Vc)/3. "
+            "For ideal balanced SVM, CMV hovers at Vdc/2. "
+            "Deviations equal the zero-sequence voltage injected by the modulator "
+            "(triplen harmonics). Peak-to-peak CMV drives bearing currents and "
+            "sets common-mode filter requirements."
+        )
+
+        _cmv_row = QtWidgets.QWidget()
+        _cmv_row_layout = QtWidgets.QHBoxLayout(_cmv_row)
+        _cmv_row_layout.setContentsMargins(4, 2, 4, 0)
+        _cmv_row_layout.addWidget(self._cmv_check)
+        _cmv_row_layout.addStretch(1)
+
+        _cmv_container = QtWidgets.QWidget()
+        _cmv_ctr_layout = QtWidgets.QVBoxLayout(_cmv_container)
+        _cmv_ctr_layout.setContentsMargins(0, 0, 0, 0)
+        _cmv_ctr_layout.setSpacing(0)
+        _cmv_ctr_layout.addWidget(_cmv_row)
+        _cmv_ctr_layout.addWidget(self._cmv_plot, stretch=1)
+
+        # --- DC bus current ripple panel -----------------------------------------
+        self._dc_bus_check = QtWidgets.QCheckBox("Show DC Bus Ripple")
+        self._dc_bus_check.setChecked(True)
+        self._dc_bus_check.setAccessibleName("Show DC bus current ripple panel")
+        self._dc_bus_check.setToolTip(
+            "Show or hide the normalised DC bus current ripple panel"
+        )
+        self._dc_bus_check.stateChanged.connect(
+            lambda s: self._dc_bus_plot.setVisible(s == Qt.CheckState.Checked.value)
+        )
+
+        self._dc_bus_plot = pg.PlotWidget(
+            title="DC Bus Current Ripple  (normalised, I_peak = 1)"
+        )
+        self._dc_bus_plot.setLabel("left", "I_dc (norm.)")
+        self._dc_bus_plot.setLabel("bottom", "Time", units="s")
+        self._dc_bus_plot.showGrid(x=True, y=True, alpha=0.3)
+        self._dc_bus_plot.setAccessibleName("DC bus current ripple plot")
+        self._dc_bus_plot.setAccessibleDescription(
+            "Shows the normalised DC bus current: Da·Ia + Db·Ib + Dc·Ic per unit of peak "
+            "phase current. Values are in [A / A_peak]. Peak-to-peak amplitude determines "
+            "DC capacitor ripple-current rating and sizing."
+        )
+
+        _dc_bus_row = QtWidgets.QWidget()
+        _dc_bus_row_layout = QtWidgets.QHBoxLayout(_dc_bus_row)
+        _dc_bus_row_layout.setContentsMargins(4, 2, 4, 0)
+        _dc_bus_row_layout.addWidget(self._dc_bus_check)
+        _dc_bus_row_layout.addStretch(1)
+
+        _dc_bus_container = QtWidgets.QWidget()
+        _dc_bus_ctr_layout = QtWidgets.QVBoxLayout(_dc_bus_container)
+        _dc_bus_ctr_layout.setContentsMargins(0, 0, 0, 0)
+        _dc_bus_ctr_layout.setSpacing(0)
+        _dc_bus_ctr_layout.addWidget(_dc_bus_row)
+        _dc_bus_ctr_layout.addWidget(self._dc_bus_plot, stretch=1)
+
         splitter.addWidget(self._wave_plot)
         splitter.addWidget(_duty_container)
         splitter.addWidget(self._fft_plot)
+        splitter.addWidget(_cmv_container)
+        splitter.addWidget(_dc_bus_container)
         splitter.setStretchFactor(0, 3)
         splitter.setStretchFactor(1, 3)
         splitter.setStretchFactor(2, 2)
+        splitter.setStretchFactor(3, 2)
+        splitter.setStretchFactor(4, 2)
         layout.addWidget(splitter)
 
         # Expose a fake .figure attribute so io.export_plot_png gracefully
@@ -500,6 +589,125 @@ class PlotCanvas(QtWidgets.QWidget):
         curve = self._duty_curves.get(phase)
         if curve is not None:
             curve.setVisible(visible)
+
+    def update_cmv(self, time: np.ndarray, cmv: np.ndarray) -> None:
+        """Update the Common Mode Voltage plot.
+
+        Parameters
+        ----------
+        time:
+            Time axis — same length as ``cmv`` (raw PWM sample rate).
+        cmv:
+            Common-mode voltage array (Va+Vb+Vc)/3, in volts.
+        """
+        if self._cmv_curve is None:
+            self._cmv_curve = self._cmv_plot.plot(
+                time,
+                cmv,
+                name="CMV",
+                pen=pg.mkPen(color="#9467bd", width=1.5),
+            )
+        else:
+            self._cmv_curve.setData(time, cmv)
+
+    def update_dc_bus_ripple(self, time: np.ndarray, current_norm: np.ndarray) -> None:
+        """Update the DC bus normalised current ripple plot.
+
+        Parameters
+        ----------
+        time:
+            Time axis — same length as ``current_norm`` (one point per PWM period).
+        current_norm:
+            Normalised DC bus current Da·Ia + Db·Ib + Dc·Ic [A/A_peak].
+        """
+        if self._dc_bus_curve is None:
+            self._dc_bus_curve = self._dc_bus_plot.plot(
+                time,
+                current_norm,
+                name="DC bus I (norm.)",
+                pen=pg.mkPen(color="#d62728", width=1.5),
+            )
+        else:
+            self._dc_bus_curve.setData(time, current_norm)
+
+    def set_reference_static(
+        self,
+        fft_freqs: np.ndarray,
+        fft_mag: np.ndarray,
+        duty_time: np.ndarray,
+        duty: dict[str, np.ndarray],
+    ) -> None:
+        """Overlay static reference curves on the FFT and duty cycle plots.
+
+        Called once each time the user saves a reference snapshot.
+        """
+        _ref_pen = pg.mkPen(color="#888888", width=1.0, style=Qt.PenStyle.DashLine)
+        # FFT overlay
+        if self._ref_fft_curve is None:
+            self._ref_fft_curve = self._fft_plot.plot(
+                fft_freqs, fft_mag, name="Ref FFT", pen=_ref_pen
+            )
+        else:
+            self._ref_fft_curve.setData(fft_freqs, fft_mag)
+        # Duty cycle overlay (N+1 edges for ZOH staircase, same as live curves)
+        if duty_time.size > 1:
+            _dt = duty_time[1] - duty_time[0]
+        elif duty_time.size == 1:
+            _dt = 1.0
+        else:
+            _dt = 1.0
+        _edges = np.empty(duty_time.size + 1)
+        _edges[:-1] = duty_time - _dt / 2.0
+        _edges[-1] = duty_time[-1] + _dt / 2.0 if duty_time.size > 0 else _dt / 2.0
+        for phase in ("A", "B", "C"):
+            duty_pct = duty[phase] * 100.0
+            if self._ref_duty_curves[phase] is None:
+                self._ref_duty_curves[phase] = self._duty_plot.plot(
+                    _edges,
+                    duty_pct,
+                    name=f"Ref {phase}",
+                    pen=_ref_pen,
+                    stepMode=True,
+                )
+            else:
+                self._ref_duty_curves[phase].setData(_edges, duty_pct)
+
+    def update_reference_waveform(
+        self, time: np.ndarray, phases: dict[str, np.ndarray]
+    ) -> None:
+        """Overlay reference waveform curves (updated each scroll tick).
+
+        Parameters
+        ----------
+        time:
+            Time axis for the current scroll window.
+        phases:
+            Mapping ``"A" / "B" / "C"`` → voltage array for the reference.
+        """
+        _ref_pen = pg.mkPen(color="#888888", width=1.0, style=Qt.PenStyle.DashLine)
+        for phase in ("A", "B", "C"):
+            if self._ref_wave_curves[phase] is None:
+                self._ref_wave_curves[phase] = self._wave_plot.plot(
+                    time,
+                    phases[phase],
+                    name=f"Ref {phase}",
+                    pen=_ref_pen,
+                )
+            else:
+                self._ref_wave_curves[phase].setData(time, phases[phase])
+
+    def clear_reference(self) -> None:
+        """Remove all reference overlay curves from every plot."""
+        for phase in ("A", "B", "C"):
+            if self._ref_wave_curves[phase] is not None:
+                self._wave_plot.removeItem(self._ref_wave_curves[phase])
+                self._ref_wave_curves[phase] = None
+            if self._ref_duty_curves[phase] is not None:
+                self._duty_plot.removeItem(self._ref_duty_curves[phase])
+                self._ref_duty_curves[phase] = None
+        if self._ref_fft_curve is not None:
+            self._fft_plot.removeItem(self._ref_fft_curve)
+            self._ref_fft_curve = None
 
     def grab_pixmap(self) -> QtGui.QPixmap:
         """Return a QPixmap screenshot of this widget for export."""
@@ -894,6 +1102,8 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         self._worker: Optional[SimulationWorker] = None
 
         self._constraining_size: bool = False
+        self._ref_result = None
+        self._ref_display_signals: dict = {}
 
         self._build_ui()
         self._apply_config_to_ui(self._config)
@@ -990,6 +1200,8 @@ class SvmShaperApp(QtWidgets.QMainWindow):
             self._reset_zoom_button,
             self._export_csv_button,
             self._export_png_button,
+            self._save_ref_button,
+            self._clear_ref_button,
             # -- Explanation / copy --
             self._copy_explanation_button,
         ]
@@ -1351,11 +1563,32 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         self._export_png_button.setToolTip("Export the current plots as a PNG image")
         self._export_png_button.clicked.connect(self._export_plot_png)
 
+        self._save_ref_button = QtWidgets.QPushButton("Save Reference")
+        self._save_ref_button.setAccessibleName("Save reference snapshot")
+        self._save_ref_button.setAccessibleDescription(
+            "Freeze the current simulation result as a reference overlay for comparison."
+        )
+        self._save_ref_button.setToolTip(
+            "Snapshot the current result as a grey dashed overlay for visual comparison"
+        )
+        self._save_ref_button.clicked.connect(self._on_save_reference)
+
+        self._clear_ref_button = QtWidgets.QPushButton("Clear Reference")
+        self._clear_ref_button.setAccessibleName("Clear reference snapshot")
+        self._clear_ref_button.setAccessibleDescription(
+            "Remove the grey dashed reference overlay from all plots."
+        )
+        self._clear_ref_button.setToolTip("Remove the comparison reference overlay")
+        self._clear_ref_button.setEnabled(False)
+        self._clear_ref_button.clicked.connect(self._on_clear_reference)
+
         osc_layout.addWidget(self._pause_button)
         osc_layout.addWidget(self._step_button)
         osc_layout.addWidget(self._reset_zoom_button)
         osc_layout.addWidget(self._export_csv_button)
         osc_layout.addWidget(self._export_png_button)
+        osc_layout.addWidget(self._save_ref_button)
+        osc_layout.addWidget(self._clear_ref_button)
 
         for grp in (param_group, modulation_group, display_group, osc_group):
             grp.setSizePolicy(
@@ -1542,6 +1775,26 @@ class SvmShaperApp(QtWidgets.QMainWindow):
             self._sim_result.duty_cycle_fft_freqs,
             self._sim_result.duty_cycle_fft_magnitude,
         )
+        self._plot_canvas.update_cmv(
+            self._sim_result.time,
+            self._sim_result.cmv,
+        )
+        self._plot_canvas.update_dc_bus_ripple(
+            self._sim_result.duty_cycle_time,
+            self._sim_result.dc_bus_current_norm,
+        )
+        # Refresh reference static overlays if a reference snapshot is active.
+        if self._ref_result is not None:
+            self._plot_canvas.set_reference_static(
+                self._ref_result.fft_freqs,
+                self._ref_result.fft_magnitude,
+                self._ref_result.duty_cycle_time,
+                {
+                    "A": self._ref_result.duty_cycle_a,
+                    "B": self._ref_result.duty_cycle_b,
+                    "C": self._ref_result.duty_cycle_c,
+                },
+            )
         self._update_info_text()
 
         # Set an appropriate scroll step to simulate an oscilloscope sweep.
@@ -1582,6 +1835,20 @@ class SvmShaperApp(QtWidgets.QMainWindow):
             window_phases,
             switch_times if self._config.show_switching_edges else None,
         )
+
+        # Reference waveform overlay — same scroll window, clamped to ref length.
+        if self._ref_result is not None and self._ref_display_signals:
+            ref_total = self._ref_result.time.size
+            ref_window = min(self._window_samples, ref_total)
+            ref_start = min(start, max(0, ref_total - ref_window))
+            ref_end = ref_start + ref_window
+            self._plot_canvas.update_reference_waveform(
+                self._ref_result.time[ref_start:ref_end],
+                {
+                    ph: self._ref_display_signals[ph][ref_start:ref_end]
+                    for ph in ("A", "B", "C")
+                },
+            )
 
         self._scroll_index += self._scroll_step
         if self._scroll_index + self._window_samples >= total_samples:
@@ -1686,12 +1953,34 @@ class SvmShaperApp(QtWidgets.QMainWindow):
             f"Dead-time duty loss: {sim.dead_time_duty_limit * 100:.3f}%"
             f" → D_max = {(1.0 - sim.dead_time_duty_limit) * 100:.3f}%,"
             f" D_min = {sim.dead_time_duty_limit * 100:.3f}%\n\n"
+            "─── Common Mode Voltage ───\n"
+            f"CMV mean: {sim.cmv_mean:.3f} V,  RMS: {sim.cmv_rms:.3f} V\n"
+            f"CMV min: {sim.cmv_min:.3f} V,  max: {sim.cmv_max:.3f} V\n"
+            f"CMV peak-to-peak: {sim.cmv_pp:.3f} V\n\n"
+            "─── DC Bus Current Ripple (normalised) ───\n"
+            f"DC bus min: {sim.dc_bus_current_norm_min:.4f},  max: {sim.dc_bus_current_norm_max:.4f}\n"
+            f"DC bus RMS: {sim.dc_bus_current_norm_rms:.4f}\n"
+            f"DC bus peak-to-peak: {sim.dc_bus_current_norm_pp:.4f}\n\n"
             f"Top harmonics (freq -> magnitude):\n"
             + "\n".join(top_harmonics_lines)
             + "\n\n"
             f"Show switching edges: {'Yes' if self._config.show_switching_edges else 'No'}\n\n"
             + sim.description_text
         )
+
+        if self._ref_result is not None:
+            _r = self._ref_result
+            info_text += (
+                "\n─── Comparison vs Reference ───\n"
+                f"Ref THD line: {_r.thd_line_percent:.2f}%"
+                f"  →  ΔTHD line: {sim.thd_line_percent - _r.thd_line_percent:+.2f}%\n"
+                f"Ref THD phase: {_r.thd_phase_percent:.2f}%"
+                f"  →  ΔTHD phase: {sim.thd_phase_percent - _r.thd_phase_percent:+.2f}%\n"
+                f"Ref CMV pp: {_r.cmv_pp:.3f} V"
+                f"  →  ΔCMV pp: {sim.cmv_pp - _r.cmv_pp:+.3f} V\n"
+                f"Ref DC bus pp: {_r.dc_bus_current_norm_pp:.4f}"
+                f"  →  ΔDC bus pp: {sim.dc_bus_current_norm_pp - _r.dc_bus_current_norm_pp:+.4f}\n"
+            )
 
         self._info_box.setPlainText(info_text)
 
@@ -1700,6 +1989,59 @@ class SvmShaperApp(QtWidgets.QMainWindow):
 
         clipboard = QtWidgets.QApplication.clipboard()
         clipboard.setText(self._info_box.toPlainText())
+
+    def _on_save_reference(self) -> None:
+        """Freeze the current simulation result as a comparison reference overlay."""
+
+        if self._sim_result is None:
+            return
+
+        self._ref_result = self._sim_result
+        if self._config.show_phase_voltages:
+            self._ref_display_signals = {
+                "A": self._ref_result.phase_voltage_ab,
+                "B": self._ref_result.phase_voltage_bc,
+                "C": self._ref_result.phase_voltage_ca,
+            }
+        else:
+            self._ref_display_signals = {
+                "A": (
+                    self._ref_result.filtered_phase_a
+                    if self._config.show_filtered
+                    else self._ref_result.phase_a
+                ),
+                "B": (
+                    self._ref_result.filtered_phase_b
+                    if self._config.show_filtered
+                    else self._ref_result.phase_b
+                ),
+                "C": (
+                    self._ref_result.filtered_phase_c
+                    if self._config.show_filtered
+                    else self._ref_result.phase_c
+                ),
+            }
+        self._plot_canvas.set_reference_static(
+            self._ref_result.fft_freqs,
+            self._ref_result.fft_magnitude,
+            self._ref_result.duty_cycle_time,
+            {
+                "A": self._ref_result.duty_cycle_a,
+                "B": self._ref_result.duty_cycle_b,
+                "C": self._ref_result.duty_cycle_c,
+            },
+        )
+        self._clear_ref_button.setEnabled(True)
+        self._update_info_text()
+
+    def _on_clear_reference(self) -> None:
+        """Remove the comparison reference overlay from all plots."""
+
+        self._ref_result = None
+        self._ref_display_signals = {}
+        self._plot_canvas.clear_reference()
+        self._clear_ref_button.setEnabled(False)
+        self._update_info_text()
 
     def _compute_switch_times(self, time: np.ndarray, signal: np.ndarray) -> np.ndarray:
         """Compute the times at which a digital PWM signal switches state."""

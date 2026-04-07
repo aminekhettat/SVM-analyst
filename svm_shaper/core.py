@@ -163,6 +163,31 @@ class SimulationResult:
         default_factory=lambda: np.array([], dtype=np.float64)
     )
 
+    # --- Common Mode Voltage: CMV = (Va + Vb + Vc) / 3 ---------------------------
+    # Shares the raw PWM time axis.  For ideal balanced SVM, CMV hovers at
+    # Vdc/2.  Deviations equal the zero-sequence voltage injected by the
+    # modulator (triplen harmonics).  Peak-to-peak CMV is the key EMC metric
+    # for bearing-current and CM-filter dimensioning.
+    cmv: np.ndarray = field(default_factory=lambda: np.array([], dtype=np.float64))
+    cmv_mean: float = 0.0
+    cmv_rms: float = 0.0
+    cmv_min: float = 0.0
+    cmv_max: float = 0.0
+    cmv_pp: float = 0.0
+
+    # --- DC bus normalised current (per PWM period) --------------------------------
+    # I_dc_norm(t) = Da·sin(ωt+φ) + Db·sin(ωt−2π/3+φ) + Dc·sin(ωt+2π/3+φ).
+    # Shares the ``duty_cycle_time`` axis.  Values are in units of peak phase
+    # current [A/A_peak].  ``dc_bus_current_norm_pp`` is proportional to the
+    # RMS ripple current seen by the DC-link capacitor.
+    dc_bus_current_norm: np.ndarray = field(
+        default_factory=lambda: np.array([], dtype=np.float64)
+    )
+    dc_bus_current_norm_min: float = 0.0
+    dc_bus_current_norm_max: float = 0.0
+    dc_bus_current_norm_rms: float = 0.0
+    dc_bus_current_norm_pp: float = 0.0
+
 
 def _apply_leg_dead_time_with_diode(
     commanded_pwm: np.ndarray,
@@ -477,6 +502,33 @@ def run_simulation(
         electrical_frequency_hz=electrical_freq,
     )
 
+    # --- Common Mode Voltage: CMV = (Va + Vb + Vc) / 3 ---------------------------
+    cmv = (phase_a + phase_b + phase_c) / 3.0
+    cmv_mean = float(np.mean(cmv))
+    cmv_rms = float(np.sqrt(np.mean(cmv**2)))
+    cmv_min = float(np.min(cmv))
+    cmv_max = float(np.max(cmv))
+    cmv_pp = cmv_max - cmv_min
+
+    # --- DC bus normalised current (per PWM period) --------------------------------
+    # Synthetic unit-amplitude phase currents aligned to current_phase_deg,
+    # sampled at PWM-period midpoints to match the duty cycle time axis.
+    if duty_cycle_time.size > 0:
+        theta_dc = 2.0 * np.pi * electrical_freq * duty_cycle_time
+        i_a_unit = np.sin(theta_dc + current_phase_rad)
+        i_b_unit = np.sin(theta_dc - 2.0 * np.pi / 3.0 + current_phase_rad)
+        i_c_unit = np.sin(theta_dc + 2.0 * np.pi / 3.0 + current_phase_rad)
+        dc_bus_current_norm = (
+            duty_cycle_a * i_a_unit + duty_cycle_b * i_b_unit + duty_cycle_c * i_c_unit
+        )
+        dc_bus_min = float(np.min(dc_bus_current_norm))
+        dc_bus_max = float(np.max(dc_bus_current_norm))
+        dc_bus_rms = float(np.sqrt(np.mean(dc_bus_current_norm**2)))
+        dc_bus_pp = dc_bus_max - dc_bus_min
+    else:
+        dc_bus_current_norm = np.array([], dtype=np.float64)
+        dc_bus_min = dc_bus_max = dc_bus_rms = dc_bus_pp = 0.0
+
     return SimulationResult(
         time=time,
         phase_a=phase_a,
@@ -541,6 +593,17 @@ def run_simulation(
         dead_time_duty_limit=dead_time_duty_limit,
         duty_cycle_fft_freqs=duty_cycle_fft_freqs,
         duty_cycle_fft_magnitude=duty_cycle_fft_magnitude,
+        cmv=cmv,
+        cmv_mean=cmv_mean,
+        cmv_rms=cmv_rms,
+        cmv_min=cmv_min,
+        cmv_max=cmv_max,
+        cmv_pp=cmv_pp,
+        dc_bus_current_norm=dc_bus_current_norm,
+        dc_bus_current_norm_min=dc_bus_min,
+        dc_bus_current_norm_max=dc_bus_max,
+        dc_bus_current_norm_rms=dc_bus_rms,
+        dc_bus_current_norm_pp=dc_bus_pp,
     )
 
 
