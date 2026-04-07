@@ -1,4 +1,9 @@
 # -*- mode: python ; coding: utf-8 -*-
+import os
+
+# Force PySide6 bindings for pyqtgraph and matplotlib Qt backend
+os.environ['PYQTGRAPH_QT_LIB'] = 'PySide6'
+os.environ['QT_API'] = 'PySide6'
 
 
 a = Analysis(
@@ -10,7 +15,11 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=[
+        'sphinx', 'pytest', 'py', 'pygments', 'docutils', 'scipy',
+        'setuptools', 'pkg_resources', 'importlib_metadata', 'importlib_resources',
+        'PyQt6', 'PyQt6.QtCore', 'PyQt6.QtGui', 'PyQt6.QtWidgets',
+    ],
     noarchive=False,
     optimize=0,
 )
