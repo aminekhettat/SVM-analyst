@@ -16,7 +16,7 @@ a = Analysis(
     hooksconfig={},
     runtime_hooks=[],
     excludes=[
-        'sphinx', 'pytest', 'py', 'pygments', 'docutils', 'scipy',
+        'sphinx', 'pytest', 'py', 'pygments', 'docutils',
         'setuptools', 'pkg_resources', 'importlib_metadata', 'importlib_resources',
         'PyQt6', 'PyQt6.QtCore', 'PyQt6.QtGui', 'PyQt6.QtWidgets',
     ],
@@ -31,7 +31,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='svm-analyst',
+    name='svm-analyst',  # v1.1.2
     icon='assets/svm-analyst.ico',
     debug=False,
     bootloader_ignore_signals=False,

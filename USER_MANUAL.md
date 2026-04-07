@@ -1,8 +1,15 @@
 # SVM Analyst User Manual
 
-Version 1.1.1
+Version 1.1.2
 
 ## What's New
+
+### Version 1.1.2
+
+- Fixed critical bug: scipy was incorrectly excluded from the PyInstaller bundle,
+  causing the executable to crash on launch with "no module named scipy".
+- Removed PyQt6 from the build environment; PySide6 is now the sole Qt binding,
+  eliminating the PyInstaller Qt-bindings collision error.
 
 ### Version 1.1.1
 

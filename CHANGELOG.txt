@@ -1,6 +1,14 @@
 SVM Analyst – Changelog
 ========================
 
+v1.1.2 – 2026-04-07
+--------------------
+- Fix: scipy was excluded from the PyInstaller bundle, causing the EXE to crash
+  on launch with "ModuleNotFoundError: No module named scipy".
+- Removed PyQt6 from the project venv; PySide6 is now the sole Qt binding,
+  eliminating the PyInstaller Qt-bindings collision that prevented clean builds.
+- EXE rebuilt from scratch with the corrected spec (105 MB, scipy included).
+
 v1.1.1 – 2026-04-07
 --------------------
 - Application icon (assets/svm-analyst.ico) embedded in the executable and window.
