@@ -11,12 +11,17 @@ License: See LICENSE
 
 # pylint: disable=too-many-instance-attributes
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 from scipy.signal import butter, filtfilt
 
-from .analysis import compute_fft, compute_thd, compute_top_harmonics
+from .analysis import (
+    compute_duty_cycle_envelope,
+    compute_fft,
+    compute_thd,
+    compute_top_harmonics,
+)
 from .modulations import (
     ModulationMode,
     PulseAlignment,
@@ -101,6 +106,62 @@ class SimulationResult:
     raw_min: float
     raw_max: float
     description_text: str
+    # Per-PWM-period duty cycle envelope: one value per switching period.
+    # duty_cycle_time contains the time at the midpoint of each period.
+    duty_cycle_time: np.ndarray
+    duty_cycle_a: np.ndarray
+    duty_cycle_b: np.ndarray
+    duty_cycle_c: np.ndarray
+
+    # --- Per-leg (line) duty cycle statistics [0, 1] ---
+    duty_cycle_a_min: float = 0.0
+    duty_cycle_a_max: float = 0.0
+    duty_cycle_a_mean: float = 0.0
+    duty_cycle_a_rms: float = 0.0
+    duty_cycle_b_min: float = 0.0
+    duty_cycle_b_max: float = 0.0
+    duty_cycle_b_mean: float = 0.0
+    duty_cycle_b_rms: float = 0.0
+    duty_cycle_c_min: float = 0.0
+    duty_cycle_c_max: float = 0.0
+    duty_cycle_c_mean: float = 0.0
+    duty_cycle_c_rms: float = 0.0
+
+    # --- Phase-to-phase duty cycle: D_A-D_B, D_B-D_C, D_C-D_A (may be negative) ---
+    duty_cycle_ab: np.ndarray = field(
+        default_factory=lambda: np.array([], dtype=np.float64)
+    )
+    duty_cycle_bc: np.ndarray = field(
+        default_factory=lambda: np.array([], dtype=np.float64)
+    )
+    duty_cycle_ca: np.ndarray = field(
+        default_factory=lambda: np.array([], dtype=np.float64)
+    )
+    duty_cycle_ab_min: float = 0.0
+    duty_cycle_ab_max: float = 0.0
+    duty_cycle_ab_mean: float = 0.0
+    duty_cycle_ab_rms: float = 0.0
+    duty_cycle_bc_min: float = 0.0
+    duty_cycle_bc_max: float = 0.0
+    duty_cycle_bc_mean: float = 0.0
+    duty_cycle_bc_rms: float = 0.0
+    duty_cycle_ca_min: float = 0.0
+    duty_cycle_ca_max: float = 0.0
+    duty_cycle_ca_mean: float = 0.0
+    duty_cycle_ca_rms: float = 0.0
+
+    # --- Dead-time impact on duty cycle ---
+    # Fraction of PWM period consumed by dead time: dead_time_us * 1e-6 * pwm_frequency_hz.
+    # Effective D_max = 1 - dead_time_duty_limit, D_min = dead_time_duty_limit.
+    dead_time_duty_limit: float = 0.0
+
+    # --- FFT of per-PWM-period duty cycle (Phase A, sampled at pwm_frequency_hz) ---
+    duty_cycle_fft_freqs: np.ndarray = field(
+        default_factory=lambda: np.array([], dtype=np.float64)
+    )
+    duty_cycle_fft_magnitude: np.ndarray = field(
+        default_factory=lambda: np.array([], dtype=np.float64)
+    )
 
 
 def _apply_leg_dead_time_with_diode(
@@ -371,6 +432,51 @@ def run_simulation(
     raw_min = float(np.min(phase_a))
     raw_max = float(np.max(phase_a))
 
+    # Per-PWM-period duty cycle envelope — reveals the modulating reference waveform.
+    duty_cycle_time, duty_cycle_a = compute_duty_cycle_envelope(
+        phase_a, time, config.oversample, config.battery_voltage
+    )
+    _, duty_cycle_b = compute_duty_cycle_envelope(
+        phase_b, time, config.oversample, config.battery_voltage
+    )
+    _, duty_cycle_c = compute_duty_cycle_envelope(
+        phase_c, time, config.oversample, config.battery_voltage
+    )
+
+    # --- Duty cycle descriptive statistics (per-leg, [0,1]) ---
+    def _dc_stats(dc: np.ndarray) -> tuple[float, float, float, float]:
+        if dc.size == 0:
+            return 0.0, 0.0, 0.0, 0.0
+        return (
+            float(np.min(dc)),
+            float(np.max(dc)),
+            float(np.mean(dc)),
+            float(np.sqrt(np.mean(dc**2))),
+        )
+
+    dc_a_min, dc_a_max, dc_a_mean, dc_a_rms = _dc_stats(duty_cycle_a)
+    dc_b_min, dc_b_max, dc_b_mean, dc_b_rms = _dc_stats(duty_cycle_b)
+    dc_c_min, dc_c_max, dc_c_mean, dc_c_rms = _dc_stats(duty_cycle_c)
+
+    # Phase-to-phase duty cycles: D_AB = D_A - D_B, etc.
+    duty_cycle_ab = duty_cycle_a - duty_cycle_b
+    duty_cycle_bc = duty_cycle_b - duty_cycle_c
+    duty_cycle_ca = duty_cycle_c - duty_cycle_a
+    dc_ab_min, dc_ab_max, dc_ab_mean, dc_ab_rms = _dc_stats(duty_cycle_ab)
+    dc_bc_min, dc_bc_max, dc_bc_mean, dc_bc_rms = _dc_stats(duty_cycle_bc)
+    dc_ca_min, dc_ca_max, dc_ca_mean, dc_ca_rms = _dc_stats(duty_cycle_ca)
+
+    # Dead-time fraction of PWM period = time_dead / T_pwm.
+    dead_time_duty_limit = (config.dead_time_us * 1e-6) * config.pwm_frequency_hz
+
+    # FFT of the per-leg duty cycle (Phase A), sampled at pwm_frequency_hz.
+    duty_cycle_fft_freqs, duty_cycle_fft_magnitude = compute_fft(
+        signal=duty_cycle_a,
+        sampling_rate=config.pwm_frequency_hz,
+        num_cycles=config.num_cycles,
+        electrical_frequency_hz=electrical_freq,
+    )
+
     return SimulationResult(
         time=time,
         phase_a=phase_a,
@@ -401,6 +507,40 @@ def run_simulation(
         raw_min=raw_min,
         raw_max=raw_max,
         description_text=description_text,
+        duty_cycle_time=duty_cycle_time,
+        duty_cycle_a=duty_cycle_a,
+        duty_cycle_b=duty_cycle_b,
+        duty_cycle_c=duty_cycle_c,
+        duty_cycle_a_min=dc_a_min,
+        duty_cycle_a_max=dc_a_max,
+        duty_cycle_a_mean=dc_a_mean,
+        duty_cycle_a_rms=dc_a_rms,
+        duty_cycle_b_min=dc_b_min,
+        duty_cycle_b_max=dc_b_max,
+        duty_cycle_b_mean=dc_b_mean,
+        duty_cycle_b_rms=dc_b_rms,
+        duty_cycle_c_min=dc_c_min,
+        duty_cycle_c_max=dc_c_max,
+        duty_cycle_c_mean=dc_c_mean,
+        duty_cycle_c_rms=dc_c_rms,
+        duty_cycle_ab=duty_cycle_ab,
+        duty_cycle_bc=duty_cycle_bc,
+        duty_cycle_ca=duty_cycle_ca,
+        duty_cycle_ab_min=dc_ab_min,
+        duty_cycle_ab_max=dc_ab_max,
+        duty_cycle_ab_mean=dc_ab_mean,
+        duty_cycle_ab_rms=dc_ab_rms,
+        duty_cycle_bc_min=dc_bc_min,
+        duty_cycle_bc_max=dc_bc_max,
+        duty_cycle_bc_mean=dc_bc_mean,
+        duty_cycle_bc_rms=dc_bc_rms,
+        duty_cycle_ca_min=dc_ca_min,
+        duty_cycle_ca_max=dc_ca_max,
+        duty_cycle_ca_mean=dc_ca_mean,
+        duty_cycle_ca_rms=dc_ca_rms,
+        dead_time_duty_limit=dead_time_duty_limit,
+        duty_cycle_fft_freqs=duty_cycle_fft_freqs,
+        duty_cycle_fft_magnitude=duty_cycle_fft_magnitude,
     )
 
 

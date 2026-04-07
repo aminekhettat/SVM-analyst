@@ -137,6 +137,8 @@ class PlotCanvas(QtWidgets.QWidget):
             "B": None,
             "C": None,
         }
+        self._duty_fft_curve: Optional[pg.PlotDataItem] = None
+        self._duty_deadtime_lines: list[pg.InfiniteLine] = []
         self._switch_markers: dict[str, Optional[pg.ScatterPlotItem]] = {
             "A": None,
             "B": None,
@@ -219,13 +221,49 @@ class PlotCanvas(QtWidgets.QWidget):
         _duty_ctr_layout.setContentsMargins(0, 0, 0, 0)
         _duty_ctr_layout.setSpacing(0)
         _duty_ctr_layout.addWidget(_duty_filter_row)
-        _duty_ctr_layout.addWidget(self._duty_plot, stretch=1)
+        _duty_ctr_layout.addWidget(self._duty_plot, stretch=2)
+
+        # Dead-time limit reference lines on the duty cycle envelope plot.
+        for _pen in (
+            pg.mkPen(color="#e04060", style=Qt.PenStyle.DashLine, width=1),
+            pg.mkPen(color="#e04060", style=Qt.PenStyle.DashLine, width=1),
+        ):
+            _line = pg.InfiniteLine(angle=0, movable=False, pen=_pen)
+            _line.setVisible(False)
+            self._duty_plot.addItem(_line)
+            self._duty_deadtime_lines.append(_line)
+
+        # Duty Cycle FFT sub-panel (toggle-able).
+        self._duty_fft_plot = pg.PlotWidget(
+            title="Duty Cycle FFT (Phase A)",
+            axisItems={"left": pg.AxisItem("left")},
+        )
+        self._duty_fft_plot.setLabel("left", "Magnitude")
+        self._duty_fft_plot.setLabel("bottom", "Frequency", units="Hz")
+        self._duty_fft_plot.showGrid(x=True, y=True, alpha=0.3)
+        self._duty_fft_plot.setBackground("k")
+
+        self._duty_fft_check = QtWidgets.QCheckBox("Show Duty Cycle FFT")
+        self._duty_fft_check.setChecked(True)
+        self._duty_fft_check.setAccessibleName("Show duty cycle FFT panel")
+        self._duty_fft_check.stateChanged.connect(
+            lambda s: self._duty_fft_plot.setVisible(s == Qt.CheckState.Checked.value)
+        )
+
+        _duty_fft_row = QtWidgets.QWidget()
+        _duty_fft_row_layout = QtWidgets.QHBoxLayout(_duty_fft_row)
+        _duty_fft_row_layout.setContentsMargins(4, 2, 4, 0)
+        _duty_fft_row_layout.addWidget(self._duty_fft_check)
+        _duty_fft_row_layout.addStretch(1)
+
+        _duty_ctr_layout.addWidget(_duty_fft_row)
+        _duty_ctr_layout.addWidget(self._duty_fft_plot, stretch=1)
 
         splitter.addWidget(self._wave_plot)
         splitter.addWidget(_duty_container)
         splitter.addWidget(self._fft_plot)
         splitter.setStretchFactor(0, 3)
-        splitter.setStretchFactor(1, 2)
+        splitter.setStretchFactor(1, 3)
         splitter.setStretchFactor(2, 2)
         layout.addWidget(splitter)
 
@@ -378,6 +416,7 @@ class PlotCanvas(QtWidgets.QWidget):
         self,
         time: np.ndarray,
         duty: dict[str, np.ndarray],
+        dead_time_duty_limit: float = 0.0,
     ) -> None:
         """Update the duty cycle envelope plot.
 
@@ -389,6 +428,11 @@ class PlotCanvas(QtWidgets.QWidget):
             Mapping from phase label (``"A"``, ``"B"``, ``"C"``) to duty cycle
             arrays in [0, 1].  Values are converted to percent (× 100) before
             plotting so the Y axis reads in % with two decimal places.
+        dead_time_duty_limit:
+            Fraction of the PWM period consumed by dead time
+            (``dead_time_us × 1e-6 × pwm_frequency_hz``).  When non-zero,
+            horizontal reference lines are drawn at the effective D_min and
+            D_max boundaries.
         """
         for phase in ("A", "B", "C"):
             duty_pct = duty[phase] * 100.0
@@ -403,6 +447,40 @@ class PlotCanvas(QtWidgets.QWidget):
                 self._duty_curves[phase].setData(time, duty_pct)
         if time.size > 0:
             self._duty_plot.setYRange(0.0, 100.0, padding=0.05)
+
+        # Dead-time limit lines: D_min = limit%, D_max = (1-limit)%.
+        if len(self._duty_deadtime_lines) == 2 and dead_time_duty_limit > 0.0:
+            self._duty_deadtime_lines[0].setValue(dead_time_duty_limit * 100.0)
+            self._duty_deadtime_lines[1].setValue((1.0 - dead_time_duty_limit) * 100.0)
+            self._duty_deadtime_lines[0].setVisible(True)
+            self._duty_deadtime_lines[1].setVisible(True)
+        elif len(self._duty_deadtime_lines) == 2:
+            self._duty_deadtime_lines[0].setVisible(False)
+            self._duty_deadtime_lines[1].setVisible(False)
+
+    def update_duty_fft(
+        self,
+        freqs: np.ndarray,
+        magnitude: np.ndarray,
+    ) -> None:
+        """Update the duty cycle FFT sub-panel.
+
+        Parameters
+        ----------
+        freqs:
+            Frequency axis in Hz.
+        magnitude:
+            Spectral magnitude of the duty cycle FFT.
+        """
+        if self._duty_fft_curve is None:
+            self._duty_fft_curve = self._duty_fft_plot.plot(
+                freqs,
+                magnitude,
+                name="Duty Cycle FFT",
+                pen=pg.mkPen(color="#00bfff", width=1),
+            )
+        else:
+            self._duty_fft_curve.setData(freqs, magnitude)
 
     def set_duty_phase_visible(self, phase: str, visible: bool) -> None:
         """Show or hide one phase curve in the duty cycle plot."""
@@ -1445,6 +1523,11 @@ class SvmShaperApp(QtWidgets.QMainWindow):
                 "B": self._sim_result.duty_cycle_b,
                 "C": self._sim_result.duty_cycle_c,
             },
+            dead_time_duty_limit=self._sim_result.dead_time_duty_limit,
+        )
+        self._plot_canvas.update_duty_fft(
+            self._sim_result.duty_cycle_fft_freqs,
+            self._sim_result.duty_cycle_fft_magnitude,
         )
         self._update_info_text()
 
@@ -1562,6 +1645,34 @@ class SvmShaperApp(QtWidgets.QMainWindow):
             "Filtering note: filtered waveforms are fundamental envelopes, so they usually do not hit 0 V or Vbatt rails.\n\n"
             f"{line_label}: mean {line_mean:.2f} V, RMS {line_rms:.2f} V, min {line_min:.2f} V, max {line_max:.2f} V\n"
             f"{phase_label}: mean {phase_mean:.2f} V, RMS {phase_rms:.2f} V, min {phase_min:.2f} V, max {phase_max:.2f} V\n\n"
+            "─── Duty Cycle Metrics ───\n"
+            f"Line duty A: min {sim.duty_cycle_a_min * 100:.2f}%,"
+            f" max {sim.duty_cycle_a_max * 100:.2f}%,"
+            f" avg {sim.duty_cycle_a_mean * 100:.2f}%,"
+            f" RMS {sim.duty_cycle_a_rms * 100:.2f}%\n"
+            f"Line duty B: min {sim.duty_cycle_b_min * 100:.2f}%,"
+            f" max {sim.duty_cycle_b_max * 100:.2f}%,"
+            f" avg {sim.duty_cycle_b_mean * 100:.2f}%,"
+            f" RMS {sim.duty_cycle_b_rms * 100:.2f}%\n"
+            f"Line duty C: min {sim.duty_cycle_c_min * 100:.2f}%,"
+            f" max {sim.duty_cycle_c_max * 100:.2f}%,"
+            f" avg {sim.duty_cycle_c_mean * 100:.2f}%,"
+            f" RMS {sim.duty_cycle_c_rms * 100:.2f}%\n"
+            f"Phase duty AB (A-B): min {sim.duty_cycle_ab_min * 100:.2f}%,"
+            f" max {sim.duty_cycle_ab_max * 100:.2f}%,"
+            f" avg {sim.duty_cycle_ab_mean * 100:.2f}%,"
+            f" RMS {sim.duty_cycle_ab_rms * 100:.2f}%\n"
+            f"Phase duty BC (B-C): min {sim.duty_cycle_bc_min * 100:.2f}%,"
+            f" max {sim.duty_cycle_bc_max * 100:.2f}%,"
+            f" avg {sim.duty_cycle_bc_mean * 100:.2f}%,"
+            f" RMS {sim.duty_cycle_bc_rms * 100:.2f}%\n"
+            f"Phase duty CA (C-A): min {sim.duty_cycle_ca_min * 100:.2f}%,"
+            f" max {sim.duty_cycle_ca_max * 100:.2f}%,"
+            f" avg {sim.duty_cycle_ca_mean * 100:.2f}%,"
+            f" RMS {sim.duty_cycle_ca_rms * 100:.2f}%\n"
+            f"Dead-time duty loss: {sim.dead_time_duty_limit * 100:.3f}%"
+            f" → D_max = {(1.0 - sim.dead_time_duty_limit) * 100:.3f}%,"
+            f" D_min = {sim.dead_time_duty_limit * 100:.3f}%\n\n"
             f"Top harmonics (freq -> magnitude):\n"
             + "\n".join(top_harmonics_lines)
             + "\n\n"

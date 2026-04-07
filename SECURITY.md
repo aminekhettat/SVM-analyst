@@ -3,7 +3,7 @@
 ## Supported versions
 
 | Version | Supported |
-|---------|-----------|
+| ------- | --------- |
 | 1.1.x   | Yes       |
 | < 1.1   | No        |
 

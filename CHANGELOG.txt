@@ -1,6 +1,29 @@
 SVM Analyst – Changelog
 ========================
 
+v1.2.2 – 2026-04-08
+--------------------
+Patch — duty cycle metrics, FFT, dead-time impact, and PDF report inclusion.
+
+- core: SimulationResult extended with per-leg (A/B/C) min/max/mean/RMS duty
+  cycle statistics, phase-to-phase duty cycle arrays (D_AB, D_BC, D_CA) and
+  their statistics, dead_time_duty_limit scalar (fraction of PWM period), and
+  FFT arrays for the duty cycle signal (Phase A, sampled at pwm_frequency_hz).
+- core: run_simulation() now computes all new fields; duty cycle FFT reuses
+  the existing compute_fft() with sampling_rate = pwm_frequency_hz.
+- gui: PlotCanvas._duty_fft_plot added below the duty cycle envelope —
+  toggled via "Show Duty Cycle FFT" checkbox.
+- gui: Dead-time limit reference lines (dashed red) drawn on the duty cycle
+  envelope plot at D_min = limit% and D_max = (1−limit)%.
+- gui: PlotCanvas.update_duty_cycle() gains dead_time_duty_limit parameter.
+- gui: PlotCanvas.update_duty_fft() new method.
+- gui: Info text box now shows a "Duty Cycle Metrics" section with per-leg
+  and phase-to-phase min/max/avg/RMS values and dead-time duty loss.
+- io: export_report_pdf() gains a "Duty Cycle Envelope + FFT" page (page 4)
+  with matplotlib subplots, dead-time horizontal lines, and TOC updated.
+- io: Parameter summary page now includes duty cycle statistics.
+- tests: 12 new tests added (test_core.py ×8, test_gui.py ×6); total 265.
+
 v1.2.1 – 2026-04-07
 --------------------
 Patch — duty cycle plot enhancements.

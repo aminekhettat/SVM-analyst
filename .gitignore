@@ -9,6 +9,7 @@ venv/
 # PyInstaller outputs
 build/
 dist/
+dist-release/
 
 # OS/editor noise
 .DS_Store

@@ -13,6 +13,8 @@ Atomic features covered:
 - Single-instance lock: acquire succeeds first time, fails second time, releases correctly
 - Window layout / auto-resize: PlotCanvas Expanding policy, info_box max height, minimum window size,
   control panel Maximum vertical policy, aspect ratio enforcement
+- Duty cycle FFT panel: update_duty_fft creates/updates curve, _duty_fft_plot exists
+- Dead-time duty limit lines: visible/hidden based on dead_time_duty_limit value
 """
 
 import os
@@ -169,6 +171,49 @@ class TestPlotCanvas:
     def test_duty_check_checkboxes_exist_for_all_phases(self, canvas):
         """PlotCanvas must expose _duty_check dict with checkboxes for A, B, C."""
         assert set(canvas._duty_check.keys()) == {"A", "B", "C"}
+
+    def test_update_duty_cycle_with_dead_time_limit_shows_lines(self, canvas):
+        """Dead-time limit lines must become visible when dead_time_duty_limit > 0."""
+        n = 50
+        t = np.linspace(0, 1e-3, n)
+        duty = {"A": np.ones(n) * 0.6, "B": np.ones(n) * 0.5, "C": np.ones(n) * 0.4}
+        canvas.update_duty_cycle(t, duty, dead_time_duty_limit=0.02)
+        assert all(ln.isVisible() for ln in canvas._duty_deadtime_lines)
+        # D_min line at 2 %, D_max line at 98 %
+        vals = sorted(ln.value() for ln in canvas._duty_deadtime_lines)
+        assert vals[0] == pytest.approx(2.0, abs=0.01)
+        assert vals[1] == pytest.approx(98.0, abs=0.01)
+
+    def test_update_duty_cycle_zero_dead_time_hides_lines(self, canvas):
+        """Dead-time limit lines must be hidden when dead_time_duty_limit == 0."""
+        n = 50
+        t = np.linspace(0, 1e-3, n)
+        duty = {"A": np.ones(n) * 0.5, "B": np.ones(n) * 0.5, "C": np.ones(n) * 0.5}
+        canvas.update_duty_cycle(t, duty, dead_time_duty_limit=0.0)
+        assert all(not ln.isVisible() for ln in canvas._duty_deadtime_lines)
+
+    def test_update_duty_fft_creates_curve(self, canvas):
+        """update_duty_fft must create the FFT curve on first call."""
+        freqs = np.linspace(0, 5000, 100)
+        mag = np.random.default_rng(42).random(100)
+        canvas.update_duty_fft(freqs, mag)
+        assert canvas._duty_fft_curve is not None
+        x, y = canvas._duty_fft_curve.getData()
+        assert len(x) == 100
+        assert len(y) == 100
+
+    def test_update_duty_fft_second_call_updates_data(self, canvas):
+        """Second call to update_duty_fft must update existing curve data."""
+        freqs = np.linspace(0, 4000, 80)
+        mag = np.ones(80) * 0.3
+        canvas.update_duty_fft(freqs, mag)
+        _, y = canvas._duty_fft_curve.getData()
+        assert float(np.mean(y)) == pytest.approx(0.3, abs=1e-6)
+
+    def test_duty_fft_plot_widget_exists(self, canvas):
+        """PlotCanvas must expose _duty_fft_plot widget."""
+        assert hasattr(canvas, "_duty_fft_plot")
+        assert canvas._duty_fft_plot is not None
 
 
 # ---------------------------------------------------------------------------

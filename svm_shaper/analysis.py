@@ -142,3 +142,59 @@ def compute_top_harmonics(
         top.append((float(freqs_sub[idx]), float(mags[idx])))
 
     return top
+
+
+def compute_duty_cycle_envelope(
+    signal: np.ndarray,
+    time: np.ndarray,
+    oversample: int,
+    battery_voltage: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Compute a per-PWM-period duty cycle envelope from a voltage waveform.
+
+    The duty cycle for each switching period is the fraction of samples whose
+    voltage exceeds half the DC-bus voltage (``battery_voltage / 2``).  Plotting
+    this against time reveals the modulating reference waveform (sinusoid for
+    SPWM, SVM envelope, clamped segments for DPWM, etc.).
+
+    Parameters
+    ----------
+    signal:
+        High-resolution phase voltage samples (e.g. ``phase_a`` from
+        ``SimulationResult``).  Shape: ``(N,)``.
+    time:
+        Corresponding time vector in seconds.  Same length as *signal*.
+    oversample:
+        Number of samples per PWM period used during waveform generation.
+        Must be >= 1.
+    battery_voltage:
+        DC-link voltage used as the HIGH-level reference.  The threshold is
+        set at ``battery_voltage / 2``.
+
+    Returns
+    -------
+    duty_time:
+        Time at the mid-point of each PWM period.  Shape: ``(M,)`` where
+        ``M = len(signal) // oversample``.
+    duty:
+        Duty cycle in [0, 1] for each period.  Shape: ``(M,)``.
+    """
+
+    if signal.size == 0 or oversample < 1:
+        return np.array([], dtype=np.float64), np.array([], dtype=np.float64)
+
+    n_periods = signal.size // oversample
+    if n_periods == 0:
+        return np.array([], dtype=np.float64), np.array([], dtype=np.float64)
+
+    # Reshape into (n_periods, oversample) blocks; discard trailing partial period.
+    trimmed = signal[: n_periods * oversample].reshape(n_periods, oversample)
+    threshold = battery_voltage * 0.5
+    duty = np.mean(trimmed > threshold, axis=1).astype(np.float64)
+
+    # Time coordinate: centre of each PWM period.
+    mid_indices = np.arange(n_periods) * oversample + oversample // 2
+    mid_indices = np.clip(mid_indices, 0, time.size - 1)
+    duty_time = time[mid_indices]
+
+    return duty_time, duty

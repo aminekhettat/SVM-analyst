@@ -1,10 +1,31 @@
-"""Unit tests for core simulation logic."""
+"""Unit tests for core simulation logic.
+
+Atomic features covered:
+- PWM pulse count integrity and DPWM reduction
+- Speed quantization and deviation fields
+- Waveform statistics consistency
+- Amplitude factor waveform range
+- Line voltage bounds
+- THD sinusoidal vs. DPWM distinction
+- DPWM rail-clamping behavior
+- Alignment setting changes waveform shape
+- Dead-time switching statistics
+- Dead-time diode conduction voltage levels
+- Current-phase parameter effect on dead-time distribution
+- Duty cycle arrays (per-PWM-period envelope)
+- Per-leg duty cycle statistics (min/max/mean/RMS)
+- Phase-to-phase duty cycle arrays and statistics
+- Dead-time duty limit formula and zero-dead-time case
+- Duty cycle FFT arrays populated
+- SimulationResult backward-compatible default fields
+"""
 
 import math
 
 import numpy as np
+import pytest
 
-from svm_shaper.core import SimulatorConfig, run_simulation
+from svm_shaper.core import SimulationResult, SimulatorConfig, run_simulation
 from svm_shaper.modulations import ModulationMode, PulseAlignment
 
 
@@ -288,3 +309,163 @@ def test_simulation_result_has_duty_cycle_fields() -> None:
     assert float(np.max(res.duty_cycle_b)) <= 1.0
     assert float(np.min(res.duty_cycle_c)) >= 0.0
     assert float(np.max(res.duty_cycle_c)) <= 1.0
+
+
+def test_duty_cycle_stats_are_computed() -> None:
+    """run_simulation must populate per-leg min/max/mean/RMS duty cycle statistics."""
+    cfg = SimulatorConfig(
+        speed_rpm=1200.0,
+        pwm_frequency_hz=8000.0,
+        motor_pole_pairs=4,
+        num_cycles=2,
+    )
+    res = run_simulation(cfg)
+    # All stat fields must be present and finite
+    for phase in ("a", "b", "c"):
+        for stat in ("min", "max", "mean", "rms"):
+            val = getattr(res, f"duty_cycle_{phase}_{stat}")
+            assert isinstance(val, float)
+            assert np.isfinite(val), f"duty_cycle_{phase}_{stat} is not finite"
+    # min <= mean <= max, RMS >= 0
+    assert res.duty_cycle_a_min <= res.duty_cycle_a_mean <= res.duty_cycle_a_max
+    assert res.duty_cycle_b_min <= res.duty_cycle_b_mean <= res.duty_cycle_b_max
+    assert res.duty_cycle_c_min <= res.duty_cycle_c_mean <= res.duty_cycle_c_max
+    assert res.duty_cycle_a_rms >= 0.0
+    assert res.duty_cycle_b_rms >= 0.0
+    assert res.duty_cycle_c_rms >= 0.0
+
+
+def test_phase_to_phase_duty_cycle_arrays_shape() -> None:
+    """Phase-to-phase duty cycles must be same length as per-leg arrays."""
+    cfg = SimulatorConfig(
+        speed_rpm=1200.0,
+        pwm_frequency_hz=8000.0,
+        motor_pole_pairs=4,
+        num_cycles=2,
+    )
+    res = run_simulation(cfg)
+    n = len(res.duty_cycle_a)
+    assert len(res.duty_cycle_ab) == n
+    assert len(res.duty_cycle_bc) == n
+    assert len(res.duty_cycle_ca) == n
+    # D_AB + D_BC + D_CA must sum to zero at every point (algebraic identity)
+    total = res.duty_cycle_ab + res.duty_cycle_bc + res.duty_cycle_ca
+    assert np.allclose(total, 0.0, atol=1e-12)
+
+
+def test_phase_to_phase_duty_cycle_stats_match_arrays() -> None:
+    """Phase duty stats in SimulationResult must match direct numpy calculations."""
+    cfg = SimulatorConfig(
+        speed_rpm=1200.0,
+        pwm_frequency_hz=8000.0,
+        motor_pole_pairs=4,
+        num_cycles=2,
+    )
+    res = run_simulation(cfg)
+    for arr, prefix in (
+        (res.duty_cycle_ab, "ab"),
+        (res.duty_cycle_bc, "bc"),
+        (res.duty_cycle_ca, "ca"),
+    ):
+        assert getattr(res, f"duty_cycle_{prefix}_min") == pytest.approx(
+            float(np.min(arr)), abs=1e-9
+        )
+        assert getattr(res, f"duty_cycle_{prefix}_max") == pytest.approx(
+            float(np.max(arr)), abs=1e-9
+        )
+        assert getattr(res, f"duty_cycle_{prefix}_mean") == pytest.approx(
+            float(np.mean(arr)), abs=1e-9
+        )
+        assert getattr(res, f"duty_cycle_{prefix}_rms") == pytest.approx(
+            float(np.sqrt(np.mean(arr**2))), abs=1e-9
+        )
+
+
+def test_dead_time_duty_limit_formula() -> None:
+    """dead_time_duty_limit must equal dead_time_us * 1e-6 * pwm_frequency_hz."""
+    cfg = SimulatorConfig(
+        speed_rpm=1200.0,
+        pwm_frequency_hz=10_000.0,
+        motor_pole_pairs=4,
+        num_cycles=2,
+        dead_time_us=2.0,
+    )
+    res = run_simulation(cfg)
+    expected = 2.0e-6 * 10_000.0
+    assert res.dead_time_duty_limit == pytest.approx(expected, rel=1e-9)
+
+
+def test_dead_time_duty_limit_zero_when_no_dead_time() -> None:
+    """dead_time_duty_limit must be 0 when dead_time_us=0."""
+    cfg = SimulatorConfig(
+        speed_rpm=1200.0,
+        pwm_frequency_hz=8000.0,
+        motor_pole_pairs=4,
+        num_cycles=2,
+        dead_time_us=0.0,
+    )
+    res = run_simulation(cfg)
+    assert res.dead_time_duty_limit == pytest.approx(0.0)
+
+
+def test_duty_cycle_fft_arrays_are_populated() -> None:
+    """duty_cycle_fft_freqs and duty_cycle_fft_magnitude must be non-empty arrays."""
+    cfg = SimulatorConfig(
+        speed_rpm=1200.0,
+        pwm_frequency_hz=8000.0,
+        motor_pole_pairs=4,
+        num_cycles=2,
+    )
+    res = run_simulation(cfg)
+    assert res.duty_cycle_fft_freqs.size > 0
+    assert res.duty_cycle_fft_magnitude.size > 0
+    assert len(res.duty_cycle_fft_freqs) == len(res.duty_cycle_fft_magnitude)
+    # Frequencies start at 0 and must be non-negative
+    assert float(res.duty_cycle_fft_freqs[0]) >= 0.0
+
+
+def test_simulation_result_default_fields_do_not_break_fixture() -> None:
+    """New optional fields must have defaults; minimal fixture construction must still work."""
+    t = np.linspace(0, 0.01, 100)
+    ph = np.sin(2 * np.pi * 50 * t)
+    # Only supply the originally required fields — new fields rely on defaults.
+    res = SimulationResult(
+        time=t,
+        phase_a=ph,
+        phase_b=ph,
+        phase_c=ph,
+        phase_voltage_ab=ph,
+        phase_voltage_bc=ph,
+        phase_voltage_ca=ph,
+        filtered_phase_a=ph,
+        filtered_phase_b=ph,
+        filtered_phase_c=ph,
+        fft_freqs=np.array([0.0, 50.0]),
+        fft_magnitude=np.array([0.0, 1.0]),
+        thd_line_percent=0.0,
+        thd_phase_percent=0.0,
+        top_harmonics=[],
+        pulses_per_electrical_cycle=100,
+        degrees_per_pwm_pulse=3.6,
+        actual_speed_rpm=600.0,
+        speed_deviation_rpm=0.0,
+        speed_deviation_percent=0.0,
+        filtered_mean=0.0,
+        filtered_rms=0.0,
+        filtered_min=0.0,
+        filtered_max=0.0,
+        raw_mean=0.0,
+        raw_rms=0.0,
+        raw_min=0.0,
+        raw_max=0.0,
+        description_text="test",
+        duty_cycle_time=np.linspace(0, 0.01, 5),
+        duty_cycle_a=np.ones(5) * 0.5,
+        duty_cycle_b=np.ones(5) * 0.5,
+        duty_cycle_c=np.ones(5) * 0.5,
+    )
+    # Defaults: stats = 0.0, arrays = empty
+    assert res.duty_cycle_a_min == 0.0
+    assert res.duty_cycle_ab.size == 0
+    assert res.dead_time_duty_limit == 0.0
+    assert res.duty_cycle_fft_freqs.size == 0

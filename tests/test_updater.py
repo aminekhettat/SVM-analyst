@@ -353,7 +353,9 @@ class TestApplyUpdate(unittest.TestCase):
             self.assertIn(r"C:\MyApp\svm-analyst.exe", content)
             os.unlink(bat_path)
 
-    @unittest.skipUnless(sys.platform == "win32", "CREATE_NO_WINDOW only exists on Windows")
+    @unittest.skipUnless(
+        sys.platform == "win32", "CREATE_NO_WINDOW only exists on Windows"
+    )
     def test_popen_uses_create_no_window_flag(self):
         with (
             patch.object(sys, "frozen", True, create=True),

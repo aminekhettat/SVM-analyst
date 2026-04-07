@@ -198,10 +198,11 @@ def export_report_pdf(
             "1. Cover page\n"
             "2. Table of contents\n"
             "3. Waveform + FFT\n"
-            + ("4. SVM hexagon\n" if include_hexagon else "")
-            + ("5. Top harmonics\n" if include_harmonics_table else "")
-            + "6. Parameter summary\n"
-            "7. Explanation\n"
+            "4. Duty Cycle Envelope + FFT\n"
+            + ("5. SVM hexagon\n" if include_hexagon else "")
+            + ("6. Top harmonics\n" if include_harmonics_table else "")
+            + "7. Parameter summary\n"
+            "8. Explanation\n"
         )
         _draw_text_page("Table of contents", toc_text, page_num)
         page_num += 1
@@ -275,6 +276,72 @@ def export_report_pdf(
             pdf.savefig(fig)
             plt.close(fig)
 
+        page_num += 1
+
+        # -- Duty Cycle Envelope + FFT -----------------------------------------------
+        dc_fig, (ax_dc, ax_dc_fft) = plt.subplots(2, 1, figsize=(8.5, 11))
+        ax_dc.plot(
+            sim.duty_cycle_time,
+            sim.duty_cycle_a * 100.0,
+            label="Phase A",
+            color="#5577ff",
+        )
+        ax_dc.plot(
+            sim.duty_cycle_time,
+            sim.duty_cycle_b * 100.0,
+            label="Phase B",
+            color="#ff5555",
+        )
+        ax_dc.plot(
+            sim.duty_cycle_time,
+            sim.duty_cycle_c * 100.0,
+            label="Phase C",
+            color="#55cc66",
+        )
+        if sim.dead_time_duty_limit > 0.0:
+            _d_loss_pct = sim.dead_time_duty_limit * 100.0
+            ax_dc.axhline(
+                y=_d_loss_pct,
+                color="orange",
+                linestyle="--",
+                linewidth=1,
+                label=f"D_min = {_d_loss_pct:.3f}%",
+            )
+            ax_dc.axhline(
+                y=100.0 - _d_loss_pct,
+                color="orange",
+                linestyle="--",
+                linewidth=1,
+                label=f"D_max = {100.0 - _d_loss_pct:.3f}%",
+            )
+        ax_dc.set_title("Duty Cycle Envelope (per-leg)")
+        ax_dc.set_xlabel("Time (s)")
+        ax_dc.set_ylabel("Duty Cycle (%)")
+        ax_dc.set_ylim(-5.0, 105.0)
+        ax_dc.legend(loc="upper right", fontsize=8)
+        ax_dc.grid(True)
+
+        if sim.duty_cycle_fft_freqs.size > 0:
+            ax_dc_fft.plot(sim.duty_cycle_fft_freqs, sim.duty_cycle_fft_magnitude)
+            ax_dc_fft.set_xlim(0, float(sim.duty_cycle_fft_freqs.max()))
+        else:
+            ax_dc_fft.text(
+                0.5,
+                0.5,
+                "No FFT data available",
+                ha="center",
+                va="center",
+                transform=ax_dc_fft.transAxes,
+            )
+        ax_dc_fft.set_title("Duty Cycle FFT (Phase A)")
+        ax_dc_fft.set_xlabel("Frequency (Hz)")
+        ax_dc_fft.set_ylabel("Magnitude")
+        ax_dc_fft.grid(True)
+
+        dc_fig.tight_layout(rect=[0, 0.05, 1, 0.95])
+        _add_footer(dc_fig, page_num)
+        pdf.savefig(dc_fig)
+        plt.close(dc_fig)
         page_num += 1
 
         # -- SVM hexagon ------------------------------------------------------------
@@ -362,6 +429,37 @@ def export_report_pdf(
             f"{phase_label} min/max: {phase_min:.2f} V / {phase_max:.2f} V\n"
         )
 
+        # Duty cycle statistics
+        dc_stats = (
+            f"Line duty A: min {sim.duty_cycle_a_min * 100:.2f}%,"
+            f" max {sim.duty_cycle_a_max * 100:.2f}%,"
+            f" avg {sim.duty_cycle_a_mean * 100:.2f}%,"
+            f" RMS {sim.duty_cycle_a_rms * 100:.2f}%\n"
+            f"Line duty B: min {sim.duty_cycle_b_min * 100:.2f}%,"
+            f" max {sim.duty_cycle_b_max * 100:.2f}%,"
+            f" avg {sim.duty_cycle_b_mean * 100:.2f}%,"
+            f" RMS {sim.duty_cycle_b_rms * 100:.2f}%\n"
+            f"Line duty C: min {sim.duty_cycle_c_min * 100:.2f}%,"
+            f" max {sim.duty_cycle_c_max * 100:.2f}%,"
+            f" avg {sim.duty_cycle_c_mean * 100:.2f}%,"
+            f" RMS {sim.duty_cycle_c_rms * 100:.2f}%\n"
+            f"Phase duty AB (A-B): min {sim.duty_cycle_ab_min * 100:.2f}%,"
+            f" max {sim.duty_cycle_ab_max * 100:.2f}%,"
+            f" avg {sim.duty_cycle_ab_mean * 100:.2f}%,"
+            f" RMS {sim.duty_cycle_ab_rms * 100:.2f}%\n"
+            f"Phase duty BC (B-C): min {sim.duty_cycle_bc_min * 100:.2f}%,"
+            f" max {sim.duty_cycle_bc_max * 100:.2f}%,"
+            f" avg {sim.duty_cycle_bc_mean * 100:.2f}%,"
+            f" RMS {sim.duty_cycle_bc_rms * 100:.2f}%\n"
+            f"Phase duty CA (C-A): min {sim.duty_cycle_ca_min * 100:.2f}%,"
+            f" max {sim.duty_cycle_ca_max * 100:.2f}%,"
+            f" avg {sim.duty_cycle_ca_mean * 100:.2f}%,"
+            f" RMS {sim.duty_cycle_ca_rms * 100:.2f}%\n"
+            f"Dead-time duty loss: {sim.dead_time_duty_limit * 100:.3f}%"
+            f" -> D_max = {(1.0 - sim.dead_time_duty_limit) * 100:.3f}%,"
+            f" D_min = {sim.dead_time_duty_limit * 100:.3f}%\n"
+        )
+
         params = (
             f"Modulation: {config.modulation.value}\n"
             + injection_line
@@ -386,6 +484,8 @@ def export_report_pdf(
             "THD note: line A includes common-mode (triplen) content, while phase AB cancels it.\n"
             "Filtering note: filtered waveforms are fundamental envelopes, so they usually do not hit 0 V or Vbatt rails.\n\n"
             + stats
+            + "\nDuty Cycle Metrics:\n"
+            + dc_stats
         )
         _draw_text_page("Parameter summary", params, page_num)
         page_num += 1
@@ -398,7 +498,7 @@ def export_report_pdf(
     # searches (e.g. in unit tests) don't reliably find key words. Append a small PDF
     # comment to the end of the file containing the important report keywords.
     # This does not affect PDF viewers, but makes tests deterministic.
-    comment_keywords = ["mean", "rms", "min", "max"]
+    comment_keywords = ["mean", "rms", "min", "max", "duty", "dead-time"]
     if injection_line:
         comment_keywords.append("Injection:")
     comment = "% " + " ".join(comment_keywords) + "\n"
