@@ -1,0 +1,22 @@
+{
+  "motor_pole_pairs": 5,
+  "pwm_frequency_hz": 10000.0,
+  "speed_rpm": 2000.0,
+  "battery_voltage": 240.0,
+  "amplitude_percent": 100.0,
+  "modulation": "SVM",
+  "show_phase_voltages": false,
+  "show_filtered": false,
+  "show_switching_edges": false,
+  "filter_cutoff_hz": 0.0,
+  "injection_percent": 100.0,
+  "alignment": "center",
+  "dead_time_us": 2.0,
+  "diode_forward_voltage_v": 0.6,
+  "current_phase_deg": 30.0,
+  "author_name": "SVM Analyst",
+  "project_name": "Default Configuration",
+  "num_cycles": 10,
+  "display_cycles": 3,
+  "oversample": 50
+}

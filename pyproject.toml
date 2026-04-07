@@ -1,6 +1,6 @@
 [project]
 name = "svm-analyst"
-version = "1.1.0"
+version = "1.1.1"
 description = "Interactive PWM/SVM modulation simulator for educational use."
 authors = [
   { name = "Amine KHETTAT" }

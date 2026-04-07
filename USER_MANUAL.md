@@ -1,6 +1,29 @@
 # SVM Analyst User Manual
 
-Version 1.0.1
+Version 1.1.1
+
+## What's New
+
+### Version 1.1.1
+
+- Application icon embedded in the executable and window for professional visual identity.
+- Automated distribution build script producing a ready-to-distribute ZIP package.
+- Freshly regenerated user manual and API documentation aligned with the executable.
+- Example files included in the distribution: default configuration and sample waveform.
+
+### Version 1.1.0
+
+- Unified name "SVM Analyst" applied to all window titles, file prefixes, and menus.
+- Full accessibility support: every control has an accessible name and description
+  compatible with screen readers such as NVDA and JAWS.
+- Extended test suite covering 191 tests: modulations, analysis, visualization,
+  sweep, IO, accessibility, and GUI behavior.
+- GitHub Actions CI pipeline for automated quality gates on each push.
+
+### Version 1.0.2
+
+- Migrated GUI from PyQt6 to PySide6.
+- Added pyqtgraph oscilloscope: real-time scrolling waveform with pause, step, and zoom.
 
 ## 1. Purpose
 
@@ -66,7 +89,7 @@ This mirrors common MCU timer modes and changes switching instant placement.
 
 Dead time inserts a short non-switching interval around commutations to emulate real gate-driver timing constraints.
 
-In version 1.0.1, dead time is modeled at inverter leg level with two key behaviors:
+In version 1.0.2 and later, dead time is modeled at inverter leg level with two key behaviors:
 
 - The PWM period remains constant (for example, 20 kHz remains 50 us period).
 - During dead time, the open-leg voltage is set by diode conduction and current direction.

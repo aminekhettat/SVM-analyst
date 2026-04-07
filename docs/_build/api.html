@@ -5,11 +5,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>API Reference &#8212; SVM Analyst 1.0.1 documentation</title>
+    <title>API Reference &#8212; SVM Analyst 1.1.1 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="_static/basic.css?v=b08954a9" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=27fed22d" />
-    <script src="_static/documentation_options.js?v=292eb321"></script>
+    <script src="_static/documentation_options.js?v=58fbf978"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -183,9 +183,17 @@ except DC and the fundamental.</p>
 </dd></dl>
 
 <p id="module-svm_shaper.gui">Graphical user interface for the SVM Analyst simulator.</p>
-<p>This module builds a PyQt6 application that allows users to select modulation
+<p>This module builds a PySide6 application that allows users to select modulation
 modes, configure system parameters, and visualize the resulting PWM signals and
-harmonics in real time.</p>
+harmonics in real time using pyqtgraph for interactive plots.</p>
+<p>Plot features:
+- Zoom with mouse wheel, rubber-band rectangle selection.
+- Pan with right-click drag.
+- Crosshair cursor with live time/voltage readout.
+- Clickable legend to hide/show individual traces.
+- Per-phase line style panel: color picker, line width, dash pattern, marker.
+- Pause / resume / step oscilloscope scrolling.
+- Right-click context menu on any plot for extra options (ViewBox built-in).</p>
 <p>Accessibility notes:
 - All interactive widgets have accessible names and descriptive tooltips.
 - Keyboard navigation is supported through standard Qt focus handling.</p>
@@ -195,7 +203,35 @@ License: See LICENSE</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="svm_shaper.gui.PlotCanvas">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">svm_shaper.gui.</span></span><span class="sig-name descname"><span class="pre">PlotCanvas</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#svm_shaper.gui.PlotCanvas" title="Link to this definition">¶</a></dt>
-<dd><p>Matplotlib canvas used for waveform and FFT plots.</p>
+<dd><p>pyqtgraph-based oscilloscope + FFT widget.</p>
+<section id="features">
+<h2>Features<a class="headerlink" href="#features" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Zoom: mouse wheel on any plot, or drag a rubber-band rectangle.</p></li>
+<li><p>Pan: right-click drag.</p></li>
+<li><p>Crosshair: moves with the mouse over the waveform, shows t / V values.</p></li>
+<li><p>Legend: click a legend label to hide/show the corresponding trace.</p></li>
+<li><p>styles: per-phase color, line width, dash pattern and marker.</p></li>
+<li><p>Right-click context menu (ViewBox built-in) to reset zoom.</p></li>
+</ul>
+<dl class="py method">
+<dt class="sig sig-object py" id="svm_shaper.gui.PlotCanvas.grab_pixmap">
+<span class="sig-name descname"><span class="pre">grab_pixmap</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">QPixmap</span></span></span><a class="headerlink" href="#svm_shaper.gui.PlotCanvas.grab_pixmap" title="Link to this definition">¶</a></dt>
+<dd><p>Return a QPixmap screenshot of this widget for export.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="svm_shaper.gui.PlotCanvas.reset_zoom">
+<span class="sig-name descname"><span class="pre">reset_zoom</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#svm_shaper.gui.PlotCanvas.reset_zoom" title="Link to this definition">¶</a></dt>
+<dd><p>Re-enable auto-range on the waveform plot.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="svm_shaper.gui.PlotCanvas.set_phase_visible">
+<span class="sig-name descname"><span class="pre">set_phase_visible</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">phase</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">visible</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#svm_shaper.gui.PlotCanvas.set_phase_visible" title="Link to this definition">¶</a></dt>
+<dd><p>Show or hide one phase curve.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="svm_shaper.gui.PlotCanvas.update_fft">
 <span class="sig-name descname"><span class="pre">update_fft</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">freqs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">magnitude</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#svm_shaper.gui.PlotCanvas.update_fft" title="Link to this definition">¶</a></dt>
@@ -203,30 +239,77 @@ License: See LICENSE</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="svm_shaper.gui.PlotCanvas.update_waveform">
-<span class="sig-name descname"><span class="pre">update_waveform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phases</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switch_times</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#svm_shaper.gui.PlotCanvas.update_waveform" title="Link to this definition">¶</a></dt>
-<dd><p>Update the waveform plot with the latest data.</p>
-<p>If <cite>switch_times</cite> is provided, display markers at the PWM switching edges.</p>
+<dt class="sig sig-object py" id="svm_shaper.gui.PlotCanvas.update_style">
+<span class="sig-name descname"><span class="pre">update_style</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">phase</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">symbol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#svm_shaper.gui.PlotCanvas.update_style" title="Link to this definition">¶</a></dt>
+<dd><p>Update visual style for one phase and redraw.</p>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="svm_shaper.gui.PlotCanvas.update_waveform">
+<span class="sig-name descname"><span class="pre">update_waveform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phases</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">switch_times</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#svm_shaper.gui.PlotCanvas.update_waveform" title="Link to this definition">¶</a></dt>
+<dd><p>Update the waveform plot (oscilloscope trace).</p>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="svm_shaper.gui.PlotStylePanel">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">svm_shaper.gui.</span></span><span class="sig-name descname"><span class="pre">PlotStylePanel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">canvas</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#svm_shaper.gui.PlotCanvas" title="svm_shaper.gui.PlotCanvas"><span class="pre">PlotCanvas</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#svm_shaper.gui.PlotStylePanel" title="Link to this definition">¶</a></dt>
+<dd><p>Side panel that lets users customise per-phase plot appearance.</p>
+<section id="controls-per-phase">
+<h2>Controls per phase<a class="headerlink" href="#controls-per-phase" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Visibility checkbox</p></li>
+<li><p>Color picker button</p></li>
+<li><p>Line width spinbox (0.5 – 5 px)</p></li>
+<li><p>Dash pattern combobox</p></li>
+<li><p>Marker shape combobox</p></li>
+<li><p>Reset button to restore defaults</p></li>
+</ul>
+</section>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="svm_shaper.gui.SimulationWorker">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">svm_shaper.gui.</span></span><span class="sig-name descname"><span class="pre">SimulationWorker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#svm_shaper.core.SimulatorConfig" title="svm_shaper.core.SimulatorConfig"><span class="pre">SimulatorConfig</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#svm_shaper.gui.SimulationWorker" title="Link to this definition">¶</a></dt>
-<dd><p>Worker for running simulation in a background thread.</p>
+<dd><p>Worker that runs the PWM simulation in a background thread.</p>
+<p>Emits <a class="reference internal" href="#svm_shaper.gui.SimulationWorker.finished" title="svm_shaper.gui.SimulationWorker.finished"><code class="xref py py-attr docutils literal notranslate"><span class="pre">finished</span></code></a> with the <a class="reference internal" href="#svm_shaper.core.SimulationResult" title="svm_shaper.core.SimulationResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SimulationResult</span></code></a>
+once the computation completes, so the GUI thread can update plots without
+blocking the event loop.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.gui.SimulationWorker.finished">
+<span class="sig-name descname"><span class="pre">finished</span></span><a class="headerlink" href="#svm_shaper.gui.SimulationWorker.finished" title="Link to this definition">¶</a></dt>
+<dd><p>Emitted when the simulation finishes; carries the SimulationResult.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="svm_shaper.gui.SimulationWorker.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#svm_shaper.gui.SimulationWorker.run" title="Link to this definition">¶</a></dt>
+<dd><p>Execute the simulation and emit the result signal.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="svm_shaper.gui.SvmHexagonDialog">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">svm_shaper.gui.</span></span><span class="sig-name descname"><span class="pre">SvmHexagonDialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#svm_shaper.core.SimulatorConfig" title="svm_shaper.core.SimulatorConfig"><span class="pre">SimulatorConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#svm_shaper.gui.SvmHexagonDialog" title="Link to this definition">¶</a></dt>
 <dd><p>Dialog showing the SVM hexagon and a rotating reference vector.</p>
+<p>The hexagon displays the six active space vectors of a three-phase inverter
+in the alpha-beta (Clarke) plane. The current active sector is highlighted
+in orange and the rotating reference vector is drawn in red. The animation
+updates every 100 ms using a QTimer.</p>
+<p>Uses matplotlib for geometry drawing (Polygon, arrow).</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="svm_shaper.gui.SvmShaperApp">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">svm_shaper.gui.</span></span><span class="sig-name descname"><span class="pre">SvmShaperApp</span></span><a class="headerlink" href="#svm_shaper.gui.SvmShaperApp" title="Link to this definition">¶</a></dt>
 <dd><p>Main window for the SVM Analyst application.</p>
+<p>This QMainWindow hosts the parameter control panel, the pyqtgraph
+oscilloscope/FFT canvas, the per-phase style panel, and the explanation
+text box.  A background <a class="reference internal" href="#svm_shaper.gui.SimulationWorker" title="svm_shaper.gui.SimulationWorker"><code class="xref py py-class docutils literal notranslate"><span class="pre">SimulationWorker</span></code></a> thread is used so that
+the GUI remains responsive while the simulation runs.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="svm_shaper.gui.SvmShaperApp.closeEvent">
 <span class="sig-name descname"><span class="pre">closeEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QCloseEvent</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#svm_shaper.gui.SvmShaperApp.closeEvent" title="Link to this definition">¶</a></dt>
@@ -238,7 +321,10 @@ License: See LICENSE</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="svm_shaper.gui.SweepDialog">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">svm_shaper.gui.</span></span><span class="sig-name descname"><span class="pre">SweepDialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#svm_shaper.core.SimulatorConfig" title="svm_shaper.core.SimulatorConfig"><span class="pre">SimulatorConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#svm_shaper.gui.SweepDialog" title="Link to this definition">¶</a></dt>
-<dd><p>Dialog to sweep a parameter and visualize THD results.</p>
+<dd><p>Dialog that sweeps one simulation parameter and plots the resulting THD.</p>
+<p>The user selects the variable to sweep (speed or PWM frequency), enters a
+range and step count, then presses <em>Run</em> to compute and display the
+THD-vs-parameter curve via pyqtgraph.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -288,6 +374,7 @@ License: See LICENSE</p>
 <li class="toctree-l2"><a class="reference internal" href="#svm_shaper.analysis.compute_thd"><code class="docutils literal notranslate"><span class="pre">compute_thd()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#svm_shaper.analysis.compute_top_harmonics"><code class="docutils literal notranslate"><span class="pre">compute_top_harmonics()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#svm_shaper.gui.PlotCanvas"><code class="docutils literal notranslate"><span class="pre">PlotCanvas</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.gui.PlotStylePanel"><code class="docutils literal notranslate"><span class="pre">PlotStylePanel</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#svm_shaper.gui.SimulationWorker"><code class="docutils literal notranslate"><span class="pre">SimulationWorker</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#svm_shaper.gui.SvmHexagonDialog"><code class="docutils literal notranslate"><span class="pre">SvmHexagonDialog</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#svm_shaper.gui.SvmShaperApp"><code class="docutils literal notranslate"><span class="pre">SvmShaperApp</span></code></a></li>

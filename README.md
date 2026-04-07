@@ -76,7 +76,7 @@ pytest
 - `svm_shaper/` - core simulation modules and GUI
 - `docs/` - documentation (Sphinx)
 - `USER_MANUAL.md` - end-user operating manual for the packaged application
-- `docs/SVM-Analyst-User-Manual-1.1.0.pdf` - PDF export of the user manual
+- `docs/SVM-Analyst-User-Manual-1.1.1.pdf` - PDF export of the user manual
 - `tests/` - unit and integration tests
 
 ## License

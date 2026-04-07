@@ -32,6 +32,7 @@ exe = EXE(
     a.datas,
     [],
     name='svm-analyst',
+    icon='assets/svm-analyst.ico',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

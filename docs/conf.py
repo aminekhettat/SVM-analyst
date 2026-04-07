@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.abspath(".."))
 
 project = "SVM Analyst"
 author = "Amine KHETTAT"
-release = "1.0.1"
+release = "1.1.1"
 
 extensions = [
     "sphinx.ext.autodoc",

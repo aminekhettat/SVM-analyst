@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 ROOT = Path(__file__).resolve().parents[1]
 INPUT_MD = ROOT / "USER_MANUAL.md"
-OUTPUT_PDF = ROOT / "docs" / "SVM-Analyst-User-Manual-1.1.0.pdf"
+OUTPUT_PDF = ROOT / "docs" / "SVM-Analyst-User-Manual-1.1.1.pdf"
 
 
 def _normalize_markdown(lines: list[str]) -> list[str]:

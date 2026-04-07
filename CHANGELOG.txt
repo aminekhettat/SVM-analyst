@@ -1,0 +1,65 @@
+SVM Analyst – Changelog
+========================
+
+v1.1.1 – 2026-04-07
+--------------------
+- Application icon (assets/svm-analyst.ico) embedded in the executable and window.
+- Automated distribution build script: scripts/build_dist.py
+    * Runs PyInstaller, assembles the release folder, generates README/NOTICES/checksums,
+      and produces SVM-Analyst-{version}.zip in dist-release/.
+- Freshly regenerated user manual (v1.1.1) and Sphinx API docs.
+- Example files added: examples/default_config.json, examples/sample_waveform.csv.
+- Distribution folder structure:
+    SVM-Analyst-{version}/
+        svm-analyst.exe
+        README.txt
+        CHANGELOG.txt
+        LICENSE.txt
+        THIRD_PARTY_NOTICES.txt
+        checksums.sha256
+        docs/SVM-Analyst-User-Manual-{version}.pdf
+        examples/default_config.json
+        examples/sample_waveform.csv
+
+v1.1.0 – 2026-04-07
+--------------------
+- Unified project name "SVM Analyst" throughout:
+    * All default export filenames use the svm-analyst_ prefix.
+    * All window and dialog titles reference "SVM Analyst".
+- Full accessibility support (WCAG-compatible):
+    * Every UI control has setAccessibleName() + setAccessibleDescription().
+    * Verified by 40 dedicated accessibility tests.
+- Extended test suite: 191 tests total, all passing.
+    * test_modulations_helpers.py  (48 tests – all modulation helper functions)
+    * test_analysis_extended.py    (FFT, THD, top-harmonics helpers)
+    * test_visualization_extended.py
+    * test_sweep_extended.py
+    * test_io_extended.py
+    * test_accessibility.py        (40 tests – accessible names and descriptions)
+    * test_gui.py                  (20 tests – GUI behaviour)
+- GitHub Actions CI pipeline (.github/workflows/ci.yml):
+    * Matrix: ubuntu-latest + windows-latest x Python 3.12.
+    * Jobs: lint (ruff) and test (pytest + coverage).
+- Docstrings added to all public methods and classes in svm_shaper/gui.py.
+
+v1.0.2 – 2026-04-06
+--------------------
+- Migrated GUI from PyQt6 to PySide6 (LGPL-licensed).
+- Added pyqtgraph oscilloscope panel:
+    * Real-time scrolling waveform with pause, step, and reset-zoom controls.
+    * Export waveform screenshot to PNG directly from the oscilloscope.
+- Separate FFT panel below the oscilloscope.
+- Single-file PyInstaller executable (dist/svm-analyst.exe).
+
+v1.0.1 – 2026-03-09
+--------------------
+- Initial public release.
+- Modulation methods: Sinusoidal PWM, THIPWM 1/6 and 1/4, SVM,
+  DPWM 120 max/min, DPWM 60 variants, DPWM 30 (DPWM3).
+- Real-time FFT with dual THD computation (line voltage A and phase voltage AB).
+- Dead-time model with diode conduction and configurable forward voltage.
+- PWM alignment modes: left, right, center (MCU-compatible timer semantics).
+- Export: waveform/FFT to CSV, plot to PNG, full report to PDF.
+- Save/load simulation configuration (JSON).
+- THD parameter sweep by speed (RPM) or PWM frequency.
+- SVM hexagon view with active sector highlighting.
