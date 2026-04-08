@@ -46,7 +46,22 @@ Educational simulator for PWM and space-vector modulations focused on PMSM drive
 - Concise voltage metrics display:
   - One line-voltage metric (A) and one phase-voltage metric (AB)
   - Mean, RMS, min, and max for each
+- Common-mode voltage (CMV) plot: live CMV waveform panel with mean/RMS/min/max/peak-to-peak metrics
+- DC bus current ripple plot: normalised ripple waveform with peak-to-peak and RMS metrics
+- Comparison mode: save a simulation snapshot as reference; grey dashed overlays on waveform, FFT, and duty plots; info box shows ΔTHD, ΔCMV pp, and ΔDC bus pp
 - Accessibility: keyboard navigation, screen-reader-friendly labels
+- Common mode voltage (CMV) panel:
+  - Plots CMV = (Va + Vb + Vc) / 3 on a dedicated scrollable panel
+  - Displays mean, RMS, min, max, and peak-to-peak statistics in the info box
+  - Show/hide checkbox; colour-coded purple
+- DC bus current ripple panel:
+  - Plots the normalised DC bus current ripple I_dc_norm = Da·sin(ωt+φ) + Db·sin(ωt−2π/3+φ) + Dc·sin(ωt+2π/3+φ)
+  - Reports min, max, RMS, and peak-to-peak in the info box
+  - Show/hide checkbox; colour-coded red
+- Comparison mode:
+  - "Save Reference" button freezes a simulation snapshot as a grey dashed overlay on the waveform, FFT, and duty cycle plots
+  - "Clear Reference" button removes all overlays
+  - Info box shows ΔTHD, ΔCMV peak-to-peak, and ΔDC bus peak-to-peak against the saved reference
 
 ## Running
 

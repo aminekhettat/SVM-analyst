@@ -21,13 +21,6 @@ from typing import Tuple
 
 import numpy as np
 
-try:
-    from numba import njit, prange
-
-    _NUMBA_AVAILABLE = True
-except ImportError:
-    _NUMBA_AVAILABLE = False
-
 
 class ModulationMode(str, Enum):
     """Supported modulation methods."""
@@ -179,21 +172,7 @@ def _apply_dead_time(signal: np.ndarray, dead_samples: int) -> np.ndarray:
 def _pwm_compare(ref: np.ndarray, carrier: np.ndarray) -> np.ndarray:
     """Compare reference and carrier waveforms to create PWM outputs."""
 
-    if _NUMBA_AVAILABLE:
-        return _pwm_compare_numba(ref, carrier)
-
     return np.where(ref >= carrier, 1.0, -1.0)
-
-
-if _NUMBA_AVAILABLE:
-
-    @njit(parallel=True)
-    def _pwm_compare_numba(ref: np.ndarray, carrier: np.ndarray) -> np.ndarray:
-        n = ref.shape[0]
-        out = np.empty(n, dtype=np.float64)
-        for i in prange(n):
-            out[i] = 1.0 if ref[i] >= carrier[i] else -1.0
-        return out
 
 
 def _phase_reference(theta: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:

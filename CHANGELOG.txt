@@ -1,6 +1,41 @@
 SVM Analyst – Changelog
 ========================
 
+v1.3.0 – 2026-04-08
+--------------------
+Minor release — CMV plot, DC bus current ripple panel, comparison mode.
+
+New features:
+- core: SimulationResult extended with CMV array (cmv) and statistics
+  (cmv_mean, cmv_rms, cmv_min, cmv_max, cmv_pp).  Formula: CMV = (Va+Vb+Vc)/3;
+  mean ≈ Vdc/2 for ideal SVM; deviations reveal zero-sequence voltage.
+- core: SimulationResult extended with normalised DC bus current ripple
+  (dc_bus_current_norm) and its statistics (min/max/rms/pp).
+  Formula: I_dc_norm = Da·sin(ωt+φ) + Db·sin(ωt−2π/3+φ) + Dc·sin(ωt+2π/3+φ).
+- gui: PlotCanvas gains a CMV panel (purple, scrollable) with show/hide checkbox
+  and update_cmv() method.
+- gui: PlotCanvas gains a DC bus current ripple panel (red, scrollable) with
+  show/hide checkbox and update_dc_bus_ripple() method.
+- gui: Splitter now has 5 panels with stretch factors 3/3/2/2/2.
+- gui: Comparison mode — "Save Reference" button stores a SimulationResult
+  snapshot; set_reference_static(), update_reference_waveform(), clear_reference()
+  draw grey dashed overlays on waveform, FFT, and duty cycle plots.
+- gui: "Clear Reference" button removes all overlays; both buttons are accessible
+  via keyboard and screen readers.
+- gui: Info box shows ΔTHD, ΔCMV peak-to-peak, and ΔDC bus peak-to-peak when
+  a reference is active.
+- io: PDF report gains a new CMV + DC bus ripple page (page 5); TOC and page
+  numbers updated accordingly.
+- io: PDF duty cycle page now uses ax.step(where='mid') for correct staircase
+  rendering (bug fix).
+- analysis: compute_thd() vectorised — replaced O(max_order × bins) per-harmonic
+  Python loop with np.rint(orders * f0 / freq_resolution); low-RPM simulations
+  improved from ~68 s to ~0.2 s per point.
+- tests: 55 new tests across 4 feature test files (test_feature_cmv.py ×15,
+  test_feature_dc_bus_ripple.py ×14, test_feature_comparison.py ×21,
+  test_feature_duty_staircase_pdf.py ×5).  Total: 321 tests.
+- ROADMAP.md created documenting all 10 agreed future features.
+
 v1.2.4 – 2026-04-09
 --------------------
 Batch 1 features: CMV plot, DC bus current ripple, comparison mode, PDF duty cycle staircase.

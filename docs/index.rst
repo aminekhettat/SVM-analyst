@@ -36,6 +36,21 @@ Key features:
 - Save/load simulation configuration (JSON)
 - Export waveform/FFT to CSV and plots to PNG
 - Build a standalone Windows executable with PyInstaller
+- Common mode voltage (CMV) panel:
+
+   - CMV = (Va + Vb + Vc) / 3, scrollable, show/hide checkbox
+   - Statistics: mean, RMS, min, max, peak-to-peak in the info box
+
+- DC bus current ripple panel:
+
+   - Normalised ripple I_dc_norm from three-phase duty cycles, scrollable, show/hide checkbox
+   - Statistics: min, max, RMS, peak-to-peak
+
+- Comparison mode:
+
+   - Save/clear a reference simulation snapshot
+   - Grey dashed overlays on waveform, FFT, and duty cycle plots
+   - Delta metrics in the info box: ΔTHD, ΔCMV pp, ΔDC bus pp
 
 Packaging example:
 

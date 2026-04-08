@@ -1,8 +1,26 @@
 # SVM Analyst User Manual
 
-Version 1.1.2
+Version 1.3.0
 
 ## What's New
+
+### Version 1.3.0
+
+- Common mode voltage (CMV) panel: plots CMV = (Va + Vb + Vc) / 3 in a dedicated
+  scrollable panel with mean, RMS, min, max, and peak-to-peak statistics reported
+  in the info box. The panel has a show/hide checkbox and is colour-coded purple.
+- DC bus current ripple panel: plots the normalised DC bus current ripple derived
+  from the three-phase duty cycles. Reports min, max, RMS, and peak-to-peak in the
+  info box. The panel has a show/hide checkbox and is colour-coded red.
+- Comparison mode: use the "Save Reference" button to freeze the current simulation
+  as a grey dashed background overlay on the waveform, FFT, and duty cycle plots.
+  The "Clear Reference" button removes all overlays. When a reference is active,
+  the info box shows ΔTHD, ΔCMV peak-to-peak, and ΔDC bus peak-to-peak.
+- PDF report: new CMV + DC bus ripple page added after the duty cycle page.
+- Bug fix: duty cycle PDF page now renders as a correct staircase (flat-top per
+  PWM period) instead of connecting adjacent samples with a straight line.
+- Performance: THD computation at low RPM improved from ~68 s to ~0.2 s per point
+  via vectorised harmonic bin selection.
 
 ### Version 1.1.2
 
@@ -166,6 +184,27 @@ The upper plot shows either PWM terminal voltages or phase-to-phase voltages dep
 
 The spectrum highlights the fundamental component and switching-related harmonics. The reported THD values are computed from the filtered analysis signals.
 
+### Common Mode Voltage (CMV) Plot
+
+The CMV panel (below the FFT) displays CMV = (Va + Vb + Vc) / 3 over the current scrolling window.
+
+- For ideal SVM the CMV mean is approximately Vdc/2; deviations from this value represent zero-sequence voltage injection.
+- THIPWM modes produce a visible 3rd-harmonic CMV ripple around Vdc/2.
+- DPWM modes produce a staircase CMV that alternates between 0 and Vdc during the clamped phase.
+- Use the show/hide checkbox to toggle the panel without affecting other plots.
+
+### DC Bus Current Ripple Plot
+
+The DC bus current ripple panel shows the normalised current drawn from the DC bus:
+
+I_dc_norm = Da·sin(ωt+φ) + Db·sin(ωt−2π/3+φ) + Dc·sin(ωt+2π/3+φ)
+
+where Da, Db, Dc are the per-phase duty cycles and φ is the current phase setting.
+
+- Values are in A/A_peak (normalised by the peak phase current).
+- A lower peak-to-peak value indicates reduced DC capacitor stress.
+- Use the show/hide checkbox to toggle the panel.
+
 ## 8. Key Metrics
 
 The information panel summarizes the most relevant values:
@@ -176,6 +215,14 @@ The information panel summarizes the most relevant values:
 - THD for phase voltage AB
 - Requested speed, realizable speed, and deviation
 - Average phase PWM pulses per electrical cycle
+- CMV mean, RMS, min, max, and peak-to-peak
+- DC bus current ripple min, max, RMS, and peak-to-peak
+
+When a reference simulation is saved (comparison mode), the panel also shows:
+
+- ΔTHD: change in line voltage THD relative to the reference
+- ΔCMV pp: change in CMV peak-to-peak relative to the reference
+- ΔDC bus pp: change in DC bus ripple peak-to-peak relative to the reference
 
 ## 9. Display Options
 
@@ -185,8 +232,21 @@ You can switch between several display configurations:
 - Line-voltage view versus phase-voltage view
 - Switching-edge markers on or off
 - SVM hexagon with active-sector indication
+- Show/hide CMV panel
+- Show/hide DC bus current ripple panel
 
 These options are useful when comparing common-mode behavior, clamping behavior, and harmonic tradeoffs across modulation families.
+
+## 9a. Comparison Mode
+
+Comparison mode lets you compare two simulation configurations side by side without switching between them:
+
+1. Configure and run the first simulation.
+2. Click "Save Reference" in the oscilloscope group.
+3. Change any parameters (modulation method, speed, dead time, etc.) and run again.
+4. The previous result is shown as grey dashed overlays on all three main plots.
+5. The info box shows ΔTHD, ΔCMV pp, and ΔDC bus pp.
+6. Click "Clear Reference" to remove the overlays and reset.
 
 ## 10. Exports
 
@@ -203,6 +263,11 @@ Use PNG export to save the current visualization for reports or presentations.
 The PDF report includes the current configuration, waveform and FFT plots, summary metrics, and explanatory notes.
 
 The exported report also includes PWM alignment, dead time, diode forward voltage, and current phase settings.
+
+From version 1.3.0, the PDF report also includes:
+
+- A CMV + DC bus ripple page showing both signals in a two-subplot layout.
+- The duty cycle page now renders with correct staircase steps (flat-top per PWM period).
 
 ## 11. Configuration Files
 

@@ -16,6 +16,13 @@ from dataclasses import dataclass, field
 import numpy as np
 from scipy.signal import butter, filtfilt
 
+try:
+    from numba import njit as _njit
+
+    _NUMBA_AVAILABLE = True
+except ImportError:
+    _NUMBA_AVAILABLE = False
+
 from .analysis import (
     compute_duty_cycle_envelope,
     compute_fft,
@@ -189,6 +196,44 @@ class SimulationResult:
     dc_bus_current_norm_pp: float = 0.0
 
 
+def _state_machine_py(commanded_pwm: np.ndarray, dead_samples: int) -> np.ndarray:
+    """Compute per-sample switch states for dead-time insertion.
+
+    Returns an int8 array: +1 upper ON, -1 lower ON, 0 both OFF (dead time).
+    Extracted for optional numba JIT compilation.
+    """
+    n = commanded_pwm.shape[0]
+    switch_state = np.empty(n, dtype=np.int8)
+    desired_prev = 1 if commanded_pwm[0] >= 0.0 else -1
+    active_state = desired_prev
+    pending_state = 0
+    pending_apply_index = -1
+    switch_state[0] = active_state
+
+    for i in range(1, n):
+        desired = 1 if commanded_pwm[i] >= 0.0 else -1
+
+        if desired != desired_prev:
+            active_state = 0
+            pending_state = desired
+            pending_apply_index = i + dead_samples
+
+        if pending_apply_index >= 0 and i >= pending_apply_index:
+            active_state = pending_state
+            pending_apply_index = -1
+
+        desired_prev = desired
+        switch_state[i] = active_state
+
+    return switch_state
+
+
+if _NUMBA_AVAILABLE:
+    _compute_switch_states = _njit(_state_machine_py)
+else:
+    _compute_switch_states = _state_machine_py
+
+
 def _apply_leg_dead_time_with_diode(
     commanded_pwm: np.ndarray,
     current_sign: np.ndarray,
@@ -210,46 +255,18 @@ def _apply_leg_dead_time_with_diode(
         return np.where(commanded_pwm >= 0.0, battery_voltage, 0.0).astype(np.float64)
 
     # Switch state encoding: +1 upper ON, -1 lower ON, 0 both OFF (dead time).
-    switch_state = np.empty(n, dtype=np.int8)
-    desired_prev = 1 if commanded_pwm[0] >= 0.0 else -1
-    active_state = desired_prev
-    pending_state = 0
-    pending_apply_index = -1
-    switch_state[0] = active_state
-
-    for i in range(1, n):
-        desired = 1 if commanded_pwm[i] >= 0.0 else -1
-
-        # Apply pending turn-on at the scheduled sample.
-        if pending_apply_index >= 0 and i >= pending_apply_index:
-            active_state = pending_state
-            pending_apply_index = -1
-
-        # On each commanded transition, turn current device OFF immediately,
-        # and delay the opposite device turn-ON by dead_samples.
-        if desired != desired_prev:
-            active_state = 0
-            pending_state = desired
-            pending_apply_index = i + dead_samples
-
-        desired_prev = desired
-        switch_state[i] = active_state
+    switch_state = _compute_switch_states(commanded_pwm, dead_samples)
 
     vf = max(0.0, diode_forward_voltage_v)
-    phase_voltage = np.empty(n, dtype=np.float64)
-    for i in range(n):
-        state = switch_state[i]
-        if state > 0:
-            phase_voltage[i] = battery_voltage
-        elif state < 0:
-            phase_voltage[i] = 0.0
-        else:
-            # During dead time, output depends on current direction via diode conduction:
-            # i > 0  -> lower diode conducts -> -Vf
-            # i < 0  -> upper diode conducts -> Vdc + Vf
-            phase_voltage[i] = -vf if current_sign[i] >= 0.0 else (battery_voltage + vf)
-
-    return phase_voltage
+    # During dead time the body diode of the conducting device clamps the output:
+    # current >= 0 -> lower diode -> -Vf; current < 0 -> upper diode -> Vdc + Vf.
+    dead_time_voltage = np.where(current_sign >= 0.0, -vf, battery_voltage + vf)
+    phase_voltage = np.where(
+        switch_state > 0,
+        battery_voltage,
+        np.where(switch_state < 0, 0.0, dead_time_voltage),
+    )
+    return phase_voltage.astype(np.float64)
 
 
 def run_simulation(
