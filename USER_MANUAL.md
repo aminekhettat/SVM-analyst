@@ -1,8 +1,33 @@
 # SVM Analyst User Manual
 
-Version 1.3.0
+Version 1.4.2
 
 ## What's New
+
+### Version 1.4.2
+
+- **Overmodulation region (MI > 1):** a new "Mod. Index" spinbox (range 0.10 – 1.50,
+  step 0.01) allows the modulation index to be set independently of the amplitude
+  percentage. When MI exceeds the linear boundary for the selected modulation type,
+  duty cycles are clamped to 0 % or 100 % for part of the PWM period
+  (overmodulation). An inline warning label "⚠ OM X%" appears in red next to the
+  spinbox and the info panel gains a dedicated Overmodulation section showing
+  saturation percentage and a flag when overmodulation is active. MI = 1.0 (default)
+  is fully backward-compatible: behaviour is identical to all previous versions.
+
+### Version 1.4.1
+
+- **dq-frame dialog enhancements:** the dq phasor dialog now shows four panels —
+  Clarke αβ trajectory, Park dq phasors, electrical angle θ_e sawtooth, and
+  mechanical angle θ_mech sawtooth — plus a metrics footer with Vα, Vβ, Vd, Vq,
+  |Vαβ| and |Vdq| RMS/peak/mean values. Implemented with real-time pyqtgraph
+  PlotWidgets for flicker-free refresh.
+
+### Version 1.4.0
+
+- **dq-frame phasor diagram:** open from the View menu to see the Clarke αβ and
+  Park dq phasors, with electrical and mechanical angle sawtooth arrays and full
+  αβ/dq metric reporting.
 
 ### Version 1.3.0
 
@@ -155,7 +180,48 @@ Defines the DC bus voltage used by the inverter model.
 
 ### Amplitude
 
-Sets the requested modulation depth as a percentage.
+Sets the post-comparison output voltage scaling as a percentage of the DC bus
+voltage (0 – 100 %). This is independent of the modulation index: `Amplitude`
+scales the final voltage, while `Mod. Index` scales the PWM reference signal
+before the carrier comparison.
+
+### Modulation Index
+
+Sets the modulation index (MI) applied to the three-phase reference signals before
+they are compared against the triangular carrier. Default is 1.0.
+
+**Linear region (MI ≤ linear boundary):**
+Reference signals stay within the ±1 carrier bounds for every PWM period, producing
+smooth duty cycles between 0 % and 100 %. THD is determined purely by the
+modulation strategy.
+
+**Linear boundary depends on modulation type:**
+
+| Modulation | Reference peak | Linear boundary |
+|------------|---------------|--------------------|
+| Sinusoidal | 1.0 (normalised) | MI = 1.0 |
+| THIPWM | ~0.866 (3rd-harmonic injection) | MI ≈ 1.15 |
+| SVM / DPWM | ~0.866 (space-vector offset) | MI ≈ 1.15 |
+
+**Overmodulation region (MI > linear boundary):**
+Reference signals exceed the carrier peaks for part of each electrical cycle. The
+comparator holds the output at maximum (D = 1) or minimum (D = 0) for those
+intervals. This is called **duty-cycle clamping** or **saturation**. Consequences:
+
+- The `Saturation` metric (shown in the info panel) rises above 0 %.
+- The red inline warning label "⚠ OM X%" appears next to the spinbox.
+- Output fundamental voltage increases beyond the linear-region maximum.
+- THD increases because the square-wave-like clamping injects low-order harmonics
+  (5th, 7th, 11th…).
+
+**Approaching six-step operation:**
+At very high MI (approximately 1.6 for sinusoidal mode), all samples in each half-
+cycle are clamped, producing three square waves 120° apart. This is the **six-step
+mode** — the theoretical maximum fundamental output of a two-level inverter — with
+~10 % more voltage than the SVM linear limit but significant low-order harmonics.
+
+Typical use: field-weakening studies, DC-bus utilisation maximisation, and harmonic
+vs. voltage gain tradeoff comparisons across modulation methods.
 
 ### Low-Pass Filter Cutoff
 
@@ -168,6 +234,10 @@ The numeric parameter controls are constrained in the GUI to avoid invalid combi
 - Numeric entries are controlled by spin boxes and constrained to valid ranges.
 - Dead time maximum is auto-limited from the PWM period (kept below half-period).
 - Current phase is limited to -45 to +45 degrees.
+- Modulation index is limited to 0.10 – 1.50. Values above 1.0 trigger the
+  overmodulation warning for sinusoidal mode; values above approximately 1.15
+  trigger it for SVM and DPWM modes. MI = 1.0 (default) keeps the simulator in
+  the linear region for all modulation types.
 
 When dependent settings change (for example PWM frequency), limits are updated automatically.
 
@@ -217,6 +287,12 @@ The information panel summarizes the most relevant values:
 - Average phase PWM pulses per electrical cycle
 - CMV mean, RMS, min, max, and peak-to-peak
 - DC bus current ripple min, max, RMS, and peak-to-peak
+- **Modulation Index / Overmodulation section:**
+  - Modulation index (MI) value in use
+  - Saturation %: fraction of PWM periods (across the worst-case phase) in which
+    the duty cycle was clamped to 0 % or 100 %
+  - Status flag: "← OVERMODULATION ACTIVE" when overmodulation is detected;
+    "(linear region)" otherwise
 
 When a reference simulation is saved (comparison mode), the panel also shows:
 
@@ -298,6 +374,18 @@ This is expected. The simulator uses an integer number of PWM pulses per electri
 ### DPWM waveforms look clamped
 
 This is expected. DPWM intentionally clamps one phase to the top or bottom rail over part of the electrical cycle to reduce switching losses.
+
+### The "⚠ OM X%" warning label appears next to Mod. Index
+
+This indicates overmodulation. The modulation index is set above the linear boundary
+for the selected modulation type, so the reference signals exceed the carrier
+amplitude during part of each cycle. Duty cycles are clamped to 0 % or 100 % for
+those intervals, increasing the fundamental output voltage and harmonic distortion.
+
+To return to the linear region: reduce MI to 1.0 (or below ~1.15 for SVM/DPWM
+modes). Leaving it set is valid if you are deliberately studying overmodulation
+or approaching six-step operation — the X% figure shows the fraction of PWM
+periods that are currently saturated.
 
 ### Dead-time plateaus go slightly below 0 V or above Vbatt
 

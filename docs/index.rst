@@ -52,6 +52,21 @@ Key features:
    - Grey dashed overlays on waveform, FFT, and duty cycle plots
    - Delta metrics in the info box: ΔTHD, ΔCMV pp, ΔDC bus pp
 
+- dq-frame phasor diagram:
+
+   - Clarke αβ trajectory, Park dq phasors, electrical and mechanical angle sawtooth
+   - αβ/dq metric footer: Vα, Vβ, Vd, Vq, |Vαβ| and |Vdq| RMS/peak/mean
+   - Real-time pyqtgraph PlotWidgets for flicker-free refresh
+
+- Overmodulation region (MI > 1):
+
+   - Modulation index (MI) spinbox, range 0.10 – 1.50, default 1.0
+   - Pre-comparison reference scaling: MI > 1 clamps duty cycles to 0 % or 100 %
+   - Linear boundary: MI = 1.0 for sinusoidal/THIPWM, MI ≈ 1.15 for SVM/DPWM
+   - Inline "⚠ OM X%" warning label and saturation % in the info panel
+   - Supports full progression from linear region through deep overmodulation to
+     six-step operation
+
 Packaging example:
 
 .. code-block:: sh
