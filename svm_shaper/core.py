@@ -76,6 +76,12 @@ class SimulatorConfig:
     display_cycles: int = 3
     # Fixed oversampling used internally for waveform generation (high precision)
     oversample: int = 50
+    # Modulation index (MI). 1.0 = full linear range for the reference signals used
+    # by each modulation type. MI > 1 scales the references above the carrier bounds,
+    # inducing duty-cycle clamping and waveform distortion (overmodulation region).
+    # For sinusoidal and THIPWM modes the linear boundary is MI=1.0; for SVM/DPWM
+    # the references already peak at ~0.866 so overmodulation starts near MI=1.15.
+    modulation_index: float = 1.0
 
 
 @dataclass  # pylint: disable=too-many-instance-attributes
@@ -244,6 +250,14 @@ class SimulationResult:
     dq_vdq_magnitude_mean: float = 0.0
     dq_vdq_magnitude_rms: float = 0.0
 
+    # --- Overmodulation metrics -------------------------------------------------
+    # Percentage of PWM periods where at least one phase duty cycle is fully
+    # saturated (D=0 or D=1). 0.0 in the linear region; rises toward 100.0
+    # as the modulation index approaches six-step operation.
+    saturation_percent: float = 0.0
+    # True when modulation_index > 1.0 and at least one PWM period is saturated.
+    is_overmodulation: bool = False
+
 
 def _state_machine_py(commanded_pwm: np.ndarray, dead_samples: int) -> np.ndarray:
     """Compute per-sample switch states for dead-time insertion.
@@ -358,6 +372,7 @@ def run_simulation(
         injection_percent=config.injection_percent,
         alignment=config.alignment,
         dead_time_s=0.0,
+        modulation_index=config.modulation_index,
     )
 
     electrical_freq = actual_electrical_freq
@@ -549,6 +564,22 @@ def run_simulation(
     dc_b_min, dc_b_max, dc_b_mean, dc_b_rms = _dc_stats(duty_cycle_b)
     dc_c_min, dc_c_max, dc_c_mean, dc_c_rms = _dc_stats(duty_cycle_c)
 
+    # --- Overmodulation saturation metric ----------------------------------------
+    # A duty cycle period is "saturated" when the switch is either fully ON (D=1)
+    # or fully OFF (D=0) for the entire switching period, meaning the reference
+    # signal exceeded the carrier bounds at that point.  The saturation percentage
+    # is the worst-case (maximum) fraction across the three phases.
+    def _sat(dc: np.ndarray) -> float:
+        if dc.size == 0:
+            return 0.0
+        tol = 1e-9
+        return float(np.mean((dc <= tol) | (dc >= 1.0 - tol)))
+
+    saturation_percent = float(
+        max(_sat(duty_cycle_a), _sat(duty_cycle_b), _sat(duty_cycle_c)) * 100.0
+    )
+    is_overmodulation = (config.modulation_index > 1.0) and (saturation_percent > 0.0)
+
     # Phase-to-phase duty cycles: D_AB = D_A - D_B, etc.
     duty_cycle_ab = duty_cycle_a - duty_cycle_b
     duty_cycle_bc = duty_cycle_b - duty_cycle_c
@@ -597,9 +628,7 @@ def run_simulation(
 
     # --- Electrical and mechanical angle sawtooth waveforms ----------------------
     theta_e_deg = np.degrees(theta % (2.0 * np.pi))
-    theta_mech_deg = np.degrees(
-        (theta / config.motor_pole_pairs) % (2.0 * np.pi)
-    )
+    theta_mech_deg = np.degrees((theta / config.motor_pole_pairs) % (2.0 * np.pi))
 
     # --- dq-frame phasor diagram --------------------------------------------------
     dq = compute_dq_phasors(
@@ -710,6 +739,8 @@ def run_simulation(
         dq_vdq_magnitude=dq["vdq_magnitude"],
         dq_vdq_magnitude_mean=dq["vdq_magnitude_mean"],
         dq_vdq_magnitude_rms=dq["vdq_magnitude_rms"],
+        saturation_percent=saturation_percent,
+        is_overmodulation=is_overmodulation,
     )
 
 

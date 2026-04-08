@@ -1102,12 +1102,14 @@ class DqPhasorDialog(QtWidgets.QDialog):
         self._pw_ab.showGrid(x=True, y=True, alpha=0.25)
         self._pw_ab.addLegend(offset=(5, 5))
         self._curve_ab = self._pw_ab.plot(
-            [], [],
+            [],
+            [],
             pen=pg.mkPen("#4ea6dc", width=1),
             name="Voltage trajectory",
         )
         self._curve_hex = self._pw_ab.plot(
-            [], [],
+            [],
+            [],
             pen=pg.mkPen("#ff8c00", width=1.5, style=Qt.PenStyle.DashLine),
             name="SVM hexagon",
         )
@@ -1125,16 +1127,26 @@ class DqPhasorDialog(QtWidgets.QDialog):
             [], [], pen=pg.mkPen("#4ea6dc", width=3), name="Vs"
         )
         self._tip_vs = self._pw_dq.plot(
-            [], [], symbol="t", symbolSize=14,
-            symbolBrush="#4ea6dc", symbolPen=None, pen=None,
+            [],
+            [],
+            symbol="t",
+            symbolSize=14,
+            symbolBrush="#4ea6dc",
+            symbolPen=None,
+            pen=None,
         )
         # Current phasor: line + tip marker
         self._line_is = self._pw_dq.plot(
             [], [], pen=pg.mkPen("#e05252", width=3), name="Is"
         )
         self._tip_is = self._pw_dq.plot(
-            [], [], symbol="t", symbolSize=14,
-            symbolBrush="#e05252", symbolPen=None, pen=None,
+            [],
+            [],
+            symbol="t",
+            symbolSize=14,
+            symbolBrush="#e05252",
+            symbolPen=None,
+            pen=None,
         )
         self._txt_vs = pg.TextItem("", color="#4ea6dc", anchor=(0, 1))
         self._txt_is = pg.TextItem("", color="#e05252", anchor=(0, 0))
@@ -1147,18 +1159,14 @@ class DqPhasorDialog(QtWidgets.QDialog):
         self._pw_te.setLabel("left", "θ_e (°elec)")
         self._pw_te.setYRange(0, 360, padding=0.05)
         self._pw_te.showGrid(x=True, y=True, alpha=0.25)
-        self._curve_te = self._pw_te.plot(
-            [], [], pen=pg.mkPen("#7fc97f", width=1)
-        )
+        self._curve_te = self._pw_te.plot([], [], pen=pg.mkPen("#7fc97f", width=1))
 
         # ── Mechanical angle sawtooth ────────────────────────────────────────────
         self._pw_tm = pg.PlotWidget(title="Mechanical angle θ_mech")
         self._pw_tm.setLabel("bottom", "Time (s)")
         self._pw_tm.setLabel("left", "θ_mech (°mech)")
         self._pw_tm.showGrid(x=True, y=True, alpha=0.25)
-        self._curve_tm = self._pw_tm.plot(
-            [], [], pen=pg.mkPen("#beaed4", width=1)
-        )
+        self._curve_tm = self._pw_tm.plot([], [], pen=pg.mkPen("#beaed4", width=1))
 
         # ── Metrics footer ───────────────────────────────────────────────────────
         self._metrics_box = QtWidgets.QGroupBox("Voltage Metrics")
@@ -1166,18 +1174,18 @@ class DqPhasorDialog(QtWidgets.QDialog):
         metrics_layout.setSpacing(6)
         # (display_name, result_field, unit)
         _metric_defs = [
-            ("Vα RMS",      "dq_valpha_rms",         "V"),
-            ("Vα peak",     "dq_valpha_peak",        "V"),
-            ("Vβ RMS",      "dq_vbeta_rms",          "V"),
-            ("Vβ peak",     "dq_vbeta_peak",         "V"),
-            ("Vd mean",     "dq_vd",                 "V"),
-            ("Vd RMS",      "dq_vd_rms",             "V"),
-            ("Vq mean",     "dq_vq",                 "V"),
-            ("Vq RMS",      "dq_vq_rms",             "V"),
-            ("|Vαβ| mean",  "dq_vab_magnitude_mean", "V"),
-            ("|Vαβ| RMS",   "dq_vab_magnitude_rms",  "V"),
-            ("|Vdq| mean",  "dq_vdq_magnitude_mean", "V"),
-            ("|Vdq| RMS",   "dq_vdq_magnitude_rms",  "V"),
+            ("Vα RMS", "dq_valpha_rms", "V"),
+            ("Vα peak", "dq_valpha_peak", "V"),
+            ("Vβ RMS", "dq_vbeta_rms", "V"),
+            ("Vβ peak", "dq_vbeta_peak", "V"),
+            ("Vd mean", "dq_vd", "V"),
+            ("Vd RMS", "dq_vd_rms", "V"),
+            ("Vq mean", "dq_vq", "V"),
+            ("Vq RMS", "dq_vq_rms", "V"),
+            ("|Vαβ| mean", "dq_vab_magnitude_mean", "V"),
+            ("|Vαβ| RMS", "dq_vab_magnitude_rms", "V"),
+            ("|Vdq| mean", "dq_vdq_magnitude_mean", "V"),
+            ("|Vdq| RMS", "dq_vdq_magnitude_rms", "V"),
         ]
         self._metric_value_labels: dict[str, QtWidgets.QLabel] = {}
         for idx, (name, field, unit) in enumerate(_metric_defs):
@@ -1233,12 +1241,12 @@ class DqPhasorDialog(QtWidgets.QDialog):
         self._curve_hex.setData(poly[:, 0], poly[:, 1])
 
         # ── Park dq phasors ──────────────────────────────────────────────────────
-        vd, vq    = result.dq_vd, result.dq_vq
-        v_mag     = result.dq_vs_magnitude
-        v_ang     = result.dq_vs_angle_deg
+        vd, vq = result.dq_vd, result.dq_vq
+        v_mag = result.dq_vs_magnitude
+        v_ang = result.dq_vs_angle_deg
         id_f, iq_f = result.dq_id, result.dq_iq
-        i_ang     = result.dq_is_angle_deg
-        ang_diff  = i_ang - v_ang
+        i_ang = result.dq_is_angle_deg
+        ang_diff = i_ang - v_ang
 
         self._line_vs.setData([0, vd], [0, vq])
         self._tip_vs.setData([vd], [vq])
@@ -1260,9 +1268,9 @@ class DqPhasorDialog(QtWidgets.QDialog):
         self._pw_dq.setYRange(-_lim, _lim, padding=0)
 
         # ── Angle sawtooth waveforms ─────────────────────────────────────────────
-        time_arr  = result.time
-        te_arr    = result.theta_e_deg
-        tm_arr    = result.theta_mech_deg
+        time_arr = result.time
+        te_arr = result.theta_e_deg
+        tm_arr = result.theta_mech_deg
         if time_arr.size > 0:
             step = max(1, time_arr.size // 10000)
             self._curve_te.setData(time_arr[::step], te_arr[::step])
@@ -1277,7 +1285,6 @@ class DqPhasorDialog(QtWidgets.QDialog):
         for attr, (lbl_widget, unit) in self._metric_value_labels.items():
             val = getattr(result, attr, 0.0)
             lbl_widget.setText(f"{val:.2f} {unit}")
-
 
 
 class SvmShaperApp(QtWidgets.QMainWindow):
@@ -1399,6 +1406,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
             self._pwm_freq_spin,
             self._battery_voltage_spin,
             self._amplitude_spin,
+            self._mi_spin,
             self._speed_spin,
             self._filter_cutoff_spin,
             self._injection_spin,
@@ -1572,6 +1580,25 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         self._amplitude_spin.setAccessibleName("Modulation amplitude percent")
         _lock_numeric_entry(self._amplitude_spin)
 
+        self._mi_spin = QtWidgets.QDoubleSpinBox()
+        self._mi_spin.setRange(0.1, 1.5)
+        self._mi_spin.setSingleStep(0.01)
+        self._mi_spin.setDecimals(2)
+        self._mi_spin.setValue(self._config.modulation_index)
+        self._mi_spin.setToolTip(
+            "Modulation index (MI). 1.00 = full linear range.\n"
+            "MI > 1 scales references beyond carrier bounds → overmodulation.\n"
+            "For SVM/DPWM, linear boundary is ~1.15 (references peak at 0.866)."
+        )
+        self._mi_spin.setAccessibleName("Modulation index")
+        _lock_numeric_entry(self._mi_spin)
+
+        self._overmod_label = QtWidgets.QLabel("")
+        self._overmod_label.setAccessibleName("Overmodulation indicator")
+        self._overmod_label.setToolTip(
+            "Indicates that duty cycles are saturated (overmodulation region)"
+        )
+
         self._speed_spin = QtWidgets.QDoubleSpinBox()
         self._speed_spin.setRange(0.0, 20000.0)
         self._speed_spin.setSingleStep(10.0)
@@ -1659,6 +1686,10 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         param_layout.addRow("PWM frequency (Hz):", self._pwm_freq_spin)
         param_layout.addRow("Battery voltage (V):", self._battery_voltage_spin)
         param_layout.addRow("Amplitude (%):", self._amplitude_spin)
+        _mi_row = QtWidgets.QHBoxLayout()
+        _mi_row.addWidget(self._mi_spin)
+        _mi_row.addWidget(self._overmod_label)
+        param_layout.addRow("Mod. Index:", _mi_row)
         param_layout.addRow("Speed (RPM):", self._speed_spin)
         param_layout.addRow("LPF cutoff (Hz):", self._filter_cutoff_spin)
         param_layout.addRow("Injection (%):", self._injection_spin)
@@ -1852,6 +1883,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         self._filter_checkbox.setChecked(config.show_filtered)
         self._edges_checkbox.setChecked(config.show_switching_edges)
         self._amplitude_spin.setValue(config.amplitude_percent)
+        self._mi_spin.setValue(config.modulation_index)
         # index 0 = Line voltages, index 1 = Phase voltages
         self._voltage_choice.setCurrentIndex(1 if config.show_phase_voltages else 0)
 
@@ -1877,6 +1909,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
             speed_rpm=self._speed_spin.value(),
             battery_voltage=self._battery_voltage_spin.value(),
             amplitude_percent=self._amplitude_spin.value(),
+            modulation_index=self._mi_spin.value(),
             modulation=modulation,
             show_phase_voltages=self._voltage_choice.currentIndex() == 1,
             show_filtered=self._filter_checkbox.isChecked(),
@@ -2023,6 +2056,14 @@ class SvmShaperApp(QtWidgets.QMainWindow):
                 },
             )
         self._update_info_text()
+
+        # Update overmodulation indicator label.
+        if result.is_overmodulation:
+            self._overmod_label.setText(f"⚠ OM {result.saturation_percent:.0f}%")
+            self._overmod_label.setStyleSheet("color: #e05252; font-weight: bold;")
+        else:
+            self._overmod_label.setText("")
+            self._overmod_label.setStyleSheet("")
 
         # Refresh the dq phasor dialog if it is currently open.
         if self._dq_dialog is not None and self._dq_dialog.isVisible():
@@ -2192,6 +2233,16 @@ class SvmShaperApp(QtWidgets.QMainWindow):
             f"DC bus min: {sim.dc_bus_current_norm_min:.4f},  max: {sim.dc_bus_current_norm_max:.4f}\n"
             f"DC bus RMS: {sim.dc_bus_current_norm_rms:.4f}\n"
             f"DC bus peak-to-peak: {sim.dc_bus_current_norm_pp:.4f}\n\n"
+            "─── Modulation Index / Overmodulation ───\n"
+            f"Modulation index (MI): {self._config.modulation_index:.2f}\n"
+            f"Saturation: {sim.saturation_percent:.1f}%"
+            f"  {'← OVERMODULATION ACTIVE' if sim.is_overmodulation else '(linear region)'}\n"
+            + (
+                f"Note: duty cycles are clamped at 0% or 100% for {sim.saturation_percent:.1f}% of PWM periods\n"
+                if sim.is_overmodulation
+                else ""
+            )
+            + "\n"
             f"Top harmonics (freq -> magnitude):\n"
             + "\n".join(top_harmonics_lines)
             + "\n\n"

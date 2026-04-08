@@ -1,6 +1,32 @@
 SVM Analyst – Changelog
 ========================
 
+v1.4.2 – 2026-06-09
+--------------------
+Feature release — overmodulation region, MI > 1 (Roadmap Feature #6).
+
+New features:
+- modulations: generate_modulated_pwm() accepts a new modulation_index
+  parameter (default 1.0). When MI > 1.0, the reference waveforms are scaled
+  above the carrier bounds, causing duty-cycle clamping in the affected PWM
+  periods (overmodulation). For SINUSOIDAL/THIPWM the linear boundary is
+  MI = 1.0; for SVM/DPWM modes the references peak at ~0.866, so
+  overmodulation begins near MI ≈ 1.15.
+- core: SimulatorConfig gains modulation_index: float = 1.0. SimulationResult
+  gains saturation_percent (0–100 %, fraction of PWM periods with D ≤ 0 or
+  D ≥ 1 across the worst-case phase) and is_overmodulation (True when
+  MI > 1.0 and at least one period is saturated).
+- gui: "Mod. Index:" spinbox (0.10 – 1.50, step 0.01) added below the
+  Amplitude row.  An inline warning label ("⚠ OM X%") turns red when
+  overmodulation is active.  Info-text panel gains a dedicated
+  "Modulation Index / Overmodulation" section showing MI, saturation %, and
+  a OVERMODULATION ACTIVE flag when applicable.
+- tests: 32 new tests in test_feature_overmodulation.py covering F16
+  (generate_modulated_pwm MI parameter), F17 (duty-cycle clamping
+  monotonicity), F18 (six-step approach), F19 (saturation_percent /
+  is_overmodulation fields), F20 (THD increase with MI), F21 (backward
+  compatibility with MI = 1.0 default).
+
 v1.4.1 – 2026-04-08
 --------------------
 Enhancement — dq-frame dialog: electrical/mechanical angle sawtooth, αβ/dq

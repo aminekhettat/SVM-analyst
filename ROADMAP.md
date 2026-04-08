@@ -19,11 +19,11 @@ being developed in the current sprint.
 
 ## Batch 2 — Medium effort
 
-| #   | Feature                                                                                                                                             | Status  | Target version |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | -------------- |
+| #   | Feature                                                                                                                                                        | Status  | Target version |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | -------------- |
 | 5   | **dq-frame phasor diagram** — voltage and current vectors in d-q plane; enhanced in v1.4.1 with θ_e/θ_mech sawtooth, αβ/dq metrics, real-time pyqtgraph dialog | Done    | v1.4.1         |
-| 6   | **Overmodulation region (MI > 1)** — extend core duty cycle computation beyond unity modulation index, visualise saturation and six-step transition | Planned | TBD            |
-| 7   | **Interleaved dual-inverter mode** — two sets of phase-shifted carriers, DC bus ripple cancellation analysis                                        | Planned | TBD            |
+| 6   | **Overmodulation region (MI > 1)** — extend core duty cycle computation beyond unity modulation index, visualise saturation and six-step transition            | Done    | v1.4.2         |
+| 7   | **Interleaved dual-inverter mode** — two sets of phase-shifted carriers, DC bus ripple cancellation analysis                                                   | Planned | TBD            |
 
 ---
 

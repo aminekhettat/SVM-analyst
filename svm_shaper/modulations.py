@@ -267,6 +267,7 @@ def generate_modulated_pwm(
     injection_percent: float = 100.0,
     alignment: PulseAlignment = PulseAlignment.CENTER,
     dead_time_s: float = 0.0,
+    modulation_index: float = 1.0,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Generate three-phase PWM waveforms for a given modulation mode.
 
@@ -358,6 +359,16 @@ def generate_modulated_pwm(
         # modify the zero vector placement by clamping one phase for a portion of
         # the electrical cycle.
         va_ref, vb_ref, vc_ref = _svm_reference(theta)
+
+    # Scale reference signals by the modulation index. MI=1.0 keeps the signals
+    # within the carrier bounds (linear region). MI>1.0 causes reference
+    # excursions beyond ±1, resulting in duty-cycle clamping (overmodulation).
+    # For sinusoidal/THIPWM modes the linear boundary is MI=1.0; for SVM the
+    # references peak at ~0.866 so the linear boundary is near MI=1.15.
+    if modulation_index != 1.0:
+        va_ref = va_ref * modulation_index
+        vb_ref = vb_ref * modulation_index
+        vc_ref = vc_ref * modulation_index
 
     carrier = _carrier_waveform(time, pwm_frequency_hz, alignment)
 
