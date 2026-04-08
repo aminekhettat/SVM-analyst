@@ -24,6 +24,7 @@ except ImportError:
     _NUMBA_AVAILABLE = False
 
 from .analysis import (
+    compute_dq_phasors,
     compute_duty_cycle_envelope,
     compute_fft,
     compute_thd,
@@ -194,6 +195,23 @@ class SimulationResult:
     dc_bus_current_norm_max: float = 0.0
     dc_bus_current_norm_rms: float = 0.0
     dc_bus_current_norm_pp: float = 0.0
+
+    # --- dq-frame phasor diagram -------------------------------------------------
+    # Clarke (αβ) trajectory — same time axis as ``time``.
+    dq_valpha: np.ndarray = field(
+        default_factory=lambda: np.array([], dtype=np.float64)
+    )
+    dq_vbeta: np.ndarray = field(default_factory=lambda: np.array([], dtype=np.float64))
+    # Park (dq) fundamental components — mean over the simulation window.
+    dq_vd: float = 0.0
+    dq_vq: float = 0.0
+    # Voltage phasor in dq frame: magnitude (V) and angle (degrees).
+    dq_vs_magnitude: float = 0.0
+    dq_vs_angle_deg: float = 0.0
+    # Current phasor in dq frame (normalised to same magnitude as voltage phasor).
+    dq_id: float = 0.0
+    dq_iq: float = 0.0
+    dq_is_angle_deg: float = 0.0
 
 
 def _state_machine_py(commanded_pwm: np.ndarray, dead_samples: int) -> np.ndarray:
@@ -546,6 +564,17 @@ def run_simulation(
         dc_bus_current_norm = np.array([], dtype=np.float64)
         dc_bus_min = dc_bus_max = dc_bus_rms = dc_bus_pp = 0.0
 
+    # --- dq-frame phasor diagram --------------------------------------------------
+    dq = compute_dq_phasors(
+        phase_a=phase_a,
+        phase_b=phase_b,
+        phase_c=phase_c,
+        time=time,
+        electrical_freq_hz=electrical_freq,
+        battery_voltage=config.battery_voltage,
+        current_phase_deg=float(config.current_phase_deg),
+    )
+
     return SimulationResult(
         time=time,
         phase_a=phase_a,
@@ -621,6 +650,15 @@ def run_simulation(
         dc_bus_current_norm_max=dc_bus_max,
         dc_bus_current_norm_rms=dc_bus_rms,
         dc_bus_current_norm_pp=dc_bus_pp,
+        dq_valpha=dq["valpha"],
+        dq_vbeta=dq["vbeta"],
+        dq_vd=dq["vd_mean"],
+        dq_vq=dq["vq_mean"],
+        dq_vs_magnitude=dq["vs_magnitude"],
+        dq_vs_angle_deg=dq["vs_angle_deg"],
+        dq_id=dq["id_fund"],
+        dq_iq=dq["iq_fund"],
+        dq_is_angle_deg=dq["is_angle_deg"],
     )
 
 

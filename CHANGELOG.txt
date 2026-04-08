@@ -1,6 +1,29 @@
 SVM Analyst – Changelog
 ========================
 
+v1.4.0 – 2026-06-09
+--------------------
+Feature release — dq-frame phasor diagram (Roadmap Feature #5).
+
+New features:
+- analysis: compute_dq_phasors() — Clarke (αβ) and Park (dq) transforms for
+  SVM phase voltages.  Returns the αβ trajectory arrays plus DC-averaged Vd/Vq,
+  voltage phasor magnitude and angle, and current phasor coordinates using the
+  amplitude-invariant Clarke convention.
+- core: SimulationResult extended with 9 new dq fields: dq_valpha, dq_vbeta
+  (Clarke trajectory arrays), dq_vd, dq_vq, dq_vs_magnitude, dq_vs_angle_deg,
+  dq_id, dq_iq, dq_is_angle_deg.  All fields default to zero / empty arrays for
+  backward-compatible manual SimulationResult construction.
+- gui: DqPhasorDialog — matplotlib 1×2 dialog (View → dq-frame Phasor Diagram)
+  showing the αβ Clarke trajectory with SVM hexagon (left panel) and the
+  fundamental voltage phasor Vs and current phasor Is as annotated arrows in the
+  dq Park frame (right panel).
+- gui: _show_dq_phasor() method on SvmShaperApp; dialog auto-refreshes on
+  _on_simulation_finished when already open.
+- tests: 29 new tests in test_feature_dq_phasor.py covering compute_dq_phasors
+  edge cases, Clarke/Park correctness, phasor magnitudes and angles, and
+  SimulationResult population via run_simulation.
+
 v1.3.0 – 2026-04-08
 --------------------
 Minor release — CMV plot, DC bus current ripple panel, comparison mode.

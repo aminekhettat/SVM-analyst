@@ -200,3 +200,100 @@ def compute_duty_cycle_envelope(
     duty_time = time[mid_indices]
 
     return duty_time, duty
+
+
+def compute_dq_phasors(
+    phase_a: np.ndarray,
+    phase_b: np.ndarray,
+    phase_c: np.ndarray,
+    time: np.ndarray,
+    electrical_freq_hz: float,
+    battery_voltage: float,
+    current_phase_deg: float,
+) -> dict:
+    """Compute Clarke (αβ) and Park (dq) frame vectors from three-phase PWM waveforms.
+
+    The three-phase voltages are centred around zero before the transforms so
+    that the DC-link mid-point offset (Vdc/2) does not contribute to the
+    rotating space vector.
+
+    Parameters
+    ----------
+    phase_a, phase_b, phase_c:
+        Per-sample leg voltages from the simulation (line voltages 0…Vdc).
+    time:
+        Time vector matching the phase arrays.
+    electrical_freq_hz:
+        Electrical frequency in Hz (used to build the Park transform angle θe).
+    battery_voltage:
+        DC-link voltage; used to centre the phase signals around zero.
+    current_phase_deg:
+        Phase lag of the fundamental current relative to the fundamental voltage
+        in degrees (positive = lagging).  Used to derive the current phasor.
+
+    Returns
+    -------
+    dict with keys:
+        ``valpha``, ``vbeta`` — Clarke trajectory arrays (same length as input).
+        ``vd_mean``, ``vq_mean`` — average Park components over the simulation.
+        ``vs_magnitude`` — voltage phasor magnitude (V).
+        ``vs_angle_deg`` — voltage phasor angle in the dq frame (degrees).
+        ``id_fund``, ``iq_fund`` — fundamental current phasor components
+            (normalised to the same magnitude as the voltage phasor for display).
+        ``is_angle_deg`` — current phasor angle in the dq frame (degrees).
+    """
+    if phase_a.size == 0 or time.size == 0 or electrical_freq_hz <= 0.0:
+        empty = np.array([], dtype=np.float64)
+        return {
+            "valpha": empty,
+            "vbeta": empty,
+            "vd_mean": 0.0,
+            "vq_mean": 0.0,
+            "vs_magnitude": 0.0,
+            "vs_angle_deg": 0.0,
+            "id_fund": 0.0,
+            "iq_fund": 0.0,
+            "is_angle_deg": 0.0,
+        }
+
+    # Centre voltages around zero so the space vector origin sits at (0, 0).
+    vdc_half = battery_voltage / 2.0
+    va = phase_a - vdc_half
+    vb = phase_b - vdc_half
+    vc = phase_c - vdc_half
+
+    # Amplitude-invariant Clarke transform: abc → αβ.
+    valpha = (2.0 / 3.0) * (va - 0.5 * vb - 0.5 * vc)
+    vbeta = (2.0 / 3.0) * ((np.sqrt(3.0) / 2.0) * (vb - vc))
+
+    # Park transform: αβ → dq  (d-axis aligned to θe=0 at t=0).
+    theta_e = 2.0 * np.pi * electrical_freq_hz * time
+    cos_theta = np.cos(theta_e)
+    sin_theta = np.sin(theta_e)
+    vd = valpha * cos_theta + vbeta * sin_theta
+    vq = -valpha * sin_theta + vbeta * cos_theta
+
+    # Average over all samples: for the fundamental the Park components are DC.
+    vd_mean = float(np.mean(vd))
+    vq_mean = float(np.mean(vq))
+
+    vs_magnitude = float(np.sqrt(vd_mean**2 + vq_mean**2))
+    vs_angle_deg = float(np.degrees(np.arctan2(vq_mean, vd_mean)))
+
+    # Current phasor: same magnitude as voltage phasor, lagging by current_phase_deg.
+    is_angle_deg = vs_angle_deg - float(current_phase_deg)
+    is_angle_rad = np.radians(is_angle_deg)
+    id_fund = vs_magnitude * float(np.cos(is_angle_rad))
+    iq_fund = vs_magnitude * float(np.sin(is_angle_rad))
+
+    return {
+        "valpha": valpha,
+        "vbeta": vbeta,
+        "vd_mean": vd_mean,
+        "vq_mean": vq_mean,
+        "vs_magnitude": vs_magnitude,
+        "vs_angle_deg": vs_angle_deg,
+        "id_fund": id_fund,
+        "iq_fund": iq_fund,
+        "is_angle_deg": is_angle_deg,
+    }

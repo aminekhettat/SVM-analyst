@@ -1062,6 +1062,152 @@ class SvmHexagonDialog(QtWidgets.QDialog):
         self._time += 0.01
 
 
+class DqPhasorDialog(QtWidgets.QDialog):
+    """Dialog showing the dq-frame voltage and current phasors.
+
+    Displays two panels:
+    - Left: Clarke αβ plane — space-vector trajectory traced by the three-phase
+      PWM waveform over the simulation window, with the SVM hexagon overlaid.
+    - Right: Park dq plane — fundamental voltage phasor (Vs, blue) and
+      current phasor (Is, red) as annotated arrows.
+
+    The dialog refreshes automatically whenever the main window produces a new
+    simulation result via :meth:`refresh`.
+    """
+
+    def __init__(
+        self,
+        result,
+        config: "SimulatorConfig",
+        parent: Optional[QtWidgets.QWidget] = None,
+    ):
+        """Open the phasor dialog with the latest simulation *result*."""
+        super().__init__(parent)
+        self.setWindowTitle("dq-frame Phasor Diagram – SVM Analyst")
+        self.setAccessibleName("dq phasor diagram dialog")
+        self.setAccessibleDescription(
+            "Shows the voltage space-vector trajectory in the Clarke αβ plane on the "
+            "left and the fundamental voltage and current phasors in the Park dq frame "
+            "on the right."
+        )
+        self.setMinimumSize(900, 450)
+
+        self._figure = Figure(figsize=(10, 4.5), tight_layout=True)
+        self._canvas_mpl = FigureCanvas(self._figure)
+        self._ax_ab = self._figure.add_subplot(121)
+        self._ax_dq = self._figure.add_subplot(122)
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(self._canvas_mpl)
+
+        self._refresh(result, config)
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    def refresh(self, result, config: "SimulatorConfig") -> None:
+        """Redraw both panels with *result* from the latest simulation."""
+        self._refresh(result, config)
+
+    # ------------------------------------------------------------------
+    # Internal
+    # ------------------------------------------------------------------
+
+    def _refresh(self, result, config: "SimulatorConfig") -> None:
+        """Render the αβ trajectory and dq phasor arrows."""
+        self._ax_ab.clear()
+        self._ax_dq.clear()
+
+        vdc = config.battery_voltage
+
+        # ── Left panel: Clarke αβ space-vector trajectory ──────────────
+        va = result.dq_valpha
+        vb = result.dq_vbeta
+        if va.size > 0:
+            # Downsample to at most 5000 points for fast rendering.
+            step = max(1, va.size // 5000)
+            self._ax_ab.plot(
+                va[::step],
+                vb[::step],
+                lw=0.6,
+                color="#1f77b4",
+                alpha=0.7,
+                label="Voltage trajectory",
+            )
+        # SVM hexagon in αβ (centred at 0, radius = 2/3 * Vdc).
+        verts = svm_hexagon_vertices(vdc=vdc)
+        poly = np.vstack((verts, verts[0]))
+        self._ax_ab.plot(
+            poly[:, 0],
+            poly[:, 1],
+            "--",
+            color="orange",
+            lw=1.2,
+            label="SVM hexagon",
+        )
+        self._ax_ab.set_xlabel("α  (V)")
+        self._ax_ab.set_ylabel("β  (V)")
+        self._ax_ab.set_title("Clarke αβ — space-vector trajectory")
+        self._ax_ab.axis("equal")
+        self._ax_ab.grid(True, alpha=0.4)
+        self._ax_ab.legend(fontsize=8)
+
+        # ── Right panel: Park dq phasors ───────────────────────────────
+        vd = result.dq_vd
+        vq = result.dq_vq
+        v_mag = result.dq_vs_magnitude
+        v_ang = result.dq_vs_angle_deg
+        id_f = result.dq_id
+        iq_f = result.dq_iq
+        i_ang = result.dq_is_angle_deg
+
+        arrow_kw = dict(length_includes_head=True, head_width=v_mag * 0.05 + 1e-9)
+
+        if v_mag > 1e-6:
+            self._ax_dq.arrow(
+                0, 0, vd, vq, color="#1f77b4", lw=2, **arrow_kw, label="Vs"
+            )
+            self._ax_dq.text(
+                vd * 1.05,
+                vq * 1.05,
+                f"Vs={v_mag:.1f} V\n∠{v_ang:.1f}°",
+                color="#1f77b4",
+                fontsize=8,
+                va="center",
+            )
+            self._ax_dq.arrow(
+                0, 0, id_f, iq_f, color="#d62728", lw=2, **arrow_kw, label="Is"
+            )
+            ang_diff = i_ang - v_ang
+            self._ax_dq.text(
+                id_f * 1.05,
+                iq_f * 1.05,
+                f"Is (norm.)\n∠{i_ang:.1f}°\nφ={ang_diff:.1f}°",
+                color="#d62728",
+                fontsize=8,
+                va="center",
+            )
+        else:
+            self._ax_dq.text(
+                0, 0, "No result yet", ha="center", va="center", fontsize=10
+            )
+
+        # d/q axis reference lines
+        _lim = max(v_mag * 1.4, 1.0)
+        self._ax_dq.axhline(0, color="#555", lw=0.8, ls="--")
+        self._ax_dq.axvline(0, color="#555", lw=0.8, ls="--")
+        self._ax_dq.set_xlim(-_lim, _lim)
+        self._ax_dq.set_ylim(-_lim, _lim)
+        self._ax_dq.set_xlabel("d  (V)")
+        self._ax_dq.set_ylabel("q  (V)")
+        self._ax_dq.set_title("Park dq — fundamental phasors")
+        self._ax_dq.grid(True, alpha=0.4)
+        self._ax_dq.set_aspect("equal", adjustable="box")
+
+        self._canvas_mpl.draw()
+
+
 class SvmShaperApp(QtWidgets.QMainWindow):
     """Main window for the SVM Analyst application.
 
@@ -1104,6 +1250,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         self._constraining_size: bool = False
         self._ref_result = None
         self._ref_display_signals: dict = {}
+        self._dq_dialog: Optional[DqPhasorDialog] = None
 
         self._build_ui()
         self._apply_config_to_ui(self._config)
@@ -1277,6 +1424,14 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         svm_hex = QtGui.QAction("SVM Hexagon", self)
         svm_hex.triggered.connect(self._show_svm_hexagon)
         view_menu.addAction(svm_hex)
+
+        dq_phasor_action = QtGui.QAction("dq-frame Phasor Diagram", self)
+        dq_phasor_action.setAccessibleName("Open dq phasor diagram")
+        dq_phasor_action.setToolTip(
+            "Show the voltage space-vector trajectory (αβ) and fundamental dq phasors"
+        )
+        dq_phasor_action.triggered.connect(self._show_dq_phasor)
+        view_menu.addAction(dq_phasor_action)
 
         tools_menu = self._menu_bar.addMenu("&Tools")
         sweep_action = QtGui.QAction("Sweep THD...", self)
@@ -1797,6 +1952,10 @@ class SvmShaperApp(QtWidgets.QMainWindow):
             )
         self._update_info_text()
 
+        # Refresh the dq phasor dialog if it is currently open.
+        if self._dq_dialog is not None and self._dq_dialog.isVisible():
+            self._dq_dialog.refresh(self._sim_result, self._config)
+
         # Set an appropriate scroll step to simulate an oscilloscope sweep.
         self._scroll_step = max(1, int(self._window_samples / 20))
         self._scroll_plot()
@@ -2271,6 +2430,24 @@ class SvmShaperApp(QtWidgets.QMainWindow):
 
         dialog = SvmHexagonDialog(self._config, parent=self)
         dialog.exec()
+
+    def _show_dq_phasor(self) -> None:
+        """Open (or bring to front) the dq-frame phasor diagram dialog."""
+        if self._sim_result is None:
+            QtWidgets.QMessageBox.information(
+                self,
+                "No simulation result",
+                "Run the simulation first before opening the phasor diagram.",
+            )
+            return
+        if self._dq_dialog is None or not self._dq_dialog.isVisible():
+            self._dq_dialog = DqPhasorDialog(
+                self._sim_result, self._config, parent=self
+            )
+            self._dq_dialog.show()
+        else:
+            self._dq_dialog.raise_()
+            self._dq_dialog.activateWindow()
 
     def _show_about(self) -> None:
         QtWidgets.QMessageBox.information(
