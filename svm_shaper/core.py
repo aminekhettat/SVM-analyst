@@ -213,6 +213,37 @@ class SimulationResult:
     dq_iq: float = 0.0
     dq_is_angle_deg: float = 0.0
 
+    # --- Angle sawtooth waveforms -----------------------------------------------
+    # Electrical angle θ_e wrapped to [0, 360) degrees electrical.
+    theta_e_deg: np.ndarray = field(
+        default_factory=lambda: np.array([], dtype=np.float64)
+    )
+    # Mechanical angle θ_mech wrapped to [0, 360) degrees mechanical.
+    theta_mech_deg: np.ndarray = field(
+        default_factory=lambda: np.array([], dtype=np.float64)
+    )
+
+    # --- Extended αβ metrics ----------------------------------------------------
+    dq_valpha_rms: float = 0.0
+    dq_valpha_peak: float = 0.0
+    dq_vbeta_rms: float = 0.0
+    dq_vbeta_peak: float = 0.0
+    # dq per-sample RMS
+    dq_vd_rms: float = 0.0
+    dq_vq_rms: float = 0.0
+    # |Vαβ| instantaneous module and statistics
+    dq_vab_magnitude: np.ndarray = field(
+        default_factory=lambda: np.array([], dtype=np.float64)
+    )
+    dq_vab_magnitude_mean: float = 0.0
+    dq_vab_magnitude_rms: float = 0.0
+    # |Vdq| instantaneous module and statistics
+    dq_vdq_magnitude: np.ndarray = field(
+        default_factory=lambda: np.array([], dtype=np.float64)
+    )
+    dq_vdq_magnitude_mean: float = 0.0
+    dq_vdq_magnitude_rms: float = 0.0
+
 
 def _state_machine_py(commanded_pwm: np.ndarray, dead_samples: int) -> np.ndarray:
     """Compute per-sample switch states for dead-time insertion.
@@ -564,6 +595,12 @@ def run_simulation(
         dc_bus_current_norm = np.array([], dtype=np.float64)
         dc_bus_min = dc_bus_max = dc_bus_rms = dc_bus_pp = 0.0
 
+    # --- Electrical and mechanical angle sawtooth waveforms ----------------------
+    theta_e_deg = np.degrees(theta % (2.0 * np.pi))
+    theta_mech_deg = np.degrees(
+        (theta / config.motor_pole_pairs) % (2.0 * np.pi)
+    )
+
     # --- dq-frame phasor diagram --------------------------------------------------
     dq = compute_dq_phasors(
         phase_a=phase_a,
@@ -659,6 +696,20 @@ def run_simulation(
         dq_id=dq["id_fund"],
         dq_iq=dq["iq_fund"],
         dq_is_angle_deg=dq["is_angle_deg"],
+        theta_e_deg=theta_e_deg,
+        theta_mech_deg=theta_mech_deg,
+        dq_valpha_rms=dq["valpha_rms"],
+        dq_valpha_peak=dq["valpha_peak"],
+        dq_vbeta_rms=dq["vbeta_rms"],
+        dq_vbeta_peak=dq["vbeta_peak"],
+        dq_vd_rms=dq["vd_rms"],
+        dq_vq_rms=dq["vq_rms"],
+        dq_vab_magnitude=dq["vab_magnitude"],
+        dq_vab_magnitude_mean=dq["vab_magnitude_mean"],
+        dq_vab_magnitude_rms=dq["vab_magnitude_rms"],
+        dq_vdq_magnitude=dq["vdq_magnitude"],
+        dq_vdq_magnitude_mean=dq["vdq_magnitude_mean"],
+        dq_vdq_magnitude_rms=dq["vdq_magnitude_rms"],
     )
 
 

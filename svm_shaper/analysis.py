@@ -254,6 +254,18 @@ def compute_dq_phasors(
             "id_fund": 0.0,
             "iq_fund": 0.0,
             "is_angle_deg": 0.0,
+            "valpha_rms": 0.0,
+            "valpha_peak": 0.0,
+            "vbeta_rms": 0.0,
+            "vbeta_peak": 0.0,
+            "vd_rms": 0.0,
+            "vq_rms": 0.0,
+            "vab_magnitude": empty,
+            "vab_magnitude_mean": 0.0,
+            "vab_magnitude_rms": 0.0,
+            "vdq_magnitude": empty,
+            "vdq_magnitude_mean": 0.0,
+            "vdq_magnitude_rms": 0.0,
         }
 
     # Centre voltages around zero so the space vector origin sits at (0, 0).
@@ -286,6 +298,26 @@ def compute_dq_phasors(
     id_fund = vs_magnitude * float(np.cos(is_angle_rad))
     iq_fund = vs_magnitude * float(np.sin(is_angle_rad))
 
+    # αβ signal metrics
+    valpha_rms = float(np.sqrt(np.mean(valpha**2)))
+    valpha_peak = float(np.max(np.abs(valpha)))
+    vbeta_rms = float(np.sqrt(np.mean(vbeta**2)))
+    vbeta_peak = float(np.max(np.abs(vbeta)))
+
+    # dq RMS (per-sample, over the full simulation window)
+    vd_rms = float(np.sqrt(np.mean(vd**2)))
+    vq_rms = float(np.sqrt(np.mean(vq**2)))
+
+    # |Vαβ| instantaneous module and its statistics
+    vab_magnitude = np.sqrt(valpha**2 + vbeta**2)
+    vab_magnitude_mean = float(np.mean(vab_magnitude))
+    vab_magnitude_rms = float(np.sqrt(np.mean(vab_magnitude**2)))
+
+    # |Vdq| instantaneous module and its statistics
+    vdq_magnitude = np.sqrt(vd**2 + vq**2)
+    vdq_magnitude_mean = float(np.mean(vdq_magnitude))
+    vdq_magnitude_rms = float(np.sqrt(np.mean(vdq_magnitude**2)))
+
     return {
         "valpha": valpha,
         "vbeta": vbeta,
@@ -296,4 +328,16 @@ def compute_dq_phasors(
         "id_fund": id_fund,
         "iq_fund": iq_fund,
         "is_angle_deg": is_angle_deg,
+        "valpha_rms": valpha_rms,
+        "valpha_peak": valpha_peak,
+        "vbeta_rms": vbeta_rms,
+        "vbeta_peak": vbeta_peak,
+        "vd_rms": vd_rms,
+        "vq_rms": vq_rms,
+        "vab_magnitude": vab_magnitude,
+        "vab_magnitude_mean": vab_magnitude_mean,
+        "vab_magnitude_rms": vab_magnitude_rms,
+        "vdq_magnitude": vdq_magnitude,
+        "vdq_magnitude_mean": vdq_magnitude_mean,
+        "vdq_magnitude_rms": vdq_magnitude_rms,
     }

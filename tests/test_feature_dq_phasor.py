@@ -14,6 +14,14 @@ F09  SimulationResult   -- dq_valpha / dq_vbeta have same length as time array
 F10  SimulationResult   -- dq_vs_magnitude grows with battery voltage (scaling)
 F11  SimulationResult   -- dq_is_angle_deg differs from dq_vs_angle_deg by
                            approximately current_phase_deg
+F12  theta_e_deg        -- electrical angle is a sawtooth in [0, 360) °elec and
+                           completes exactly num_cycles revolutions
+F13  theta_mech_deg     -- mechanical angle period = pole_pairs × electrical period
+                           (BLDC pole-pairs rule verified via reset-count ratio)
+F14  Clarke αβ          -- Vβ leads Vα by 90° for balanced sinusoidal input
+F15  αβ / dq metrics   -- RMS, peak, mean and module fields are physically
+                           reasonable and populated by run_simulation
+                           approximately current_phase_deg
 """
 
 from __future__ import annotations
@@ -263,3 +271,243 @@ class TestSimulationResultDqCurrentAngle:
     def test_zero_lag_gives_aligned_current_and_voltage(self):
         r = run_simulation(SimulatorConfig(current_phase_deg=0.0))
         assert abs(r.dq_vs_angle_deg - r.dq_is_angle_deg) < 1.0
+
+
+# ---------------------------------------------------------------------------
+# F12  theta_e_deg — electrical angle sawtooth shape and cycle count
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def sim_result_4pp():
+    """Simulation with 4 pole pairs and 8 electrical cycles for angle tests."""
+    return run_simulation(SimulatorConfig(motor_pole_pairs=4, num_cycles=8))
+
+
+class TestElectricalAngleSawtooth:
+    """F12 — theta_e_deg is a sawtooth waveform in [0, 360) °elec."""
+
+    def test_theta_e_in_range(self, sim_result_4pp):
+        te = sim_result_4pp.theta_e_deg
+        assert te.size > 0
+        assert float(np.min(te)) >= 0.0
+        assert float(np.max(te)) < 360.0 + 1e-6
+
+    def test_theta_e_is_array(self, sim_result_4pp):
+        assert isinstance(sim_result_4pp.theta_e_deg, np.ndarray)
+
+    def test_theta_e_same_length_as_time(self, sim_result_4pp):
+        r = sim_result_4pp
+        assert r.theta_e_deg.shape == r.time.shape
+
+    def test_theta_e_has_expected_reset_count(self, sim_result_4pp):
+        """8 electrical cycles → 7 sawtooth resets (drops of > 180°)."""
+        te = sim_result_4pp.theta_e_deg
+        resets = int(np.sum(np.diff(te) < -180.0))
+        # With num_cycles=8 the angle completes 8 cycles; there are 7 internal
+        # downward jumps (the last cycle ends at the window boundary, not a reset).
+        assert resets == 7
+
+    def test_theta_e_mostly_increasing_within_cycle(self, sim_result_4pp):
+        """Between resets the angle must be monotonically non-decreasing."""
+        te = sim_result_4pp.theta_e_deg
+        diff = np.diff(te)
+        # Only jumps larger than 180° are resets; everything else must be ≥ 0.
+        non_reset_diffs = diff[diff > -180.0]
+        assert float(np.min(non_reset_diffs)) >= -1e-9
+
+
+# ---------------------------------------------------------------------------
+# F13  theta_mech_deg — mechanical/electrical period ratio equals pole_pairs
+# ---------------------------------------------------------------------------
+
+
+class TestMechanicalAngleSawtooth:
+    """F13 — mechanical angle period = pole_pairs × electrical period (BLDC rule)."""
+
+    def test_theta_mech_in_range(self, sim_result_4pp):
+        tm = sim_result_4pp.theta_mech_deg
+        assert float(np.min(tm)) >= 0.0
+        assert float(np.max(tm)) < 360.0 + 1e-6
+
+    def test_theta_mech_is_array(self, sim_result_4pp):
+        assert isinstance(sim_result_4pp.theta_mech_deg, np.ndarray)
+
+    def test_theta_mech_same_length_as_time(self, sim_result_4pp):
+        r = sim_result_4pp
+        assert r.theta_mech_deg.shape == r.time.shape
+
+    def test_theta_mech_reset_count_matches_bldc_rule(self, sim_result_4pp):
+        """For 4 pole pairs and 8 electrical cycles there are 1 mechanical reset.
+
+        BLDC rule: 1 mechanical revolution = pole_pairs electrical revolutions.
+        8 elec cycles / 4 pole pairs = 2 mechanical cycles → 1 internal reset.
+        """
+        tm = sim_result_4pp.theta_mech_deg
+        mech_resets = int(np.sum(np.diff(tm) < -180.0))
+        assert mech_resets == 1
+
+    def test_elec_reset_count_is_pole_pairs_times_mech_reset_count(
+        self, sim_result_4pp
+    ):
+        """Cycle-count ratio: elec_cycles = pole_pairs × mech_cycles (BLDC rule).
+
+        12 electrical cycles / 4 pole pairs = 3 mechanical cycles.
+        Resets = cycles - 1, so (e_resets+1) = pole_pairs × (m_resets+1).
+        """
+        pole_pairs = 4
+        r2 = run_simulation(SimulatorConfig(motor_pole_pairs=pole_pairs, num_cycles=12))
+        e2 = int(np.sum(np.diff(r2.theta_e_deg) < -180.0))
+        m2 = int(np.sum(np.diff(r2.theta_mech_deg) < -180.0))
+        # e2=11 resets → 12 elec cycles; m2=2 resets → 3 mech cycles; 12=4×3.
+        assert (e2 + 1) == pole_pairs * (m2 + 1)
+
+
+# ---------------------------------------------------------------------------
+# F14  Clarke αβ — Vβ leads Vα by exactly 90° for balanced sinusoidal input
+# ---------------------------------------------------------------------------
+
+
+class TestAlphaBeta90DegPhaseShift:
+    """F14 — Vβ leads Vα by 90° for a balanced three-phase sinusoidal source."""
+
+    def test_alpha_beta_are_orthogonal(self):
+        """Orthogonality: <Vα, Vβ> ≈ 0 if their RMS values are equal."""
+        va, vb, vc, t = _balanced_sin(freq_hz=50.0, vdc=200.0, n_samples=8000)
+        r = compute_dq_phasors(va, vb, vc, t, 50.0, 200.0, 0.0)
+        valpha = r["valpha"]
+        vbeta = r["vbeta"]
+        # Normalised cross-product (dot product / product of norms) should be ≈ 0.
+        dot = float(np.mean(valpha * vbeta))
+        rms_a = float(np.sqrt(np.mean(valpha**2)))
+        rms_b = float(np.sqrt(np.mean(vbeta**2)))
+        assert abs(dot) / (rms_a * rms_b + 1e-12) < 0.05
+
+    def test_alpha_beta_rms_are_equal(self):
+        """Amplitude invariance: RMS of Vβ equals RMS of Vα."""
+        va, vb, vc, t = _balanced_sin(freq_hz=50.0, vdc=300.0, n_samples=8000)
+        r = compute_dq_phasors(va, vb, vc, t, 50.0, 300.0, 0.0)
+        rms_a = float(np.sqrt(np.mean(r["valpha"] ** 2)))
+        rms_b = float(np.sqrt(np.mean(r["vbeta"] ** 2)))
+        assert abs(rms_a - rms_b) / (rms_a + 1e-12) < 0.01
+
+    def test_beta_leads_alpha_by_90_degrees(self):
+        """Phase shift: extract fundamental components and measure Vβ – Vα angle."""
+        freq = 50.0
+        va, vb, vc, t = _balanced_sin(freq_hz=freq, vdc=200.0, n_samples=8000)
+        r = compute_dq_phasors(va, vb, vc, t, freq, 200.0, 0.0)
+        valpha = r["valpha"]
+        vbeta = r["vbeta"]
+        # Project onto the fundamental using a complex exponential DFT kernel.
+        kernel = np.exp(1j * 2 * np.pi * freq * t)
+        phi_a = float(np.angle(np.mean(kernel * valpha), deg=True))
+        phi_b = float(np.angle(np.mean(kernel * vbeta), deg=True))
+        phase_diff = (phi_b - phi_a) % 360.0
+        # Vβ should lead Vα by 90° (within a 5° tolerance due to PWM quantisation).
+        assert abs(phase_diff - 90.0) < 5.0
+
+
+# ---------------------------------------------------------------------------
+# F15  αβ / dq metrics — populated and physically reasonable
+# ---------------------------------------------------------------------------
+
+
+class TestDqMetricsFromAnalysis:
+    """F15a — compute_dq_phasors returns all new metric keys with sensible values."""
+
+    def test_valpha_rms_positive(self):
+        va, vb, vc, t = _balanced_sin()
+        r = compute_dq_phasors(va, vb, vc, t, 50.0, 200.0, 0.0)
+        assert r["valpha_rms"] > 0.0
+
+    def test_vbeta_rms_positive(self):
+        va, vb, vc, t = _balanced_sin()
+        r = compute_dq_phasors(va, vb, vc, t, 50.0, 200.0, 0.0)
+        assert r["vbeta_rms"] > 0.0
+
+    def test_valpha_peak_ge_rms(self):
+        va, vb, vc, t = _balanced_sin()
+        r = compute_dq_phasors(va, vb, vc, t, 50.0, 200.0, 0.0)
+        assert r["valpha_peak"] >= r["valpha_rms"]
+
+    def test_vbeta_peak_ge_rms(self):
+        va, vb, vc, t = _balanced_sin()
+        r = compute_dq_phasors(va, vb, vc, t, 50.0, 200.0, 0.0)
+        assert r["vbeta_peak"] >= r["vbeta_rms"]
+
+    def test_vab_magnitude_mean_positive(self):
+        va, vb, vc, t = _balanced_sin()
+        r = compute_dq_phasors(va, vb, vc, t, 50.0, 200.0, 0.0)
+        assert r["vab_magnitude_mean"] > 0.0
+
+    def test_vab_magnitude_is_array(self):
+        va, vb, vc, t = _balanced_sin()
+        r = compute_dq_phasors(va, vb, vc, t, 50.0, 200.0, 0.0)
+        assert isinstance(r["vab_magnitude"], np.ndarray)
+        assert r["vab_magnitude"].shape == t.shape
+
+    def test_vdq_magnitude_is_array(self):
+        va, vb, vc, t = _balanced_sin()
+        r = compute_dq_phasors(va, vb, vc, t, 50.0, 200.0, 0.0)
+        assert isinstance(r["vdq_magnitude"], np.ndarray)
+        assert r["vdq_magnitude"].shape == t.shape
+
+    def test_vab_rms_ge_mean(self):
+        va, vb, vc, t = _balanced_sin()
+        r = compute_dq_phasors(va, vb, vc, t, 50.0, 200.0, 0.0)
+        assert r["vab_magnitude_rms"] >= r["vab_magnitude_mean"] - 1e-9
+
+    def test_vdq_magnitude_mean_positive(self):
+        va, vb, vc, t = _balanced_sin()
+        r = compute_dq_phasors(va, vb, vc, t, 50.0, 200.0, 0.0)
+        assert r["vdq_magnitude_mean"] > 0.0
+
+    def test_empty_input_returns_zero_metrics(self):
+        empty = np.array([])
+        r = compute_dq_phasors(empty, empty, empty, empty, 50.0, 200.0, 0.0)
+        assert r["valpha_rms"] == 0.0
+        assert r["vab_magnitude_mean"] == 0.0
+        assert r["vdq_magnitude_rms"] == 0.0
+
+
+class TestDqMetricsFromSimulation:
+    """F15b — run_simulation populates all new metric fields in SimulationResult."""
+
+    def test_theta_e_deg_is_array(self, sim_result):
+        assert isinstance(sim_result.theta_e_deg, np.ndarray)
+        assert sim_result.theta_e_deg.size > 0
+
+    def test_theta_mech_deg_is_array(self, sim_result):
+        assert isinstance(sim_result.theta_mech_deg, np.ndarray)
+        assert sim_result.theta_mech_deg.size > 0
+
+    def test_dq_valpha_rms_is_float(self, sim_result):
+        assert isinstance(sim_result.dq_valpha_rms, float)
+        assert sim_result.dq_valpha_rms > 0.0
+
+    def test_dq_vbeta_rms_is_float(self, sim_result):
+        assert isinstance(sim_result.dq_vbeta_rms, float)
+        assert sim_result.dq_vbeta_rms > 0.0
+
+    def test_dq_valpha_peak_ge_rms(self, sim_result):
+        assert sim_result.dq_valpha_peak >= sim_result.dq_valpha_rms
+
+    def test_dq_vbeta_peak_ge_rms(self, sim_result):
+        assert sim_result.dq_vbeta_peak >= sim_result.dq_vbeta_rms
+
+    def test_dq_vab_magnitude_mean_is_float(self, sim_result):
+        assert isinstance(sim_result.dq_vab_magnitude_mean, float)
+        assert sim_result.dq_vab_magnitude_mean > 0.0
+
+    def test_dq_vab_magnitude_is_array(self, sim_result):
+        assert isinstance(sim_result.dq_vab_magnitude, np.ndarray)
+        assert sim_result.dq_vab_magnitude.shape == sim_result.time.shape
+
+    def test_dq_vdq_magnitude_is_array(self, sim_result):
+        assert isinstance(sim_result.dq_vdq_magnitude, np.ndarray)
+        assert sim_result.dq_vdq_magnitude.shape == sim_result.time.shape
+
+    def test_dq_vdq_magnitude_mean_is_float(self, sim_result):
+        assert isinstance(sim_result.dq_vdq_magnitude_mean, float)
+        assert sim_result.dq_vdq_magnitude_mean > 0.0
+

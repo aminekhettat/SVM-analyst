@@ -1,6 +1,30 @@
 SVM Analyst – Changelog
 ========================
 
+v1.4.1 – 2026-04-08
+--------------------
+Enhancement — dq-frame dialog: electrical/mechanical angle sawtooth, αβ/dq
+metrics, and real-time pyqtgraph visualisation.
+
+New features:
+- analysis: compute_dq_phasors() now returns 12 additional keys — valpha_rms,
+  valpha_peak, vbeta_rms, vbeta_peak, vd_rms, vq_rms, vab_magnitude (array),
+  vab_magnitude_mean, vab_magnitude_rms, vdq_magnitude (array),
+  vdq_magnitude_mean, vdq_magnitude_rms.
+- core: SimulationResult extended with 14 new fields — theta_e_deg and
+  theta_mech_deg (electrical and mechanical angle sawtooth arrays, 0–360°) plus
+  all new αβ/dq metric scalars and |Vαβ|/|Vdq| arrays from compute_dq_phasors.
+- gui: DqPhasorDialog fully rewritten with pyqtgraph PlotWidgets for real-time
+  refresh without full redraw.  Now shows four panels — Clarke αβ trajectory,
+  Park dq phasors, electrical angle θ_e sawtooth (°elec), mechanical angle
+  θ_mech sawtooth (°mech) — plus a metrics footer with Vα, Vβ, Vd, Vq, |Vαβ|
+  and |Vdq| RMS/peak/mean values.  Dialog grows to 1100×700 minimum.
+- tests: 33 new tests in test_feature_dq_phasor.py — F12 (electrical angle
+  sawtooth shape and reset count), F13 (BLDC pole-pairs rule verified via
+  mechanical/electrical cycle ratio), F14 (Vβ leads Vα by 90°: orthogonality,
+  equal RMS, and DFT phase extraction), F15a/b (αβ/dq metric fields populated
+  and physically reasonable from both compute_dq_phasors and run_simulation).
+
 v1.4.0 – 2026-06-09
 --------------------
 Feature release — dq-frame phasor diagram (Roadmap Feature #5).

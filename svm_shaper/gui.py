@@ -1063,13 +1063,16 @@ class SvmHexagonDialog(QtWidgets.QDialog):
 
 
 class DqPhasorDialog(QtWidgets.QDialog):
-    """Dialog showing the dq-frame voltage and current phasors.
+    """Dialog showing dq-frame analysis: Clarke/Park trajectories, angle sawtooth, and metrics.
 
-    Displays two panels:
-    - Left: Clarke αβ plane — space-vector trajectory traced by the three-phase
-      PWM waveform over the simulation window, with the SVM hexagon overlaid.
-    - Right: Park dq plane — fundamental voltage phasor (Vs, blue) and
-      current phasor (Is, red) as annotated arrows.
+    Uses pyqtgraph PlotWidgets for real-time performance.
+
+    Panels:
+    • Top-left:     Clarke αβ space-vector trajectory + SVM hexagon
+    • Top-right:    Park dq phasors (Vs voltage arrow, Is current arrow)
+    • Bottom-left:  Electrical angle θ_e sawtooth (0–360 °elec)
+    • Bottom-right: Mechanical angle θ_mech sawtooth (0–360 °mech)
+    • Footer:       Voltage metrics (Vα, Vβ, Vd, Vq, |Vαβ|, |Vdq| — RMS, peak, mean)
 
     The dialog refreshes automatically whenever the main window produces a new
     simulation result via :meth:`refresh`.
@@ -1083,22 +1086,121 @@ class DqPhasorDialog(QtWidgets.QDialog):
     ):
         """Open the phasor dialog with the latest simulation *result*."""
         super().__init__(parent)
-        self.setWindowTitle("dq-frame Phasor Diagram – SVM Analyst")
+        self.setWindowTitle("dq-frame Analysis – SVM Analyst")
         self.setAccessibleName("dq phasor diagram dialog")
         self.setAccessibleDescription(
-            "Shows the voltage space-vector trajectory in the Clarke αβ plane on the "
-            "left and the fundamental voltage and current phasors in the Park dq frame "
-            "on the right."
+            "Shows Clarke αβ trajectory, Park dq phasors, electrical and mechanical "
+            "angle sawtooth waveforms, and scalar metrics for α, β, d, q voltages."
         )
-        self.setMinimumSize(900, 450)
+        self.setMinimumSize(1100, 700)
 
-        self._figure = Figure(figsize=(10, 4.5), tight_layout=True)
-        self._canvas_mpl = FigureCanvas(self._figure)
-        self._ax_ab = self._figure.add_subplot(121)
-        self._ax_dq = self._figure.add_subplot(122)
+        # ── αβ Clarke trajectory ─────────────────────────────────────────────────
+        self._pw_ab = pg.PlotWidget(title="Clarke αβ — space-vector trajectory")
+        self._pw_ab.setLabel("bottom", "α (V)")
+        self._pw_ab.setLabel("left", "β (V)")
+        self._pw_ab.setAspectLocked(True)
+        self._pw_ab.showGrid(x=True, y=True, alpha=0.25)
+        self._pw_ab.addLegend(offset=(5, 5))
+        self._curve_ab = self._pw_ab.plot(
+            [], [],
+            pen=pg.mkPen("#4ea6dc", width=1),
+            name="Voltage trajectory",
+        )
+        self._curve_hex = self._pw_ab.plot(
+            [], [],
+            pen=pg.mkPen("#ff8c00", width=1.5, style=Qt.PenStyle.DashLine),
+            name="SVM hexagon",
+        )
 
-        layout = QVBoxLayout(self)
-        layout.addWidget(self._canvas_mpl)
+        # ── Park dq phasors ──────────────────────────────────────────────────────
+        self._pw_dq = pg.PlotWidget(title="Park dq — fundamental phasors")
+        self._pw_dq.setLabel("bottom", "d (V)")
+        self._pw_dq.setLabel("left", "q (V)")
+        self._pw_dq.setAspectLocked(True)
+        self._pw_dq.showGrid(x=True, y=True, alpha=0.25)
+        self._pw_dq.addLine(x=0, pen=pg.mkPen("#666", width=1))
+        self._pw_dq.addLine(y=0, pen=pg.mkPen("#666", width=1))
+        # Voltage phasor: line + tip marker
+        self._line_vs = self._pw_dq.plot(
+            [], [], pen=pg.mkPen("#4ea6dc", width=3), name="Vs"
+        )
+        self._tip_vs = self._pw_dq.plot(
+            [], [], symbol="t", symbolSize=14,
+            symbolBrush="#4ea6dc", symbolPen=None, pen=None,
+        )
+        # Current phasor: line + tip marker
+        self._line_is = self._pw_dq.plot(
+            [], [], pen=pg.mkPen("#e05252", width=3), name="Is"
+        )
+        self._tip_is = self._pw_dq.plot(
+            [], [], symbol="t", symbolSize=14,
+            symbolBrush="#e05252", symbolPen=None, pen=None,
+        )
+        self._txt_vs = pg.TextItem("", color="#4ea6dc", anchor=(0, 1))
+        self._txt_is = pg.TextItem("", color="#e05252", anchor=(0, 0))
+        self._pw_dq.addItem(self._txt_vs)
+        self._pw_dq.addItem(self._txt_is)
+
+        # ── Electrical angle sawtooth ────────────────────────────────────────────
+        self._pw_te = pg.PlotWidget(title="Electrical angle θ_e")
+        self._pw_te.setLabel("bottom", "Time (s)")
+        self._pw_te.setLabel("left", "θ_e (°elec)")
+        self._pw_te.setYRange(0, 360, padding=0.05)
+        self._pw_te.showGrid(x=True, y=True, alpha=0.25)
+        self._curve_te = self._pw_te.plot(
+            [], [], pen=pg.mkPen("#7fc97f", width=1)
+        )
+
+        # ── Mechanical angle sawtooth ────────────────────────────────────────────
+        self._pw_tm = pg.PlotWidget(title="Mechanical angle θ_mech")
+        self._pw_tm.setLabel("bottom", "Time (s)")
+        self._pw_tm.setLabel("left", "θ_mech (°mech)")
+        self._pw_tm.showGrid(x=True, y=True, alpha=0.25)
+        self._curve_tm = self._pw_tm.plot(
+            [], [], pen=pg.mkPen("#beaed4", width=1)
+        )
+
+        # ── Metrics footer ───────────────────────────────────────────────────────
+        self._metrics_box = QtWidgets.QGroupBox("Voltage Metrics")
+        metrics_layout = QtWidgets.QGridLayout(self._metrics_box)
+        metrics_layout.setSpacing(6)
+        # (display_name, result_field, unit)
+        _metric_defs = [
+            ("Vα RMS",      "dq_valpha_rms",         "V"),
+            ("Vα peak",     "dq_valpha_peak",        "V"),
+            ("Vβ RMS",      "dq_vbeta_rms",          "V"),
+            ("Vβ peak",     "dq_vbeta_peak",         "V"),
+            ("Vd mean",     "dq_vd",                 "V"),
+            ("Vd RMS",      "dq_vd_rms",             "V"),
+            ("Vq mean",     "dq_vq",                 "V"),
+            ("Vq RMS",      "dq_vq_rms",             "V"),
+            ("|Vαβ| mean",  "dq_vab_magnitude_mean", "V"),
+            ("|Vαβ| RMS",   "dq_vab_magnitude_rms",  "V"),
+            ("|Vdq| mean",  "dq_vdq_magnitude_mean", "V"),
+            ("|Vdq| RMS",   "dq_vdq_magnitude_rms",  "V"),
+        ]
+        self._metric_value_labels: dict[str, QtWidgets.QLabel] = {}
+        for idx, (name, field, unit) in enumerate(_metric_defs):
+            row, col = divmod(idx, 4)
+            lbl_name = QtWidgets.QLabel(f"{name}:")
+            lbl_val = QtWidgets.QLabel("—")
+            lbl_val.setAlignment(Qt.AlignmentFlag.AlignRight)
+            metrics_layout.addWidget(lbl_name, row, col * 2)
+            metrics_layout.addWidget(lbl_val, row, col * 2 + 1)
+            self._metric_value_labels[field] = (lbl_val, unit)
+
+        # ── Main layout: 2×2 grid of plots + metrics footer ─────────────────────
+        plots_widget = QtWidgets.QWidget()
+        grid = QtWidgets.QGridLayout(plots_widget)
+        grid.setSpacing(4)
+        grid.addWidget(self._pw_ab, 0, 0)
+        grid.addWidget(self._pw_dq, 0, 1)
+        grid.addWidget(self._pw_te, 1, 0)
+        grid.addWidget(self._pw_tm, 1, 1)
+
+        main_layout = QVBoxLayout(self)
+        main_layout.addWidget(plots_widget, stretch=5)
+        main_layout.addWidget(self._metrics_box, stretch=1)
 
         self._refresh(result, config)
 
@@ -1107,7 +1209,7 @@ class DqPhasorDialog(QtWidgets.QDialog):
     # ------------------------------------------------------------------
 
     def refresh(self, result, config: "SimulatorConfig") -> None:
-        """Redraw both panels with *result* from the latest simulation."""
+        """Redraw all panels with *result* from the latest simulation."""
         self._refresh(result, config)
 
     # ------------------------------------------------------------------
@@ -1115,97 +1217,67 @@ class DqPhasorDialog(QtWidgets.QDialog):
     # ------------------------------------------------------------------
 
     def _refresh(self, result, config: "SimulatorConfig") -> None:
-        """Render the αβ trajectory and dq phasor arrows."""
-        self._ax_ab.clear()
-        self._ax_dq.clear()
-
+        """Update all pyqtgraph curves and metric labels in-place (no full redraw)."""
         vdc = config.battery_voltage
 
-        # ── Left panel: Clarke αβ space-vector trajectory ──────────────
+        # ── Clarke αβ trajectory ─────────────────────────────────────────────────
         va = result.dq_valpha
         vb = result.dq_vbeta
         if va.size > 0:
-            # Downsample to at most 5000 points for fast rendering.
             step = max(1, va.size // 5000)
-            self._ax_ab.plot(
-                va[::step],
-                vb[::step],
-                lw=0.6,
-                color="#1f77b4",
-                alpha=0.7,
-                label="Voltage trajectory",
-            )
-        # SVM hexagon in αβ (centred at 0, radius = 2/3 * Vdc).
+            self._curve_ab.setData(va[::step], vb[::step])
+        else:
+            self._curve_ab.setData([], [])
         verts = svm_hexagon_vertices(vdc=vdc)
         poly = np.vstack((verts, verts[0]))
-        self._ax_ab.plot(
-            poly[:, 0],
-            poly[:, 1],
-            "--",
-            color="orange",
-            lw=1.2,
-            label="SVM hexagon",
-        )
-        self._ax_ab.set_xlabel("α  (V)")
-        self._ax_ab.set_ylabel("β  (V)")
-        self._ax_ab.set_title("Clarke αβ — space-vector trajectory")
-        self._ax_ab.axis("equal")
-        self._ax_ab.grid(True, alpha=0.4)
-        self._ax_ab.legend(fontsize=8)
+        self._curve_hex.setData(poly[:, 0], poly[:, 1])
 
-        # ── Right panel: Park dq phasors ───────────────────────────────
-        vd = result.dq_vd
-        vq = result.dq_vq
-        v_mag = result.dq_vs_magnitude
-        v_ang = result.dq_vs_angle_deg
-        id_f = result.dq_id
-        iq_f = result.dq_iq
-        i_ang = result.dq_is_angle_deg
+        # ── Park dq phasors ──────────────────────────────────────────────────────
+        vd, vq    = result.dq_vd, result.dq_vq
+        v_mag     = result.dq_vs_magnitude
+        v_ang     = result.dq_vs_angle_deg
+        id_f, iq_f = result.dq_id, result.dq_iq
+        i_ang     = result.dq_is_angle_deg
+        ang_diff  = i_ang - v_ang
 
-        arrow_kw = dict(length_includes_head=True, head_width=v_mag * 0.05 + 1e-9)
+        self._line_vs.setData([0, vd], [0, vq])
+        self._tip_vs.setData([vd], [vq])
+        self._line_is.setData([0, id_f], [0, iq_f])
+        self._tip_is.setData([id_f], [iq_f])
 
         if v_mag > 1e-6:
-            self._ax_dq.arrow(
-                0, 0, vd, vq, color="#1f77b4", lw=2, **arrow_kw, label="Vs"
-            )
-            self._ax_dq.text(
-                vd * 1.05,
-                vq * 1.05,
-                f"Vs={v_mag:.1f} V\n∠{v_ang:.1f}°",
-                color="#1f77b4",
-                fontsize=8,
-                va="center",
-            )
-            self._ax_dq.arrow(
-                0, 0, id_f, iq_f, color="#d62728", lw=2, **arrow_kw, label="Is"
-            )
-            ang_diff = i_ang - v_ang
-            self._ax_dq.text(
-                id_f * 1.05,
-                iq_f * 1.05,
-                f"Is (norm.)\n∠{i_ang:.1f}°\nφ={ang_diff:.1f}°",
-                color="#d62728",
-                fontsize=8,
-                va="center",
-            )
+            self._txt_vs.setText(f"Vs={v_mag:.1f} V  ∠{v_ang:.1f}°")
+            self._txt_vs.setPos(vd, vq)
+            self._txt_is.setText(f"Is (norm.)  ∠{i_ang:.1f}°  φ={ang_diff:.1f}°")
+            self._txt_is.setPos(id_f, iq_f)
         else:
-            self._ax_dq.text(
-                0, 0, "No result yet", ha="center", va="center", fontsize=10
-            )
+            self._txt_vs.setText("No result yet")
+            self._txt_vs.setPos(0.0, 0.0)
+            self._txt_is.setText("")
 
-        # d/q axis reference lines
         _lim = max(v_mag * 1.4, 1.0)
-        self._ax_dq.axhline(0, color="#555", lw=0.8, ls="--")
-        self._ax_dq.axvline(0, color="#555", lw=0.8, ls="--")
-        self._ax_dq.set_xlim(-_lim, _lim)
-        self._ax_dq.set_ylim(-_lim, _lim)
-        self._ax_dq.set_xlabel("d  (V)")
-        self._ax_dq.set_ylabel("q  (V)")
-        self._ax_dq.set_title("Park dq — fundamental phasors")
-        self._ax_dq.grid(True, alpha=0.4)
-        self._ax_dq.set_aspect("equal", adjustable="box")
+        self._pw_dq.setXRange(-_lim, _lim, padding=0)
+        self._pw_dq.setYRange(-_lim, _lim, padding=0)
 
-        self._canvas_mpl.draw()
+        # ── Angle sawtooth waveforms ─────────────────────────────────────────────
+        time_arr  = result.time
+        te_arr    = result.theta_e_deg
+        tm_arr    = result.theta_mech_deg
+        if time_arr.size > 0:
+            step = max(1, time_arr.size // 10000)
+            self._curve_te.setData(time_arr[::step], te_arr[::step])
+            self._curve_tm.setData(time_arr[::step], tm_arr[::step])
+            mech_max = 360.0 / config.motor_pole_pairs
+            self._pw_tm.setYRange(0, mech_max, padding=0.05)
+        else:
+            self._curve_te.setData([], [])
+            self._curve_tm.setData([], [])
+
+        # ── Metrics labels ───────────────────────────────────────────────────────
+        for attr, (lbl_widget, unit) in self._metric_value_labels.items():
+            val = getattr(result, attr, 0.0)
+            lbl_widget.setText(f"{val:.2f} {unit}")
+
 
 
 class SvmShaperApp(QtWidgets.QMainWindow):
