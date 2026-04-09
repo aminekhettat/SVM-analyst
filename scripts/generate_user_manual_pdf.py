@@ -6,6 +6,7 @@ without requiring external tools like pandoc.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 import textwrap
 
@@ -14,7 +15,17 @@ import matplotlib.pyplot as plt
 
 ROOT = Path(__file__).resolve().parents[1]
 INPUT_MD = ROOT / "USER_MANUAL.md"
-OUTPUT_PDF = ROOT / "docs" / "SVM-Analyst-User-Manual-1.1.2.pdf"
+
+
+def _read_version() -> str:
+    text = (ROOT / "svm_shaper" / "__init__.py").read_text(encoding="utf-8")
+    m = re.search(r'^__version__\s*=\s*"([^"]+)"', text, re.MULTILINE)
+    if not m:
+        raise RuntimeError("Cannot read __version__ from svm_shaper/__init__.py")
+    return m.group(1)
+
+
+OUTPUT_PDF = ROOT / "docs" / f"SVM-Analyst-User-Manual-{_read_version()}.pdf"
 
 
 def _normalize_markdown(lines: list[str]) -> list[str]:
