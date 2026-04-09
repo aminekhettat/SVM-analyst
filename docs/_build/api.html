@@ -43,13 +43,13 @@ Date: 2026-03-09
 License: See LICENSE</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="svm_shaper.core.SimulationResult">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">svm_shaper.core.</span></span><span class="sig-name descname"><span class="pre">SimulationResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_c</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_voltage_ab</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_voltage_bc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_voltage_ca</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filtered_phase_a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filtered_phase_b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filtered_phase_c</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_freqs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_magnitude</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thd_line_percent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thd_phase_percent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">top_harmonics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pulses_per_electrical_cycle</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">degrees_per_pwm_pulse</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">actual_speed_rpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speed_deviation_rpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speed_deviation_percent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filtered_mean</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filtered_rms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filtered_min</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filtered_max</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_mean</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_rms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_min</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_max</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description_text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#svm_shaper.core.SimulationResult" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">svm_shaper.core.</span></span><span class="sig-name descname"><span class="pre">SimulationResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">time:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">phase_a:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">phase_b:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">phase_c:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">phase_voltage_ab:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">phase_voltage_bc:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">phase_voltage_ca:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">filtered_phase_a:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">filtered_phase_b:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">filtered_phase_c:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">fft_freqs:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">fft_magnitude:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">thd_line_percent:</span> <span class="pre">float,</span> <span class="pre">thd_phase_percent:</span> <span class="pre">float,</span> <span class="pre">top_harmonics:</span> <span class="pre">list[tuple[float,</span> <span class="pre">float]],</span> <span class="pre">pulses_per_electrical_cycle:</span> <span class="pre">int,</span> <span class="pre">degrees_per_pwm_pulse:</span> <span class="pre">float,</span> <span class="pre">actual_speed_rpm:</span> <span class="pre">float,</span> <span class="pre">speed_deviation_rpm:</span> <span class="pre">float,</span> <span class="pre">speed_deviation_percent:</span> <span class="pre">float,</span> <span class="pre">filtered_mean:</span> <span class="pre">float,</span> <span class="pre">filtered_rms:</span> <span class="pre">float,</span> <span class="pre">filtered_min:</span> <span class="pre">float,</span> <span class="pre">filtered_max:</span> <span class="pre">float,</span> <span class="pre">raw_mean:</span> <span class="pre">float,</span> <span class="pre">raw_rms:</span> <span class="pre">float,</span> <span class="pre">raw_min:</span> <span class="pre">float,</span> <span class="pre">raw_max:</span> <span class="pre">float,</span> <span class="pre">description_text:</span> <span class="pre">str,</span> <span class="pre">duty_cycle_time:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">duty_cycle_a:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">duty_cycle_b:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">duty_cycle_c:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">duty_cycle_a_min:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">duty_cycle_a_max:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">duty_cycle_a_mean:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">duty_cycle_a_rms:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">duty_cycle_b_min:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">duty_cycle_b_max:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">duty_cycle_b_mean:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">duty_cycle_b_rms:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">duty_cycle_c_min:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">duty_cycle_c_max:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">duty_cycle_c_mean:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">duty_cycle_c_rms:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">duty_cycle_ab:</span> <span class="pre">~numpy.ndarray</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;,</span> <span class="pre">duty_cycle_bc:</span> <span class="pre">~numpy.ndarray</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;,</span> <span class="pre">duty_cycle_ca:</span> <span class="pre">~numpy.ndarray</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;,</span> <span class="pre">duty_cycle_ab_min:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">duty_cycle_ab_max:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">duty_cycle_ab_mean:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">duty_cycle_ab_rms:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">duty_cycle_bc_min:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">duty_cycle_bc_max:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">duty_cycle_bc_mean:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">duty_cycle_bc_rms:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">duty_cycle_ca_min:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">duty_cycle_ca_max:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">duty_cycle_ca_mean:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">duty_cycle_ca_rms:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">dead_time_duty_limit:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">duty_cycle_fft_freqs:</span> <span class="pre">~numpy.ndarray</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;,</span> <span class="pre">duty_cycle_fft_magnitude:</span> <span class="pre">~numpy.ndarray</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;,</span> <span class="pre">cmv:</span> <span class="pre">~numpy.ndarray</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;,</span> <span class="pre">cmv_mean:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">cmv_rms:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">cmv_min:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">cmv_max:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">cmv_pp:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">dc_bus_current_norm:</span> <span class="pre">~numpy.ndarray</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;,</span> <span class="pre">dc_bus_current_norm_min:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">dc_bus_current_norm_max:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">dc_bus_current_norm_rms:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">dc_bus_current_norm_pp:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">dq_valpha:</span> <span class="pre">~numpy.ndarray</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;,</span> <span class="pre">dq_vbeta:</span> <span class="pre">~numpy.ndarray</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;,</span> <span class="pre">dq_vd:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">dq_vq:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">dq_vs_magnitude:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">dq_vs_angle_deg:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">dq_id:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">dq_iq:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">dq_is_angle_deg:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">theta_e_deg:</span> <span class="pre">~numpy.ndarray</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;,</span> <span class="pre">theta_mech_deg:</span> <span class="pre">~numpy.ndarray</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;,</span> <span class="pre">dq_valpha_rms:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">dq_valpha_peak:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">dq_vbeta_rms:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">dq_vbeta_peak:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">dq_vd_rms:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">dq_vq_rms:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">dq_vab_magnitude:</span> <span class="pre">~numpy.ndarray</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;,</span> <span class="pre">dq_vab_magnitude_mean:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">dq_vab_magnitude_rms:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">dq_vdq_magnitude:</span> <span class="pre">~numpy.ndarray</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;,</span> <span class="pre">dq_vdq_magnitude_mean:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">dq_vdq_magnitude_rms:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">saturation_percent:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0.0,</span> <span class="pre">is_overmodulation:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#svm_shaper.core.SimulationResult" title="Link to this definition">¶</a></dt>
 <dd><p>Container for computed waveform and analysis results.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="svm_shaper.core.SimulatorConfig">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">svm_shaper.core.</span></span><span class="sig-name descname"><span class="pre">SimulatorConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">motor_pole_pairs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pwm_frequency_hz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speed_rpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">battery_voltage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">240.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">amplitude_percent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modulation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#svm_shaper.modulations.ModulationMode" title="svm_shaper.modulations.ModulationMode"><span class="pre">ModulationMode</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">ModulationMode.SVM</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_phase_voltages</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_filtered</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_switching_edges</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_cutoff_hz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">injection_percent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alignment</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#svm_shaper.modulations.PulseAlignment" title="svm_shaper.modulations.PulseAlignment"><span class="pre">PulseAlignment</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">PulseAlignment.CENTER</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dead_time_us</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diode_forward_voltage_v</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_phase_deg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">author_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">project_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_cycles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">display_cycles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oversample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#svm_shaper.core.SimulatorConfig" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">svm_shaper.core.</span></span><span class="sig-name descname"><span class="pre">SimulatorConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">motor_pole_pairs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pwm_frequency_hz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speed_rpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">battery_voltage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">240.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">amplitude_percent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modulation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#svm_shaper.modulations.ModulationMode" title="svm_shaper.modulations.ModulationMode"><span class="pre">ModulationMode</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">ModulationMode.SVM</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_phase_voltages</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_filtered</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_switching_edges</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_cutoff_hz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">injection_percent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alignment</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#svm_shaper.modulations.PulseAlignment" title="svm_shaper.modulations.PulseAlignment"><span class="pre">PulseAlignment</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">PulseAlignment.CENTER</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dead_time_us</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diode_forward_voltage_v</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_phase_deg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">author_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">project_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_cycles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">display_cycles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oversample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modulation_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#svm_shaper.core.SimulatorConfig" title="Link to this definition">¶</a></dt>
 <dd><p>User-editable simulation configuration.</p>
 </dd></dl>
 
@@ -84,7 +84,7 @@ License: See LICENSE</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="svm_shaper.modulations.generate_modulated_pwm">
-<span class="sig-prename descclassname"><span class="pre">svm_shaper.modulations.</span></span><span class="sig-name descname"><span class="pre">generate_modulated_pwm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">modulation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#svm_shaper.modulations.ModulationMode" title="svm_shaper.modulations.ModulationMode"><span class="pre">ModulationMode</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">pole_pairs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speed_rpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pwm_frequency_hz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_cycles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oversample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">injection_percent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alignment</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#svm_shaper.modulations.PulseAlignment" title="svm_shaper.modulations.PulseAlignment"><span class="pre">PulseAlignment</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">PulseAlignment.CENTER</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dead_time_s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#svm_shaper.modulations.generate_modulated_pwm" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">svm_shaper.modulations.</span></span><span class="sig-name descname"><span class="pre">generate_modulated_pwm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">modulation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#svm_shaper.modulations.ModulationMode" title="svm_shaper.modulations.ModulationMode"><span class="pre">ModulationMode</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">pole_pairs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speed_rpm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pwm_frequency_hz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_cycles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oversample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">injection_percent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alignment</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#svm_shaper.modulations.PulseAlignment" title="svm_shaper.modulations.PulseAlignment"><span class="pre">PulseAlignment</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">PulseAlignment.CENTER</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dead_time_s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modulation_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#svm_shaper.modulations.generate_modulated_pwm" title="Link to this definition">¶</a></dt>
 <dd><p>Generate three-phase PWM waveforms for a given modulation mode.</p>
 <p>This function supports a basic sinusoidal PWM reference, third-harmonic
 injection variations (including adjustable injection factor), space-vector
@@ -126,6 +126,75 @@ unit tests.</p>
 <p>Author: Amine KHETTAT
 Date: 2026-03-09
 License: See LICENSE</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="svm_shaper.analysis.compute_dq_phasors">
+<span class="sig-prename descclassname"><span class="pre">svm_shaper.analysis.</span></span><span class="sig-name descname"><span class="pre">compute_dq_phasors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">phase_a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_c</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">electrical_freq_hz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">battery_voltage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_phase_deg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#svm_shaper.analysis.compute_dq_phasors" title="Link to this definition">¶</a></dt>
+<dd><p>Compute Clarke (αβ) and Park (dq) frame vectors from three-phase PWM waveforms.</p>
+<p>The three-phase voltages are centred around zero before the transforms so
+that the DC-link mid-point offset (Vdc/2) does not contribute to the
+rotating space vector.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>phase_a</strong> – Per-sample leg voltages from the simulation (line voltages 0…Vdc).</p></li>
+<li><p><strong>phase_b</strong> – Per-sample leg voltages from the simulation (line voltages 0…Vdc).</p></li>
+<li><p><strong>phase_c</strong> – Per-sample leg voltages from the simulation (line voltages 0…Vdc).</p></li>
+<li><p><strong>time</strong> – Time vector matching the phase arrays.</p></li>
+<li><p><strong>electrical_freq_hz</strong> – Electrical frequency in Hz (used to build the Park transform angle θe).</p></li>
+<li><p><strong>battery_voltage</strong> – DC-link voltage; used to centre the phase signals around zero.</p></li>
+<li><p><strong>current_phase_deg</strong> – Phase lag of the fundamental current relative to the fundamental voltage
+in degrees (positive = lagging).  Used to derive the current phasor.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><p><code class="docutils literal notranslate"><span class="pre">valpha</span></code>, <code class="docutils literal notranslate"><span class="pre">vbeta</span></code> — Clarke trajectory arrays (same length as input).
+<code class="docutils literal notranslate"><span class="pre">vd_mean</span></code>, <code class="docutils literal notranslate"><span class="pre">vq_mean</span></code> — average Park components over the simulation.
+<code class="docutils literal notranslate"><span class="pre">vs_magnitude</span></code> — voltage phasor magnitude (V).
+<code class="docutils literal notranslate"><span class="pre">vs_angle_deg</span></code> — voltage phasor angle in the dq frame (degrees).
+<code class="docutils literal notranslate"><span class="pre">id_fund</span></code>, <code class="docutils literal notranslate"><span class="pre">iq_fund</span></code> — fundamental current phasor components</p>
+<blockquote>
+<div><p>(normalised to the same magnitude as the voltage phasor for display).</p>
+</div></blockquote>
+<p><code class="docutils literal notranslate"><span class="pre">is_angle_deg</span></code> — current phasor angle in the dq frame (degrees).</p>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict with keys</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="svm_shaper.analysis.compute_duty_cycle_envelope">
+<span class="sig-prename descclassname"><span class="pre">svm_shaper.analysis.</span></span><span class="sig-name descname"><span class="pre">compute_duty_cycle_envelope</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signal</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oversample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">battery_voltage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#svm_shaper.analysis.compute_duty_cycle_envelope" title="Link to this definition">¶</a></dt>
+<dd><p>Compute a per-PWM-period duty cycle envelope from a voltage waveform.</p>
+<p>The duty cycle for each switching period is the fraction of samples whose
+voltage exceeds half the DC-bus voltage (<code class="docutils literal notranslate"><span class="pre">battery_voltage</span> <span class="pre">/</span> <span class="pre">2</span></code>).  Plotting
+this against time reveals the modulating reference waveform (sinusoid for
+SPWM, SVM envelope, clamped segments for DPWM, etc.).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>signal</strong> – High-resolution phase voltage samples (e.g. <code class="docutils literal notranslate"><span class="pre">phase_a</span></code> from
+<code class="docutils literal notranslate"><span class="pre">SimulationResult</span></code>).  Shape: <code class="docutils literal notranslate"><span class="pre">(N,)</span></code>.</p></li>
+<li><p><strong>time</strong> – Corresponding time vector in seconds.  Same length as <em>signal</em>.</p></li>
+<li><p><strong>oversample</strong> – Number of samples per PWM period used during waveform generation.
+Must be &gt;= 1.</p></li>
+<li><p><strong>battery_voltage</strong> – DC-link voltage used as the HIGH-level reference.  The threshold is
+set at <code class="docutils literal notranslate"><span class="pre">battery_voltage</span> <span class="pre">/</span> <span class="pre">2</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><em>duty_time</em> – Time at the mid-point of each PWM period.  Shape: <code class="docutils literal notranslate"><span class="pre">(M,)</span></code> where
+<code class="docutils literal notranslate"><span class="pre">M</span> <span class="pre">=</span> <span class="pre">len(signal)</span> <span class="pre">//</span> <span class="pre">oversample</span></code>.</p></li>
+<li><p><em>duty</em> – Duty cycle in [0, 1] for each period.  Shape: <code class="docutils literal notranslate"><span class="pre">(M,)</span></code>.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="svm_shaper.analysis.compute_fft">
 <span class="sig-prename descclassname"><span class="pre">svm_shaper.analysis.</span></span><span class="sig-name descname"><span class="pre">compute_fft</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signal</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampling_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_cycles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">electrical_frequency_hz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#svm_shaper.analysis.compute_fft" title="Link to this definition">¶</a></dt>
@@ -182,6 +251,904 @@ except DC and the fundamental.</p>
 </dl>
 </dd></dl>
 
+<p id="module-svm_shaper.single_shunt">Single Shunt Current Reconstruction (SSCR) analysis module.</p>
+<p>This module implements the complete acquisition-window analysis and current
+reconstruction algorithm for three-phase PWM inverters that use a single
+shunt resistor on the DC-bus negative rail.</p>
+<section id="theory-overview">
+<h2>Theory overview<a class="headerlink" href="#theory-overview" title="Link to this heading">¶</a></h2>
+<p>In a center-aligned (symmetric) PWM inverter, each phase <code class="docutils literal notranslate"><span class="pre">x</span></code> has a duty
+cycle <code class="docutils literal notranslate"><span class="pre">D_x</span> <span class="pre">∈</span> <span class="pre">[0,</span> <span class="pre">1]</span></code>.  Within every half-period the three lower switches
+conduct in a strictly nested fashion determined by the sort order of the
+three duty cycles:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>D_max ≥ D_mid ≥ D_min
+t_on,x = T/2 · (1 − D_x)          [center-aligned turn-on time]
+t_on,max ≤ t_on,mid ≤ t_on,min
+</pre></div>
+</div>
+<p>Two time windows become available:</p>
+<ul class="simple">
+<li><p><strong>W₁</strong> – only the D_max phase lower switch is conducting  →  <code class="docutils literal notranslate"><span class="pre">i_shunt</span> <span class="pre">=</span> <span class="pre">i_max</span></code></p></li>
+<li><p><strong>W₂</strong> – both D_max and D_mid lower switches are conducting  →  <code class="docutils literal notranslate"><span class="pre">i_shunt</span> <span class="pre">=</span> <span class="pre">i_max</span> <span class="pre">+</span> <span class="pre">i_mid</span> <span class="pre">=</span> <span class="pre">−i_min</span></code></p></li>
+</ul>
+<p>After subtracting dead-time <code class="docutils literal notranslate"><span class="pre">t_d</span></code> from each window, the effective (usable)
+widths are:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>W1_eff = max(T/2 · (D_max − D_mid) − t_d , 0)
+W2_eff = max(T/2 · (D_mid − D_min) − t_d , 0)
+</pre></div>
+</div>
+<p>For edge-aligned PWM (left/right), the full period <code class="docutils literal notranslate"><span class="pre">T</span></code> replaces <code class="docutils literal notranslate"><span class="pre">T/2</span></code> and
+the windows occur once per period instead of twice.</p>
+</section>
+<section id="phase-shift-strategy-edge-aligned">
+<h2>Phase-shift strategy (edge-aligned)<a class="headerlink" href="#phase-shift-strategy-edge-aligned" title="Link to this heading">¶</a></h2>
+<p>Adding static inter-phase time offsets <code class="docutils literal notranslate"><span class="pre">Δt_A,</span> <span class="pre">Δt_B,</span> <span class="pre">Δt_C</span></code> to the reference
+of a left- or right-aligned carrier staggers the switching events and creates
+observable windows even when all three duty cycles are nearly equal.</p>
+</section>
+<section id="compensation-strategies-center-aligned-blind-zones">
+<h2>Compensation strategies (center-aligned blind zones)<a class="headerlink" href="#compensation-strategies-center-aligned-blind-zones" title="Link to this heading">¶</a></h2>
+<p>When <code class="docutils literal notranslate"><span class="pre">W_eff</span> <span class="pre">&lt;</span> <span class="pre">t_acq_min</span></code>, reconstruction fails (blind zone).  Three built-in
+strategies are supported:</p>
+<ol class="arabic simple">
+<li><p><strong>NONE</strong> – flag the period as blind only (pedagogic display).</p></li>
+<li><p><strong>MIN_PULSE</strong> – increase the distance between D_max and D_mid by applying
+a duty-cycle delta <code class="docutils literal notranslate"><span class="pre">δ</span> <span class="pre">=</span> <span class="pre">(t_d</span> <span class="pre">+</span> <span class="pre">t_acq_min</span> <span class="pre">−</span> <span class="pre">W_ideal)</span> <span class="pre">/</span> <span class="pre">(T/2)</span></code> so that W_eff
+just meets the minimum threshold.  Applied symmetrically (±δ/2) to minimise
+voltage error.</p></li>
+<li><p><strong>HOLD</strong> – keep the last successfully reconstructed current values instead
+of declaring a blind sample.</p></li>
+</ol>
+<p>Author: Amine KHETTAT
+Date: 2026-04-09
+License: See LICENSE</p>
+</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.CompensationStrategy">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">svm_shaper.single_shunt.</span></span><span class="sig-name descname"><span class="pre">CompensationStrategy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#svm_shaper.single_shunt.CompensationStrategy" title="Link to this definition">¶</a></dt>
+<dd><p>Strategy applied when an acquisition window is smaller than <code class="docutils literal notranslate"><span class="pre">t_acq_min</span></code>.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.CompensationStrategy.NONE">
+<span class="sig-name descname"><span class="pre">NONE</span></span><a class="headerlink" href="#svm_shaper.single_shunt.CompensationStrategy.NONE" title="Link to this definition">¶</a></dt>
+<dd><p>No correction is applied.  Blind periods are flagged in the output
+arrays with <code class="docutils literal notranslate"><span class="pre">w1_blind</span></code> / <code class="docutils literal notranslate"><span class="pre">w2_blind</span></code>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.CompensationStrategy.MIN_PULSE">
+<span class="sig-name descname"><span class="pre">MIN_PULSE</span></span><a class="headerlink" href="#svm_shaper.single_shunt.CompensationStrategy.MIN_PULSE" title="Link to this definition">¶</a></dt>
+<dd><p>Artificially widens the narrower window by symmetrically adjusting the
+mid duty cycle (±δ/2) so that the effective window just meets the
+minimum ADC acquisition threshold.  Introduces a small voltage error
+during the clamped cycle.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.CompensationStrategy.HOLD">
+<span class="sig-name descname"><span class="pre">HOLD</span></span><a class="headerlink" href="#svm_shaper.single_shunt.CompensationStrategy.HOLD" title="Link to this definition">¶</a></dt>
+<dd><p>When a window is blind, the previously reconstructed current sample is
+repeated instead of marking the period as invalid.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.DEFAULT_T_ACQ_MIN_US">
+<span class="sig-prename descclassname"><span class="pre">svm_shaper.single_shunt.</span></span><span class="sig-name descname"><span class="pre">DEFAULT_T_ACQ_MIN_US</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.5</span></span><a class="headerlink" href="#svm_shaper.single_shunt.DEFAULT_T_ACQ_MIN_US" title="Link to this definition">¶</a></dt>
+<dd><p>Minimum effective window width (µs) required for a valid ADC acquisition.
+This is the settling time needed after an IGBT switching edge before the
+shunt voltage ring-down is small enough for the ADC.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.PeriodAnalysis">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">svm_shaper.single_shunt.</span></span><span class="sig-name descname"><span class="pre">PeriodAnalysis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">period_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_max</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_mid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_min</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_max</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_mid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_min</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sector</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w1_ideal_us</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w2_ideal_us</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w1_eff_us</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w2_eff_us</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w1_blind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w2_blind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i_max_reconstructed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i_min_reconstructed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i_mid_reconstructed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compensation_applied</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_max_compensated</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_mid_compensated</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#svm_shaper.single_shunt.PeriodAnalysis" title="Link to this definition">¶</a></dt>
+<dd><p>Acquisition-window analysis result for a single PWM period.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.PeriodAnalysis.period_index">
+<span class="sig-name descname"><span class="pre">period_index</span></span><a class="headerlink" href="#svm_shaper.single_shunt.PeriodAnalysis.period_index" title="Link to this definition">¶</a></dt>
+<dd><p>Zero-based index of this PWM period in the simulation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.PeriodAnalysis.phase_max">
+<span class="sig-name descname"><span class="pre">phase_max</span></span><a class="headerlink" href="#svm_shaper.single_shunt.PeriodAnalysis.phase_max" title="Link to this definition">¶</a></dt>
+<dd><p>Label of the phase with the highest duty cycle (“A”, “B”, or “C”).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.PeriodAnalysis.phase_mid">
+<span class="sig-name descname"><span class="pre">phase_mid</span></span><a class="headerlink" href="#svm_shaper.single_shunt.PeriodAnalysis.phase_mid" title="Link to this definition">¶</a></dt>
+<dd><p>Label of the phase with the intermediate duty cycle.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.PeriodAnalysis.phase_min">
+<span class="sig-name descname"><span class="pre">phase_min</span></span><a class="headerlink" href="#svm_shaper.single_shunt.PeriodAnalysis.phase_min" title="Link to this definition">¶</a></dt>
+<dd><p>Label of the phase with the lowest duty cycle.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.PeriodAnalysis.d_max">
+<span class="sig-name descname"><span class="pre">d_max</span></span><a class="headerlink" href="#svm_shaper.single_shunt.PeriodAnalysis.d_max" title="Link to this definition">¶</a></dt>
+<dd><p>Highest duty cycle in [0, 1].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.PeriodAnalysis.d_mid">
+<span class="sig-name descname"><span class="pre">d_mid</span></span><a class="headerlink" href="#svm_shaper.single_shunt.PeriodAnalysis.d_mid" title="Link to this definition">¶</a></dt>
+<dd><p>Intermediate duty cycle in [0, 1].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.PeriodAnalysis.d_min">
+<span class="sig-name descname"><span class="pre">d_min</span></span><a class="headerlink" href="#svm_shaper.single_shunt.PeriodAnalysis.d_min" title="Link to this definition">¶</a></dt>
+<dd><p>Lowest duty cycle in [0, 1].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.PeriodAnalysis.sector">
+<span class="sig-name descname"><span class="pre">sector</span></span><a class="headerlink" href="#svm_shaper.single_shunt.PeriodAnalysis.sector" title="Link to this definition">¶</a></dt>
+<dd><p>SVM sector index (1–6) attributed to this period based on the
+electrical angle at the period mid-point.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.PeriodAnalysis.w1_ideal_us">
+<span class="sig-name descname"><span class="pre">w1_ideal_us</span></span><a class="headerlink" href="#svm_shaper.single_shunt.PeriodAnalysis.w1_ideal_us" title="Link to this definition">¶</a></dt>
+<dd><p>Ideal W₁ width (µs) before dead-time subtraction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.PeriodAnalysis.w2_ideal_us">
+<span class="sig-name descname"><span class="pre">w2_ideal_us</span></span><a class="headerlink" href="#svm_shaper.single_shunt.PeriodAnalysis.w2_ideal_us" title="Link to this definition">¶</a></dt>
+<dd><p>Ideal W₂ width (µs) before dead-time subtraction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.PeriodAnalysis.w1_eff_us">
+<span class="sig-name descname"><span class="pre">w1_eff_us</span></span><a class="headerlink" href="#svm_shaper.single_shunt.PeriodAnalysis.w1_eff_us" title="Link to this definition">¶</a></dt>
+<dd><p>Effective W₁ width (µs) after dead-time subtraction.  Non-negative.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.PeriodAnalysis.w2_eff_us">
+<span class="sig-name descname"><span class="pre">w2_eff_us</span></span><a class="headerlink" href="#svm_shaper.single_shunt.PeriodAnalysis.w2_eff_us" title="Link to this definition">¶</a></dt>
+<dd><p>Effective W₂ width (µs) after dead-time subtraction.  Non-negative.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.PeriodAnalysis.w1_blind">
+<span class="sig-name descname"><span class="pre">w1_blind</span></span><a class="headerlink" href="#svm_shaper.single_shunt.PeriodAnalysis.w1_blind" title="Link to this definition">¶</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">True</span></code> when <code class="docutils literal notranslate"><span class="pre">w1_eff_us</span> <span class="pre">&lt;</span> <span class="pre">t_acq_min_us</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.PeriodAnalysis.w2_blind">
+<span class="sig-name descname"><span class="pre">w2_blind</span></span><a class="headerlink" href="#svm_shaper.single_shunt.PeriodAnalysis.w2_blind" title="Link to this definition">¶</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">True</span></code> when <code class="docutils literal notranslate"><span class="pre">w2_eff_us</span> <span class="pre">&lt;</span> <span class="pre">t_acq_min_us</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.PeriodAnalysis.i_max_reconstructed">
+<span class="sig-name descname"><span class="pre">i_max_reconstructed</span></span><a class="headerlink" href="#svm_shaper.single_shunt.PeriodAnalysis.i_max_reconstructed" title="Link to this definition">¶</a></dt>
+<dd><p>Reconstructed value of the maximum phase current (A/A_peak) from W₁.
+<code class="docutils literal notranslate"><span class="pre">nan</span></code> when <code class="docutils literal notranslate"><span class="pre">w1_blind</span></code> and no compensation is applied.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.PeriodAnalysis.i_min_reconstructed">
+<span class="sig-name descname"><span class="pre">i_min_reconstructed</span></span><a class="headerlink" href="#svm_shaper.single_shunt.PeriodAnalysis.i_min_reconstructed" title="Link to this definition">¶</a></dt>
+<dd><p>Reconstructed value of the minimum phase current (A/A_peak) from W₂
+(Note: measured sample is <code class="docutils literal notranslate"><span class="pre">−i_min</span></code> off the shunt).
+<code class="docutils literal notranslate"><span class="pre">nan</span></code> when <code class="docutils literal notranslate"><span class="pre">w2_blind</span></code> and no compensation is applied.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.PeriodAnalysis.i_mid_reconstructed">
+<span class="sig-name descname"><span class="pre">i_mid_reconstructed</span></span><a class="headerlink" href="#svm_shaper.single_shunt.PeriodAnalysis.i_mid_reconstructed" title="Link to this definition">¶</a></dt>
+<dd><p>Third phase current derived from KCL: <code class="docutils literal notranslate"><span class="pre">−i_max</span> <span class="pre">−</span> <span class="pre">i_min</span></code>.
+<code class="docutils literal notranslate"><span class="pre">nan</span></code> when either window is blind and no compensation is applied.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.PeriodAnalysis.compensation_applied">
+<span class="sig-name descname"><span class="pre">compensation_applied</span></span><a class="headerlink" href="#svm_shaper.single_shunt.PeriodAnalysis.compensation_applied" title="Link to this definition">¶</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">True</span></code> when the compensation strategy modified duty cycles this period.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.PeriodAnalysis.d_max_compensated">
+<span class="sig-name descname"><span class="pre">d_max_compensated</span></span><a class="headerlink" href="#svm_shaper.single_shunt.PeriodAnalysis.d_max_compensated" title="Link to this definition">¶</a></dt>
+<dd><p>Duty cycle used after compensation (equals <code class="docutils literal notranslate"><span class="pre">d_max</span></code> when no compensation).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.PeriodAnalysis.d_mid_compensated">
+<span class="sig-name descname"><span class="pre">d_mid_compensated</span></span><a class="headerlink" href="#svm_shaper.single_shunt.PeriodAnalysis.d_mid_compensated" title="Link to this definition">¶</a></dt>
+<dd><p>Duty cycle used after compensation (equals <code class="docutils literal notranslate"><span class="pre">d_mid</span></code> when no compensation).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">svm_shaper.single_shunt.</span></span><span class="sig-name descname"><span class="pre">SingleShuntAnalysis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_periods</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pwm_frequency_hz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dead_time_us</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_acq_min_us</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alignment</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compensation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#svm_shaper.single_shunt.CompensationStrategy" title="svm_shaper.single_shunt.CompensationStrategy"><span class="pre">CompensationStrategy</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w1_ideal</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w2_ideal</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w1_eff</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w2_eff</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w1_blind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w2_blind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sector</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_max_label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_mid_label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase_min_label</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_max</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_mid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_min</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i_max_norm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i_min_norm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i_mid_norm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i_a_norm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i_b_norm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i_c_norm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blind_fraction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w1_eff_min_us</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w1_eff_mean_us</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w2_eff_min_us</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w2_eff_mean_us</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">periods</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis" title="Link to this definition">¶</a></dt>
+<dd><p>Full per-cycle SSCR analysis derived from one <a class="reference internal" href="#svm_shaper.core.SimulationResult" title="svm_shaper.core.SimulationResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SimulationResult</span></code></a>.</p>
+<p>All per-period arrays share the same length <code class="docutils literal notranslate"><span class="pre">N</span></code> (number of PWM periods in
+the simulation).  The <code class="docutils literal notranslate"><span class="pre">duty_cycle_time</span></code> axis from the parent simulation
+result is used for time references.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.num_periods">
+<span class="sig-name descname"><span class="pre">num_periods</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.num_periods" title="Link to this definition">¶</a></dt>
+<dd><p>Number of PWM periods analysed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.pwm_frequency_hz">
+<span class="sig-name descname"><span class="pre">pwm_frequency_hz</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.pwm_frequency_hz" title="Link to this definition">¶</a></dt>
+<dd><p>PWM carrier frequency (Hz).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.dead_time_us">
+<span class="sig-name descname"><span class="pre">dead_time_us</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.dead_time_us" title="Link to this definition">¶</a></dt>
+<dd><p>Dead time used as input to this analysis (µs).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.t_acq_min_us">
+<span class="sig-name descname"><span class="pre">t_acq_min_us</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.t_acq_min_us" title="Link to this definition">¶</a></dt>
+<dd><p>Minimum ADC acquisition time threshold (µs).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.alignment">
+<span class="sig-name descname"><span class="pre">alignment</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.alignment" title="Link to this definition">¶</a></dt>
+<dd><p>PWM alignment label (“Center”, “Left”, or “Right”).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.compensation">
+<span class="sig-name descname"><span class="pre">compensation</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.compensation" title="Link to this definition">¶</a></dt>
+<dd><p>Compensation strategy applied.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#svm_shaper.single_shunt.CompensationStrategy" title="svm_shaper.single_shunt.CompensationStrategy">CompensationStrategy</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.time">
+<span class="sig-name descname"><span class="pre">time</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.time" title="Link to this definition">¶</a></dt>
+<dd><p>Time at the mid-point of each PWM period (s).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (N,)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.w1_ideal">
+<span class="sig-name descname"><span class="pre">w1_ideal</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.w1_ideal" title="Link to this definition">¶</a></dt>
+<dd><p>Ideal W₁ width in µs (no dead-time subtraction).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (N,), float64</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.w2_ideal">
+<span class="sig-name descname"><span class="pre">w2_ideal</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.w2_ideal" title="Link to this definition">¶</a></dt>
+<dd><p>Ideal W₂ width in µs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (N,), float64</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.w1_eff">
+<span class="sig-name descname"><span class="pre">w1_eff</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.w1_eff" title="Link to this definition">¶</a></dt>
+<dd><p>Effective W₁ width in µs (≥0).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (N,), float64</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.w2_eff">
+<span class="sig-name descname"><span class="pre">w2_eff</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.w2_eff" title="Link to this definition">¶</a></dt>
+<dd><p>Effective W₂ width in µs (≥0).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (N,), float64</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.w1_blind">
+<span class="sig-name descname"><span class="pre">w1_blind</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.w1_blind" title="Link to this definition">¶</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">True</span></code> where W₁ acquisition is impossible.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (N,), bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.w2_blind">
+<span class="sig-name descname"><span class="pre">w2_blind</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.w2_blind" title="Link to this definition">¶</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">True</span></code> where W₂ acquisition is impossible.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (N,), bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.sector">
+<span class="sig-name descname"><span class="pre">sector</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.sector" title="Link to this definition">¶</a></dt>
+<dd><p>SVM sector index (1–6) per period.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (N,), int8</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.phase_max_label">
+<span class="sig-name descname"><span class="pre">phase_max_label</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.phase_max_label" title="Link to this definition">¶</a></dt>
+<dd><p>“A”, “B”, or “C” label of the D_max phase per period.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.phase_mid_label">
+<span class="sig-name descname"><span class="pre">phase_mid_label</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.phase_mid_label" title="Link to this definition">¶</a></dt>
+<dd><p>“A”, “B”, or “C” label of the D_mid phase per period.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.phase_min_label">
+<span class="sig-name descname"><span class="pre">phase_min_label</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.phase_min_label" title="Link to this definition">¶</a></dt>
+<dd><p>“A”, “B”, or “C” label of the D_min phase per period.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.d_max">
+<span class="sig-name descname"><span class="pre">d_max</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.d_max" title="Link to this definition">¶</a></dt>
+<dd><p>Max duty cycle per period.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (N,), float64</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.d_mid">
+<span class="sig-name descname"><span class="pre">d_mid</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.d_mid" title="Link to this definition">¶</a></dt>
+<dd><p>Mid duty cycle per period.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (N,), float64</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.d_min">
+<span class="sig-name descname"><span class="pre">d_min</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.d_min" title="Link to this definition">¶</a></dt>
+<dd><p>Min duty cycle per period.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (N,), float64</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.i_max_norm">
+<span class="sig-name descname"><span class="pre">i_max_norm</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.i_max_norm" title="Link to this definition">¶</a></dt>
+<dd><p>Reconstructed normalised current for the max phase (A/A_peak).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (N,), float64</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.i_min_norm">
+<span class="sig-name descname"><span class="pre">i_min_norm</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.i_min_norm" title="Link to this definition">¶</a></dt>
+<dd><p>Reconstructed normalised current for the min phase.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (N,), float64</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.i_mid_norm">
+<span class="sig-name descname"><span class="pre">i_mid_norm</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.i_mid_norm" title="Link to this definition">¶</a></dt>
+<dd><p>Derived current for the mid phase via KCL.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (N,), float64</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.i_a_norm">
+<span class="sig-name descname"><span class="pre">i_a_norm</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.i_a_norm" title="Link to this definition">¶</a></dt>
+<dd><p>Reconstructed phase-A current (A/A_peak) reassembled from the
+max/mid/min result using the per-period phase ordering.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (N,), float64</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.i_b_norm">
+<span class="sig-name descname"><span class="pre">i_b_norm</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.i_b_norm" title="Link to this definition">¶</a></dt>
+<dd><p>Reconstructed phase-B current (A/A_peak).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (N,), float64</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.i_c_norm">
+<span class="sig-name descname"><span class="pre">i_c_norm</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.i_c_norm" title="Link to this definition">¶</a></dt>
+<dd><p>Reconstructed phase-C current (A/A_peak).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray, shape (N,), float64</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.blind_fraction">
+<span class="sig-name descname"><span class="pre">blind_fraction</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.blind_fraction" title="Link to this definition">¶</a></dt>
+<dd><p>Fraction of periods that have at least one blind window (0–1).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.w1_eff_min_us">
+<span class="sig-name descname"><span class="pre">w1_eff_min_us</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.w1_eff_min_us" title="Link to this definition">¶</a></dt>
+<dd><p>Minimum observed W₁_eff across all periods (µs).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.w1_eff_mean_us">
+<span class="sig-name descname"><span class="pre">w1_eff_mean_us</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.w1_eff_mean_us" title="Link to this definition">¶</a></dt>
+<dd><p>Mean W₁_eff across all periods (µs).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.w2_eff_min_us">
+<span class="sig-name descname"><span class="pre">w2_eff_min_us</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.w2_eff_min_us" title="Link to this definition">¶</a></dt>
+<dd><p>Minimum observed W₂_eff (µs).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.w2_eff_mean_us">
+<span class="sig-name descname"><span class="pre">w2_eff_mean_us</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.w2_eff_mean_us" title="Link to this definition">¶</a></dt>
+<dd><p>Mean W₂_eff (µs).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.SingleShuntAnalysis.periods">
+<span class="sig-name descname"><span class="pre">periods</span></span><a class="headerlink" href="#svm_shaper.single_shunt.SingleShuntAnalysis.periods" title="Link to this definition">¶</a></dt>
+<dd><p>Per-period structured records (useful for single-period zoom view).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[<a class="reference internal" href="#svm_shaper.single_shunt.PeriodAnalysis" title="svm_shaper.single_shunt.PeriodAnalysis">PeriodAnalysis</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.build_pwm_period_pulse_shapes">
+<span class="sig-prename descclassname"><span class="pre">svm_shaper.single_shunt.</span></span><span class="sig-name descname"><span class="pre">build_pwm_period_pulse_shapes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d_a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_c</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pwm_freq_hz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dead_time_us</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alignment</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Center'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_points</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2000</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#svm_shaper.single_shunt.build_pwm_period_pulse_shapes" title="Link to this definition">¶</a></dt>
+<dd><p>Build time-domain pulse-shape arrays for a single PWM period.</p>
+<p>Suitable for the zoom view in the Single Shunt pedagogical viewer.  The
+returned dictionary contains everything needed to draw all three phase
+pulses and annotate the W₁/W₂ acquisition windows.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>d_a</strong> (<em>float</em>) – Duty cycles for phases A, B, C in [0, 1].</p></li>
+<li><p><strong>d_b</strong> (<em>float</em>) – Duty cycles for phases A, B, C in [0, 1].</p></li>
+<li><p><strong>d_c</strong> (<em>float</em>) – Duty cycles for phases A, B, C in [0, 1].</p></li>
+<li><p><strong>pwm_freq_hz</strong> (<em>float</em>) – PWM carrier frequency (Hz).</p></li>
+<li><p><strong>dead_time_us</strong> (<em>float</em>) – Dead time (µs).</p></li>
+<li><p><strong>alignment</strong> (<em>str</em><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">&quot;Center&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;Left&quot;</span></code>, or <code class="docutils literal notranslate"><span class="pre">&quot;Right&quot;</span></code>.</p></li>
+<li><p><strong>n_points</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of time points in the output arrays (default 2000).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><em>dict with keys</em></p></li>
+<li><p>* <code class="docutils literal notranslate"><span class="pre">&quot;time_us&quot;</span></code> – (n_points,) float64 – time axis in µs.</p></li>
+<li><p>* <code class="docutils literal notranslate"><span class="pre">&quot;pulse_a&quot;</span></code> – (n_points,) float64 – high-side switch state for phase A (0/1).</p></li>
+<li><p>* <code class="docutils literal notranslate"><span class="pre">&quot;pulse_b&quot;</span></code> – (n_points,) float64 – phase B.</p></li>
+<li><p>* <code class="docutils literal notranslate"><span class="pre">&quot;pulse_c&quot;</span></code> – (n_points,) float64 – phase C.</p></li>
+<li><p>* <code class="docutils literal notranslate"><span class="pre">&quot;dead_time_mask&quot;</span></code> – (n_points,) bool – True where any leg is in dead-time.</p></li>
+<li><p>* <code class="docutils literal notranslate"><span class="pre">&quot;w1_mask&quot;</span></code> – (n_points,) bool – True within the W₁ window.</p></li>
+<li><p>* <code class="docutils literal notranslate"><span class="pre">&quot;w2_mask&quot;</span></code> – (n_points,) bool – True within the W₂ window.</p></li>
+<li><p>* <code class="docutils literal notranslate"><span class="pre">&quot;w1_start_us&quot;</span></code> – float – start time of W₁ (µs).</p></li>
+<li><p>* <code class="docutils literal notranslate"><span class="pre">&quot;w1_end_us&quot;</span></code> – float – end time of W₁ (µs).</p></li>
+<li><p>* <code class="docutils literal notranslate"><span class="pre">&quot;w2_start_us&quot;</span></code> – float – start time of W₂ (µs).</p></li>
+<li><p>* <code class="docutils literal notranslate"><span class="pre">&quot;w2_end_us&quot;</span></code> – float – end time of W₂ (µs).</p></li>
+<li><p>* <code class="docutils literal notranslate"><span class="pre">&quot;w1_eff_us&quot;</span></code> – float – effective W₁ width (µs).</p></li>
+<li><p>* <code class="docutils literal notranslate"><span class="pre">&quot;w2_eff_us&quot;</span></code> – float – effective W₂ width (µs).</p></li>
+<li><p>* <code class="docutils literal notranslate"><span class="pre">&quot;w1_blind&quot;</span></code> – bool.</p></li>
+<li><p>* <code class="docutils literal notranslate"><span class="pre">&quot;w2_blind&quot;</span></code> – bool.</p></li>
+<li><p>* <code class="docutils literal notranslate"><span class="pre">&quot;phase_max&quot;</span></code> – str – “A”, “B”, or “C”.</p></li>
+<li><p>* <code class="docutils literal notranslate"><span class="pre">&quot;phase_mid&quot;</span></code> – str.</p></li>
+<li><p>* <code class="docutils literal notranslate"><span class="pre">&quot;phase_min&quot;</span></code> – str.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.compute_shunt_current_norm">
+<span class="sig-prename descclassname"><span class="pre">svm_shaper.single_shunt.</span></span><span class="sig-name descname"><span class="pre">compute_shunt_current_norm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d_max</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_mid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_min</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta_rad</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#svm_shaper.single_shunt.compute_shunt_current_norm" title="Link to this definition">¶</a></dt>
+<dd><p>Compute per-period normalised shunt current samples from a synthetic model.</p>
+<p>This is a simplified <strong>model</strong> used for pedagogic display when no real
+measured shunt current is available.  The current waveform is assumed to
+be sinusoidal (unity amplitude) with the standard 120°-shifted pattern:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>i_A(θ) = cos(θ)
+i_B(θ) = cos(θ − 2π/3)
+i_C(θ) = cos(θ + 2π/3)
+</pre></div>
+</div>
+<p>The three samples are then re-ordered by the duty-cycle sort to return
+(i_max, i_mid, i_min) matching the window ordering for the given period.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>d_max</strong> (<em>float</em>) – Highest duty cycle (determines which phase is measured in W₁).</p></li>
+<li><p><strong>d_mid</strong> (<em>float</em>) – Intermediate duty cycle (determines which phase is measured in W₂).</p></li>
+<li><p><strong>d_min</strong> (<em>float</em>) – Lowest duty cycle.</p></li>
+<li><p><strong>theta_rad</strong> (<em>float</em>) – Electrical angle at the mid-point of this PWM period (radians).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>i_max_norm</strong> (<em>float</em>) – Normalised current for the D_max phase (A/A_peak).</p></li>
+<li><p><strong>i_mid_norm</strong> (<em>float</em>) – Normalised current for the D_mid phase derived from W₂ via KCL.</p></li>
+<li><p><strong>i_min_norm</strong> (<em>float</em>) – Normalised current for the D_min phase (= –i_max – i_mid via KCL).</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.compute_single_shunt_analysis">
+<span class="sig-prename descclassname"><span class="pre">svm_shaper.single_shunt.</span></span><span class="sig-name descname"><span class="pre">compute_single_shunt_analysis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#svm_shaper.core.SimulatorConfig" title="svm_shaper.core.SimulatorConfig"><span class="pre">SimulatorConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#svm_shaper.core.SimulationResult" title="svm_shaper.core.SimulationResult"><span class="pre">SimulationResult</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_acq_min_us</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compensation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#svm_shaper.single_shunt.CompensationStrategy" title="svm_shaper.single_shunt.CompensationStrategy"><span class="pre">CompensationStrategy</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">CompensationStrategy.NONE</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#svm_shaper.single_shunt.SingleShuntAnalysis" title="svm_shaper.single_shunt.SingleShuntAnalysis"><span class="pre">SingleShuntAnalysis</span></a></span></span><a class="headerlink" href="#svm_shaper.single_shunt.compute_single_shunt_analysis" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the full per-period SSCR analysis for a simulation result.</p>
+<p>This is the primary public API of this module.  It consumes the duty-cycle
+envelope arrays from <em>result</em> (<code class="docutils literal notranslate"><span class="pre">duty_cycle_time</span></code>, <code class="docutils literal notranslate"><span class="pre">duty_cycle_a/b/c</span></code>),
+and the electrical angle array (<code class="docutils literal notranslate"><span class="pre">theta_e_deg</span></code>) for sector labelling.</p>
+<p>The computation is performed entirely in NumPy without any Qt dependency
+so it can be unit-tested without a display.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>config</strong> (<a class="reference internal" href="#svm_shaper.core.SimulatorConfig" title="svm_shaper.core.SimulatorConfig"><em>SimulatorConfig</em></a>) – Current simulation configuration (provides <code class="docutils literal notranslate"><span class="pre">pwm_frequency_hz</span></code>,
+<code class="docutils literal notranslate"><span class="pre">dead_time_us</span></code>, <code class="docutils literal notranslate"><span class="pre">alignment</span></code>).</p></li>
+<li><p><strong>result</strong> (<a class="reference internal" href="#svm_shaper.core.SimulationResult" title="svm_shaper.core.SimulationResult"><em>SimulationResult</em></a>) – Simulation output (provides <code class="docutils literal notranslate"><span class="pre">duty_cycle_time/a/b/c</span></code>,
+<code class="docutils literal notranslate"><span class="pre">theta_e_deg</span></code>).</p></li>
+<li><p><strong>t_acq_min_us</strong> (<em>float</em><em>, </em><em>optional</em>) – Minimum ADC acquisition time (µs).  Defaults to
+<a class="reference internal" href="#svm_shaper.single_shunt.DEFAULT_T_ACQ_MIN_US" title="svm_shaper.single_shunt.DEFAULT_T_ACQ_MIN_US"><code class="xref py py-data docutils literal notranslate"><span class="pre">DEFAULT_T_ACQ_MIN_US</span></code></a>.</p></li>
+<li><p><strong>compensation</strong> (<a class="reference internal" href="#svm_shaper.single_shunt.CompensationStrategy" title="svm_shaper.single_shunt.CompensationStrategy"><em>CompensationStrategy</em></a><em>, </em><em>optional</em>) – Blind-zone compensation mode.  Defaults to
+<a class="reference internal" href="#svm_shaper.single_shunt.CompensationStrategy.NONE" title="svm_shaper.single_shunt.CompensationStrategy.NONE"><code class="xref py py-data docutils literal notranslate"><span class="pre">CompensationStrategy.NONE</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Complete per-period analysis object.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#svm_shaper.single_shunt.SingleShuntAnalysis" title="svm_shaper.single_shunt.SingleShuntAnalysis">SingleShuntAnalysis</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.compute_window_widths">
+<span class="sig-prename descclassname"><span class="pre">svm_shaper.single_shunt.</span></span><span class="sig-name descname"><span class="pre">compute_window_widths</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d_max</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_mid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_min</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pwm_freq_hz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dead_time_us</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alignment</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Center'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#svm_shaper.single_shunt.compute_window_widths" title="Link to this definition">¶</a></dt>
+<dd><p>Compute ideal and effective acquisition window widths for one PWM period.</p>
+<p>The half-period multiplier depends on the carrier alignment:</p>
+<ul class="simple">
+<li><p><strong>Center</strong> : windows use <code class="docutils literal notranslate"><span class="pre">T/2</span> <span class="pre">=</span> <span class="pre">1</span> <span class="pre">/</span> <span class="pre">(2·f_PWM)</span></code>
+(two symmetric windows per full period).</p></li>
+<li><p><strong>Left / Right</strong> : windows use <code class="docutils literal notranslate"><span class="pre">T</span> <span class="pre">=</span> <span class="pre">1</span> <span class="pre">/</span> <span class="pre">f_PWM</span></code>
+(single window per period; factor is 2× larger but occurs once).</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>d_max</strong> (<em>float</em>) – Highest duty cycle in the sorted triplet [0, 1].</p></li>
+<li><p><strong>d_mid</strong> (<em>float</em>) – Intermediate duty cycle [0, 1].</p></li>
+<li><p><strong>d_min</strong> (<em>float</em>) – Lowest duty cycle [0, 1].</p></li>
+<li><p><strong>pwm_freq_hz</strong> (<em>float</em>) – PWM carrier frequency (Hz).</p></li>
+<li><p><strong>dead_time_us</strong> (<em>float</em>) – Dead time inserted at each switching edge (µs).</p></li>
+<li><p><strong>alignment</strong> (<em>str</em><em>, </em><em>optional</em>) – One of <code class="docutils literal notranslate"><span class="pre">&quot;Center&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;Left&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;Right&quot;</span></code> (case-insensitive).
+Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;Center&quot;</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>w1_ideal_us</strong> (<em>float</em>) – Ideal W₁ window width in µs (<code class="docutils literal notranslate"><span class="pre">T_half</span> <span class="pre">·</span> <span class="pre">(D_max</span> <span class="pre">−</span> <span class="pre">D_mid)</span></code>).</p></li>
+<li><p><strong>w2_ideal_us</strong> (<em>float</em>) – Ideal W₂ window width in µs.</p></li>
+<li><p><strong>w1_eff_us</strong> (<em>float</em>) – Effective W₁ after dead-time subtraction (clamped to ≥ 0).</p></li>
+<li><p><strong>w2_eff_us</strong> (<em>float</em>) – Effective W₂ after dead-time subtraction (clamped to ≥ 0).</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.get_duty_ordering">
+<span class="sig-prename descclassname"><span class="pre">svm_shaper.single_shunt.</span></span><span class="sig-name descname"><span class="pre">get_duty_ordering</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d_a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_c</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#svm_shaper.single_shunt.get_duty_ordering" title="Link to this definition">¶</a></dt>
+<dd><p>Sort three duty-cycle values and return them with their phase labels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>d_a</strong> (<em>float</em>) – Duty cycle for phase A in [0, 1].</p></li>
+<li><p><strong>d_b</strong> (<em>float</em>) – Duty cycle for phase B in [0, 1].</p></li>
+<li><p><strong>d_c</strong> (<em>float</em>) – Duty cycle for phase C in [0, 1].</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>d_max</strong> (<em>float</em>) – Highest duty cycle.</p></li>
+<li><p><strong>d_mid</strong> (<em>float</em>) – Intermediate duty cycle.</p></li>
+<li><p><strong>d_min</strong> (<em>float</em>) – Lowest duty cycle.</p></li>
+<li><p><strong>label_max</strong> (<em>str</em>) – Phase label (“A”, “B”, or “C”) with the highest duty cycle.</p></li>
+<li><p><strong>label_mid</strong> (<em>str</em>) – Phase label with the intermediate duty cycle.</p></li>
+<li><p><strong>label_min</strong> (<em>str</em>) – Phase label with the lowest duty cycle.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">get_duty_ordering</span><span class="p">(</span><span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">)</span>
+<span class="go">(0.8, 0.5, 0.3, &#39;A&#39;, &#39;B&#39;, &#39;C&#39;)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">get_duty_ordering</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span>
+<span class="go">(0.8, 0.5, 0.3, &#39;B&#39;, &#39;C&#39;, &#39;A&#39;)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="svm_shaper.single_shunt.get_sector_from_angle">
+<span class="sig-prename descclassname"><span class="pre">svm_shaper.single_shunt.</span></span><span class="sig-name descname"><span class="pre">get_sector_from_angle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theta_deg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#svm_shaper.single_shunt.get_sector_from_angle" title="Link to this definition">¶</a></dt>
+<dd><p>Return the SVM sector index (1–6) for electrical angle <em>theta_deg</em>.</p>
+<p>The hexagon is divided into six 60° sectors numbered counter-clockwise
+starting from sector 1 at 0°:</p>
+<ul class="simple">
+<li><p>Sector 1 : 0° – 60°</p></li>
+<li><p>Sector 2 : 60° – 120°</p></li>
+<li><p>Sector 3 : 120° – 180°</p></li>
+<li><p>Sector 4 : 180° – 240°</p></li>
+<li><p>Sector 5 : 240° – 300°</p></li>
+<li><p>Sector 6 : 300° – 360°</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>theta_deg</strong> (<em>float</em>) – Electrical angle in degrees.  Any value is accepted (modulo 360° is
+applied internally).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Sector index in [1, 6].</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">get_sector_from_angle</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+<span class="go">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">get_sector_from_angle</span><span class="p">(</span><span class="mf">90.0</span><span class="p">)</span>
+<span class="go">2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">get_sector_from_angle</span><span class="p">(</span><span class="mf">359.9</span><span class="p">)</span>
+<span class="go">6</span>
+</pre></div>
+</div>
+</dd></dl>
+
 <p id="module-svm_shaper.gui">Graphical user interface for the SVM Analyst simulator.</p>
 <p>This module builds a PySide6 application that allows users to select modulation
 modes, configure system parameters, and visualize the resulting PWM signals and
@@ -201,6 +1168,27 @@ harmonics in real time using pyqtgraph for interactive plots.</p>
 Date: 2026-03-09
 License: See LICENSE</p>
 <dl class="py class">
+<dt class="sig sig-object py" id="svm_shaper.gui.DqPhasorDialog">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">svm_shaper.gui.</span></span><span class="sig-name descname"><span class="pre">DqPhasorDialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#svm_shaper.core.SimulatorConfig" title="svm_shaper.core.SimulatorConfig"><span class="pre">SimulatorConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#svm_shaper.gui.DqPhasorDialog" title="Link to this definition">¶</a></dt>
+<dd><p>Dialog showing dq-frame analysis: Clarke/Park trajectories, angle sawtooth, and metrics.</p>
+<p>Uses pyqtgraph PlotWidgets for real-time performance.</p>
+<p>Panels:
+• Top-left:     Clarke αβ space-vector trajectory + SVM hexagon
+• Top-right:    Park dq phasors (Vs voltage arrow, Is current arrow)
+• Bottom-left:  Electrical angle θ_e sawtooth (0–360 °elec)
+• Bottom-right: Mechanical angle θ_mech sawtooth (0–360 °mech)
+• Footer:       Voltage metrics (Vα, Vβ, Vd, Vq, <a href="#id1"><span class="problematic" id="id2">|Vαβ|</span></a>, <a href="#id3"><span class="problematic" id="id4">|Vdq|</span></a> — RMS, peak, mean)</p>
+<p>The dialog refreshes automatically whenever the main window produces a new
+simulation result via <a class="reference internal" href="#svm_shaper.gui.DqPhasorDialog.refresh" title="svm_shaper.gui.DqPhasorDialog.refresh"><code class="xref py py-meth docutils literal notranslate"><span class="pre">refresh()</span></code></a>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="svm_shaper.gui.DqPhasorDialog.refresh">
+<span class="sig-name descname"><span class="pre">refresh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#svm_shaper.core.SimulatorConfig" title="svm_shaper.core.SimulatorConfig"><span class="pre">SimulatorConfig</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#svm_shaper.gui.DqPhasorDialog.refresh" title="Link to this definition">¶</a></dt>
+<dd><p>Redraw all panels with <em>result</em> from the latest simulation.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="svm_shaper.gui.PlotCanvas">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">svm_shaper.gui.</span></span><span class="sig-name descname"><span class="pre">PlotCanvas</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#svm_shaper.gui.PlotCanvas" title="Link to this definition">¶</a></dt>
 <dd><p>pyqtgraph-based oscilloscope + FFT widget.</p>
@@ -215,6 +1203,12 @@ License: See LICENSE</p>
 <li><p>Right-click context menu (ViewBox built-in) to reset zoom.</p></li>
 </ul>
 <dl class="py method">
+<dt class="sig sig-object py" id="svm_shaper.gui.PlotCanvas.clear_reference">
+<span class="sig-name descname"><span class="pre">clear_reference</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#svm_shaper.gui.PlotCanvas.clear_reference" title="Link to this definition">¶</a></dt>
+<dd><p>Remove all reference overlay curves from every plot.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="svm_shaper.gui.PlotCanvas.grab_pixmap">
 <span class="sig-name descname"><span class="pre">grab_pixmap</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">QPixmap</span></span></span><a class="headerlink" href="#svm_shaper.gui.PlotCanvas.grab_pixmap" title="Link to this definition">¶</a></dt>
 <dd><p>Return a QPixmap screenshot of this widget for export.</p>
@@ -227,15 +1221,104 @@ License: See LICENSE</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="svm_shaper.gui.PlotCanvas.set_duty_phase_visible">
+<span class="sig-name descname"><span class="pre">set_duty_phase_visible</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">phase</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">visible</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#svm_shaper.gui.PlotCanvas.set_duty_phase_visible" title="Link to this definition">¶</a></dt>
+<dd><p>Show or hide one phase curve in the duty cycle plot.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="svm_shaper.gui.PlotCanvas.set_phase_visible">
 <span class="sig-name descname"><span class="pre">set_phase_visible</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">phase</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">visible</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#svm_shaper.gui.PlotCanvas.set_phase_visible" title="Link to this definition">¶</a></dt>
 <dd><p>Show or hide one phase curve.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="svm_shaper.gui.PlotCanvas.set_reference_static">
+<span class="sig-name descname"><span class="pre">set_reference_static</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fft_freqs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_mag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">duty_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">duty</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#svm_shaper.gui.PlotCanvas.set_reference_static" title="Link to this definition">¶</a></dt>
+<dd><p>Overlay static reference curves on the FFT and duty cycle plots.</p>
+<p>Called once each time the user saves a reference snapshot.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="svm_shaper.gui.PlotCanvas.update_cmv">
+<span class="sig-name descname"><span class="pre">update_cmv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmv</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#svm_shaper.gui.PlotCanvas.update_cmv" title="Link to this definition">¶</a></dt>
+<dd><p>Update the Common Mode Voltage plot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>time</strong> – Time axis — same length as <code class="docutils literal notranslate"><span class="pre">cmv</span></code> (raw PWM sample rate).</p></li>
+<li><p><strong>cmv</strong> – Common-mode voltage array (Va+Vb+Vc)/3, in volts.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="svm_shaper.gui.PlotCanvas.update_dc_bus_ripple">
+<span class="sig-name descname"><span class="pre">update_dc_bus_ripple</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_norm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#svm_shaper.gui.PlotCanvas.update_dc_bus_ripple" title="Link to this definition">¶</a></dt>
+<dd><p>Update the DC bus normalised current ripple plot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>time</strong> – Time axis — same length as <code class="docutils literal notranslate"><span class="pre">current_norm</span></code> (one point per PWM period).</p></li>
+<li><p><strong>current_norm</strong> – Normalised DC bus current Da·Ia + Db·Ib + Dc·Ic [A/A_peak].</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="svm_shaper.gui.PlotCanvas.update_duty_cycle">
+<span class="sig-name descname"><span class="pre">update_duty_cycle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">duty</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dead_time_duty_limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#svm_shaper.gui.PlotCanvas.update_duty_cycle" title="Link to this definition">¶</a></dt>
+<dd><p>Update the duty cycle envelope plot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>time</strong> – Time axis (one point per PWM period, at period mid-points).</p></li>
+<li><p><strong>duty</strong> – Mapping from phase label (<code class="docutils literal notranslate"><span class="pre">&quot;A&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;B&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;C&quot;</span></code>) to duty cycle
+arrays in [0, 1].  Values are converted to percent (× 100) before
+plotting so the Y axis reads in % with two decimal places.</p></li>
+<li><p><strong>dead_time_duty_limit</strong> – Fraction of the PWM period consumed by dead time
+(<code class="docutils literal notranslate"><span class="pre">dead_time_us</span> <span class="pre">×</span> <span class="pre">1e-6</span> <span class="pre">×</span> <span class="pre">pwm_frequency_hz</span></code>).  When non-zero,
+horizontal reference lines are drawn at the effective D_min and
+D_max boundaries.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="svm_shaper.gui.PlotCanvas.update_duty_fft">
+<span class="sig-name descname"><span class="pre">update_duty_fft</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">freqs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">magnitude</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#svm_shaper.gui.PlotCanvas.update_duty_fft" title="Link to this definition">¶</a></dt>
+<dd><p>Update the duty cycle FFT sub-panel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>freqs</strong> – Frequency axis in Hz.</p></li>
+<li><p><strong>magnitude</strong> – Spectral magnitude of the duty cycle FFT.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="svm_shaper.gui.PlotCanvas.update_fft">
 <span class="sig-name descname"><span class="pre">update_fft</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">freqs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">magnitude</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#svm_shaper.gui.PlotCanvas.update_fft" title="Link to this definition">¶</a></dt>
 <dd><p>Update the FFT plot.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="svm_shaper.gui.PlotCanvas.update_reference_waveform">
+<span class="sig-name descname"><span class="pre">update_reference_waveform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phases</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#svm_shaper.gui.PlotCanvas.update_reference_waveform" title="Link to this definition">¶</a></dt>
+<dd><p>Overlay reference waveform curves (updated each scroll tick).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>time</strong> – Time axis for the current scroll window.</p></li>
+<li><p><strong>phases</strong> – Mapping <code class="docutils literal notranslate"><span class="pre">&quot;A&quot;</span> <span class="pre">/</span> <span class="pre">&quot;B&quot;</span> <span class="pre">/</span> <span class="pre">&quot;C&quot;</span></code> → voltage array for the reference.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -289,6 +1372,74 @@ blocking the event loop.</p>
 <dd><p>Execute the simulation and emit the result signal.</p>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="svm_shaper.gui.SingleShuntDialog">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">svm_shaper.gui.</span></span><span class="sig-name descname"><span class="pre">SingleShuntDialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">object</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#svm_shaper.core.SimulatorConfig" title="svm_shaper.core.SimulatorConfig"><span class="pre">SimulatorConfig</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">QWidget</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#svm_shaper.gui.SingleShuntDialog" title="Link to this definition">¶</a></dt>
+<dd><p>Pedagogical viewer for Single Shunt Current Reconstruction (SSCR).</p>
+<p>The dialog provides a four-panel interactive display:</p>
+<ul class="simple">
+<li><p><strong>Top-left</strong> – Duty-cycle envelopes with sector coloring and a
+draggable time cursor that selects which PWM period is shown in the
+zoom panel.</p></li>
+<li><p><strong>Top-right</strong> – Per-period PWM pulse zoom with dead-time and W₁/W₂
+window annotations (green = observable, red = blind).</p></li>
+<li><p><strong>Bottom-left</strong> – Effective window widths W₁_eff and W₂_eff over one
+electrical cycle.</p></li>
+<li><p><strong>Bottom-right</strong> – Textual acquisition info for the selected period.</p></li>
+</ul>
+<p>A control row at the top lets the user choose the compensation strategy
+and the minimum ADC acquisition time.</p>
+<p>The dialog refreshes automatically whenever the main window calls
+<a class="reference internal" href="#svm_shaper.gui.SingleShuntDialog.refresh" title="svm_shaper.gui.SingleShuntDialog.refresh"><code class="xref py py-meth docutils literal notranslate"><span class="pre">refresh()</span></code></a>.</p>
+<section id="accessibility-notes">
+<h2>Accessibility notes<a class="headerlink" href="#accessibility-notes" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>All pyqtgraph plot widgets have accessible names and descriptions.</p></li>
+<li><p>All controls have tooltip and accessible name set.</p></li>
+<li><p>The info panel is a read-only <code class="docutils literal notranslate"><span class="pre">QPlainTextEdit</span></code> with a Copy button.</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">param result<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Latest simulation output from the main window.</p>
+</dd>
+<dt class="field-even">type result<span class="colon">:</span></dt>
+<dd class="field-even"><p>SimulationResult</p>
+</dd>
+<dt class="field-odd">param config<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Current simulation configuration.</p>
+</dd>
+<dt class="field-even">type config<span class="colon">:</span></dt>
+<dd class="field-even"><p>SimulatorConfig</p>
+</dd>
+<dt class="field-odd">param parent<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Parent window.</p>
+</dd>
+<dt class="field-even">type parent<span class="colon">:</span></dt>
+<dd class="field-even"><p>QWidget, optional</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="svm_shaper.gui.SingleShuntDialog.refresh">
+<span class="sig-name descname"><span class="pre">refresh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">object</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#svm_shaper.core.SimulatorConfig" title="svm_shaper.core.SimulatorConfig"><span class="pre">SimulatorConfig</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#svm_shaper.gui.SingleShuntDialog.refresh" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh all panels with a new simulation <em>result</em> and <em>config</em>.</p>
+<p>Called by <a class="reference internal" href="#svm_shaper.gui.SvmShaperApp" title="svm_shaper.gui.SvmShaperApp"><code class="xref py py-class docutils literal notranslate"><span class="pre">SvmShaperApp</span></code></a> whenever <code class="docutils literal notranslate"><span class="pre">_on_simulation_finished</span></code>
+fires and this dialog is visible.  The method runs the analysis in the
+calling thread (which is the Qt GUI thread after the worker signals
+back), so it must remain fast.  The per-period computation is
+vectorised and completes in ≪ 1 ms for the default 10-cycle simulation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>result</strong> (<a class="reference internal" href="#svm_shaper.core.SimulationResult" title="svm_shaper.core.SimulationResult"><em>SimulationResult</em></a>) – Latest simulation output.</p></li>
+<li><p><strong>config</strong> (<a class="reference internal" href="#svm_shaper.core.SimulatorConfig" title="svm_shaper.core.SimulatorConfig"><em>SimulatorConfig</em></a>) – Configuration used for the new simulation.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
 </dd></dl>
 
 <dl class="py class">
@@ -385,12 +1536,29 @@ THD-vs-parameter curve via pyqtgraph.</p>
 <li class="toctree-l2"><a class="reference internal" href="#svm_shaper.modulations.PulseAlignment"><code class="docutils literal notranslate"><span class="pre">PulseAlignment</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#svm_shaper.modulations.generate_modulated_pwm"><code class="docutils literal notranslate"><span class="pre">generate_modulated_pwm()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#svm_shaper.modulations.get_modulation_description"><code class="docutils literal notranslate"><span class="pre">get_modulation_description()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.analysis.compute_dq_phasors"><code class="docutils literal notranslate"><span class="pre">compute_dq_phasors()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.analysis.compute_duty_cycle_envelope"><code class="docutils literal notranslate"><span class="pre">compute_duty_cycle_envelope()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#svm_shaper.analysis.compute_fft"><code class="docutils literal notranslate"><span class="pre">compute_fft()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#svm_shaper.analysis.compute_thd"><code class="docutils literal notranslate"><span class="pre">compute_thd()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#svm_shaper.analysis.compute_top_harmonics"><code class="docutils literal notranslate"><span class="pre">compute_top_harmonics()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#theory-overview">Theory overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#phase-shift-strategy-edge-aligned">Phase-shift strategy (edge-aligned)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#compensation-strategies-center-aligned-blind-zones">Compensation strategies (center-aligned blind zones)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.single_shunt.CompensationStrategy"><code class="docutils literal notranslate"><span class="pre">CompensationStrategy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.single_shunt.DEFAULT_T_ACQ_MIN_US"><code class="docutils literal notranslate"><span class="pre">DEFAULT_T_ACQ_MIN_US</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.single_shunt.PeriodAnalysis"><code class="docutils literal notranslate"><span class="pre">PeriodAnalysis</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.single_shunt.SingleShuntAnalysis"><code class="docutils literal notranslate"><span class="pre">SingleShuntAnalysis</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.single_shunt.build_pwm_period_pulse_shapes"><code class="docutils literal notranslate"><span class="pre">build_pwm_period_pulse_shapes()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.single_shunt.compute_shunt_current_norm"><code class="docutils literal notranslate"><span class="pre">compute_shunt_current_norm()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.single_shunt.compute_single_shunt_analysis"><code class="docutils literal notranslate"><span class="pre">compute_single_shunt_analysis()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.single_shunt.compute_window_widths"><code class="docutils literal notranslate"><span class="pre">compute_window_widths()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.single_shunt.get_duty_ordering"><code class="docutils literal notranslate"><span class="pre">get_duty_ordering()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.single_shunt.get_sector_from_angle"><code class="docutils literal notranslate"><span class="pre">get_sector_from_angle()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.gui.DqPhasorDialog"><code class="docutils literal notranslate"><span class="pre">DqPhasorDialog</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#svm_shaper.gui.PlotCanvas"><code class="docutils literal notranslate"><span class="pre">PlotCanvas</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#svm_shaper.gui.PlotStylePanel"><code class="docutils literal notranslate"><span class="pre">PlotStylePanel</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#svm_shaper.gui.SimulationWorker"><code class="docutils literal notranslate"><span class="pre">SimulationWorker</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#svm_shaper.gui.SingleShuntDialog"><code class="docutils literal notranslate"><span class="pre">SingleShuntDialog</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#svm_shaper.gui.SvmHexagonDialog"><code class="docutils literal notranslate"><span class="pre">SvmHexagonDialog</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#svm_shaper.gui.SvmShaperApp"><code class="docutils literal notranslate"><span class="pre">SvmShaperApp</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#svm_shaper.gui.SweepDialog"><code class="docutils literal notranslate"><span class="pre">SweepDialog</span></code></a></li>

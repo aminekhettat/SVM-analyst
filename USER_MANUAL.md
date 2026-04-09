@@ -1,8 +1,22 @@
 # SVM Analyst User Manual
 
-Version 1.4.2
+Version 1.4.3
 
 ## What's New
+
+### Version 1.4.3
+
+- **Single Shunt Current Reconstruction (SSCR) viewer:** a new pedagogical window
+  accessible via View → Single Shunt Current Reconstruction… visualises how a
+  single DC-bus shunt current sensor reconstructs the three phase currents over
+  each PWM period.  Four panels are shown: duty-cycle envelope (with current
+  sector and blind-zone fraction), per-period PWM zoom with W1/W2 acquisition
+  windows, acquisition window width vs electrical angle, and a per-period info
+  text with clipboard copy.  Three compensation strategies are available (None,
+  Minimum-pulse, Hold).  The viewer auto-refreshes on every simulation update.
+- **Bug fix:** corrected an application crash at start-up introduced in v1.4.2 in
+  which `setAccessibleName()` was incorrectly called on `QAction` objects; this
+  caused every test that instantiated the main window to fail (59 CI test errors).
 
 ### Version 1.4.2
 
@@ -197,11 +211,11 @@ modulation strategy.
 
 **Linear boundary depends on modulation type:**
 
-| Modulation | Reference peak | Linear boundary |
-|------------|---------------|--------------------|
-| Sinusoidal | 1.0 (normalised) | MI = 1.0 |
-| THIPWM | ~0.866 (3rd-harmonic injection) | MI ≈ 1.15 |
-| SVM / DPWM | ~0.866 (space-vector offset) | MI ≈ 1.15 |
+| Modulation | Reference peak                  | Linear boundary |
+| ---------- | ------------------------------- | --------------- |
+| Sinusoidal | 1.0 (normalised)                | MI = 1.0        |
+| THIPWM     | ~0.866 (3rd-harmonic injection) | MI ≈ 1.15       |
+| SVM / DPWM | ~0.866 (space-vector offset)    | MI ≈ 1.15       |
 
 **Overmodulation region (MI > linear boundary):**
 Reference signals exceed the carrier peaks for part of each electrical cycle. The
@@ -313,7 +327,29 @@ You can switch between several display configurations:
 
 These options are useful when comparing common-mode behavior, clamping behavior, and harmonic tradeoffs across modulation families.
 
-## 9a. Comparison Mode
+## 9b. Single Shunt Current Reconstruction Viewer
+
+Open via **View → Single Shunt Current Reconstruction…**
+
+This window provides a step-by-step illustration of how a single shunt resistor placed in the DC bus link can reconstruct all three phase currents over each PWM period.
+
+**Controls:**
+
+- **Compensation strategy** — selects how the algorithm handles PWM periods where one or both acquisition windows are too narrow:
+  - *None*: no correction, phase current samples may be missing.
+  - *Min-pulse compensation*: widens the narrowest duty pulse to guarantee a minimum window width.
+  - *Hold strategy*: holds the last valid sample when a window is too narrow.
+- **t_acq_min (µs)** — minimum ADC acquisition time; windows narrower than this are flagged as unobservable.
+- **Refresh** — manually re-runs the analysis on the current simulation data.
+
+**Panels:**
+
+1. **Duty-cycle envelope** — phase A/B/C duty cycles vs. electrical angle with the active SVM sector overlaid and the blind-zone fraction in the status bar.
+2. **PWM period zoom** — a single PWM period showing the phase pulses (Center / Left / Right aligned) with the W1 and W2 acquisition windows highlighted.
+3. **Acquisition window widths** — W1 and W2 window widths (µs) over the electrical cycle.
+4. **Per-period info text** — sector number, duty ordering, W1/W2 widths, and observable flag for the selected period; can be copied to the clipboard.
+
+
 
 Comparison mode lets you compare two simulation configurations side by side without switching between them:
 

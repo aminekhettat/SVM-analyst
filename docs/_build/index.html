@@ -44,12 +44,29 @@
 <li class="toctree-l2"><a class="reference internal" href="api.html#svm_shaper.modulations.PulseAlignment"><code class="docutils literal notranslate"><span class="pre">PulseAlignment</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="api.html#svm_shaper.modulations.generate_modulated_pwm"><code class="docutils literal notranslate"><span class="pre">generate_modulated_pwm()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="api.html#svm_shaper.modulations.get_modulation_description"><code class="docutils literal notranslate"><span class="pre">get_modulation_description()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#svm_shaper.analysis.compute_dq_phasors"><code class="docutils literal notranslate"><span class="pre">compute_dq_phasors()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#svm_shaper.analysis.compute_duty_cycle_envelope"><code class="docutils literal notranslate"><span class="pre">compute_duty_cycle_envelope()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="api.html#svm_shaper.analysis.compute_fft"><code class="docutils literal notranslate"><span class="pre">compute_fft()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="api.html#svm_shaper.analysis.compute_thd"><code class="docutils literal notranslate"><span class="pre">compute_thd()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="api.html#svm_shaper.analysis.compute_top_harmonics"><code class="docutils literal notranslate"><span class="pre">compute_top_harmonics()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#theory-overview">Theory overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#phase-shift-strategy-edge-aligned">Phase-shift strategy (edge-aligned)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#compensation-strategies-center-aligned-blind-zones">Compensation strategies (center-aligned blind zones)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#svm_shaper.single_shunt.CompensationStrategy"><code class="docutils literal notranslate"><span class="pre">CompensationStrategy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#svm_shaper.single_shunt.DEFAULT_T_ACQ_MIN_US"><code class="docutils literal notranslate"><span class="pre">DEFAULT_T_ACQ_MIN_US</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#svm_shaper.single_shunt.PeriodAnalysis"><code class="docutils literal notranslate"><span class="pre">PeriodAnalysis</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#svm_shaper.single_shunt.SingleShuntAnalysis"><code class="docutils literal notranslate"><span class="pre">SingleShuntAnalysis</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#svm_shaper.single_shunt.build_pwm_period_pulse_shapes"><code class="docutils literal notranslate"><span class="pre">build_pwm_period_pulse_shapes()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#svm_shaper.single_shunt.compute_shunt_current_norm"><code class="docutils literal notranslate"><span class="pre">compute_shunt_current_norm()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#svm_shaper.single_shunt.compute_single_shunt_analysis"><code class="docutils literal notranslate"><span class="pre">compute_single_shunt_analysis()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#svm_shaper.single_shunt.compute_window_widths"><code class="docutils literal notranslate"><span class="pre">compute_window_widths()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#svm_shaper.single_shunt.get_duty_ordering"><code class="docutils literal notranslate"><span class="pre">get_duty_ordering()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#svm_shaper.single_shunt.get_sector_from_angle"><code class="docutils literal notranslate"><span class="pre">get_sector_from_angle()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#svm_shaper.gui.DqPhasorDialog"><code class="docutils literal notranslate"><span class="pre">DqPhasorDialog</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="api.html#svm_shaper.gui.PlotCanvas"><code class="docutils literal notranslate"><span class="pre">PlotCanvas</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="api.html#svm_shaper.gui.PlotStylePanel"><code class="docutils literal notranslate"><span class="pre">PlotStylePanel</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="api.html#svm_shaper.gui.SimulationWorker"><code class="docutils literal notranslate"><span class="pre">SimulationWorker</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#svm_shaper.gui.SingleShuntDialog"><code class="docutils literal notranslate"><span class="pre">SingleShuntDialog</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="api.html#svm_shaper.gui.SvmHexagonDialog"><code class="docutils literal notranslate"><span class="pre">SvmHexagonDialog</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="api.html#svm_shaper.gui.SvmShaperApp"><code class="docutils literal notranslate"><span class="pre">SvmShaperApp</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="api.html#svm_shaper.gui.SweepDialog"><code class="docutils literal notranslate"><span class="pre">SweepDialog</span></code></a></li>
@@ -88,6 +105,52 @@ and harmonic spectra, and includes a small Python API for batch analysis.</p>
 <li><p>Save/load simulation configuration (JSON)</p></li>
 <li><p>Export waveform/FFT to CSV and plots to PNG</p></li>
 <li><p>Build a standalone Windows executable with PyInstaller</p></li>
+<li><p>Common mode voltage (CMV) panel:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>CMV = (Va + Vb + Vc) / 3, scrollable, show/hide checkbox</p></li>
+<li><p>Statistics: mean, RMS, min, max, peak-to-peak in the info box</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>DC bus current ripple panel:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Normalised ripple I_dc_norm from three-phase duty cycles, scrollable, show/hide checkbox</p></li>
+<li><p>Statistics: min, max, RMS, peak-to-peak</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>Comparison mode:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Save/clear a reference simulation snapshot</p></li>
+<li><p>Grey dashed overlays on waveform, FFT, and duty cycle plots</p></li>
+<li><p>Delta metrics in the info box: ΔTHD, ΔCMV pp, ΔDC bus pp</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>dq-frame phasor diagram:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Clarke αβ trajectory, Park dq phasors, electrical and mechanical angle sawtooth</p></li>
+<li><p>αβ/dq metric footer: Vα, Vβ, Vd, Vq, <a href="#id1"><span class="problematic" id="id2">|Vαβ|</span></a> and <a href="#id3"><span class="problematic" id="id4">|Vdq|</span></a> RMS/peak/mean</p></li>
+<li><p>Real-time pyqtgraph PlotWidgets for flicker-free refresh</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>Overmodulation region (MI &gt; 1):</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Modulation index (MI) spinbox, range 0.10 – 1.50, default 1.0</p></li>
+<li><p>Pre-comparison reference scaling: MI &gt; 1 clamps duty cycles to 0 % or 100 %</p></li>
+<li><p>Linear boundary: MI = 1.0 for sinusoidal/THIPWM, MI ≈ 1.15 for SVM/DPWM</p></li>
+<li><p>Inline “⚠ OM X%” warning label and saturation % in the info panel</p></li>
+<li><p>Supports full progression from linear region through deep overmodulation to
+six-step operation</p></li>
+</ul>
+</div></blockquote>
+</li>
 </ul>
 <p>Packaging example:</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>PyInstaller<span class="w"> </span>--name<span class="w"> </span>svm-analyst<span class="w"> </span>--onefile<span class="w"> </span>--windowed<span class="w"> </span>main.py

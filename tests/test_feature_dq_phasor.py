@@ -510,4 +510,3 @@ class TestDqMetricsFromSimulation:
     def test_dq_vdq_magnitude_mean_is_float(self, sim_result):
         assert isinstance(sim_result.dq_vdq_magnitude_mean, float)
         assert sim_result.dq_vdq_magnitude_mean > 0.0
-

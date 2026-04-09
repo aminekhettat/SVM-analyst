@@ -60,6 +60,11 @@ from .io import (
     save_config,
 )
 from .modulations import ModulationMode, PulseAlignment
+from .single_shunt import (
+    CompensationStrategy,
+    SingleShuntAnalysis,
+    compute_single_shunt_analysis,
+)
 from .sweep import sweep_thd
 from .visualization import svm_hexagon_vertices, svm_reference_vector
 
@@ -1287,6 +1292,653 @@ class DqPhasorDialog(QtWidgets.QDialog):
             lbl_widget.setText(f"{val:.2f} {unit}")
 
 
+class SingleShuntDialog(QtWidgets.QDialog):
+    """Pedagogical viewer for Single Shunt Current Reconstruction (SSCR).
+
+    The dialog provides a four-panel interactive display:
+
+    * **Top-left** – Duty-cycle envelopes with sector coloring and a
+      draggable time cursor that selects which PWM period is shown in the
+      zoom panel.
+    * **Top-right** – Per-period PWM pulse zoom with dead-time and W₁/W₂
+      window annotations (green = observable, red = blind).
+    * **Bottom-left** – Effective window widths W₁_eff and W₂_eff over one
+      electrical cycle.
+    * **Bottom-right** – Textual acquisition info for the selected period.
+
+    A control row at the top lets the user choose the compensation strategy
+    and the minimum ADC acquisition time.
+
+    The dialog refreshes automatically whenever the main window calls
+    :meth:`refresh`.
+
+    Accessibility notes
+    -------------------
+    * All pyqtgraph plot widgets have accessible names and descriptions.
+    * All controls have tooltip and accessible name set.
+    * The info panel is a read-only ``QPlainTextEdit`` with a Copy button.
+
+    Parameters
+    ----------
+    result : SimulationResult
+        Latest simulation output from the main window.
+    config : SimulatorConfig
+        Current simulation configuration.
+    parent : QWidget, optional
+        Parent window.
+    """
+
+    def __init__(
+        self,
+        result: "object",
+        config: "SimulatorConfig",
+        parent: Optional[QtWidgets.QWidget] = None,
+    ) -> None:
+        """Open the SSCR viewer with *result* and *config*."""
+        super().__init__(parent)
+        self.setWindowTitle("Single Shunt Current Reconstruction – SVM Analyst")
+        self.setAccessibleName("Single shunt current reconstruction dialog")
+        self.setAccessibleDescription(
+            "Pedagogical viewer for single shunt current reconstruction. "
+            "Shows duty-cycle ordering, acquisition window widths W1 and W2, "
+            "blind zones, and reconstructed phase currents per PWM period."
+        )
+        self.setMinimumSize(1280, 780)
+
+        # Keep track of the selected period index (cursor position).
+        self._selected_period: int = 0
+        self._analysis: Optional[SingleShuntAnalysis] = None
+        self._result = result
+        self._config = config
+
+        # Sector background colors (muted pastels, one per sector 1–6).
+        self._sector_colors: list[str] = [
+            "#ffd6d6",  # S1 – red tint
+            "#ffecd6",  # S2 – orange tint
+            "#ffffd6",  # S3 – yellow tint
+            "#d6ffd6",  # S4 – green tint
+            "#d6f0ff",  # S5 – blue tint
+            "#edd6ff",  # S6 – purple tint
+        ]
+
+        self._build_ui()
+        self._run_analysis(result, config)
+
+    # ------------------------------------------------------------------
+    # UI construction
+    # ------------------------------------------------------------------
+
+    def _build_ui(self) -> None:
+        """Build the dialog layout (controls + four-panel plot grid + info bar)."""
+        outer = QVBoxLayout(self)
+        outer.setSpacing(4)
+        outer.setContentsMargins(6, 6, 6, 6)
+
+        # ── Control toolbar ──────────────────────────────────────────────────────
+        ctrl_row = QtWidgets.QWidget()
+        ctrl_layout = QtWidgets.QHBoxLayout(ctrl_row)
+        ctrl_layout.setContentsMargins(0, 0, 0, 0)
+
+        ctrl_layout.addWidget(QtWidgets.QLabel("Compensation:"))
+        self._comp_combo = QtWidgets.QComboBox()
+        self._comp_combo.setAccessibleName("Compensation strategy selector")
+        self._comp_combo.setToolTip(
+            "Select the blind-zone compensation strategy applied to the analysis."
+        )
+        for strat in CompensationStrategy:
+            self._comp_combo.addItem(strat.value, strat)
+        self._comp_combo.currentIndexChanged.connect(self._on_compensation_changed)
+
+        ctrl_layout.addWidget(self._comp_combo)
+        ctrl_layout.addSpacing(16)
+
+        ctrl_layout.addWidget(QtWidgets.QLabel("t_acq_min (µs):"))
+        self._t_acq_spin = QtWidgets.QDoubleSpinBox()
+        self._t_acq_spin.setRange(0.1, 50.0)
+        self._t_acq_spin.setSingleStep(0.1)
+        self._t_acq_spin.setDecimals(1)
+        self._t_acq_spin.setValue(1.5)
+        self._t_acq_spin.setFixedWidth(75)
+        self._t_acq_spin.setAccessibleName("Minimum ADC acquisition time")
+        self._t_acq_spin.setToolTip(
+            "Minimum ADC settling time required after a switching edge (µs)."
+        )
+        self._t_acq_spin.valueChanged.connect(self._on_t_acq_changed)
+        ctrl_layout.addWidget(self._t_acq_spin)
+        ctrl_layout.addSpacing(16)
+
+        self._refresh_btn = QtWidgets.QPushButton("Refresh")
+        self._refresh_btn.setAccessibleName("Refresh SSCR analysis")
+        self._refresh_btn.setToolTip("Re-run the acquisition-window analysis.")
+        self._refresh_btn.clicked.connect(self._on_refresh_clicked)
+        ctrl_layout.addWidget(self._refresh_btn)
+        ctrl_layout.addStretch(1)
+
+        # Blind-zone summary label.
+        self._blind_label = QtWidgets.QLabel("Blind: —")
+        self._blind_label.setAccessibleName("Blind fraction label")
+        ctrl_layout.addWidget(self._blind_label)
+
+        outer.addWidget(ctrl_row)
+
+        # ── Four-panel plot grid ─────────────────────────────────────────────────
+        plots_widget = QtWidgets.QWidget()
+        grid_layout = QtWidgets.QGridLayout(plots_widget)
+        grid_layout.setSpacing(4)
+        grid_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Top-left: duty cycle envelopes with cursor line.
+        self._pw_duty = pg.PlotWidget(
+            title="Duty Cycle Envelopes – Click to select period"
+        )
+        self._pw_duty.setLabel("left", "Duty cycle (%)")
+        self._pw_duty.setLabel("bottom", "Time (s)")
+        self._pw_duty.showGrid(x=True, y=True, alpha=0.25)
+        self._pw_duty.addLegend(offset=(5, 5))
+        self._pw_duty.setAccessibleName("Duty cycle envelope plot")
+        self._pw_duty.setAccessibleDescription(
+            "Per-period duty cycle envelopes for phases A, B, C. "
+            "Sector boundary regions are shaded in pastel colors. "
+            "Click to select a PWM period for the zoom view."
+        )
+        self._pw_duty.scene().sigMouseClicked.connect(self._on_duty_plot_clicked)
+        self._duty_curves: dict[str, Optional[pg.PlotDataItem]] = {
+            "A": None,
+            "B": None,
+            "C": None,
+        }
+        self._sector_regions: list[pg.LinearRegionItem] = []
+        self._cursor_line = pg.InfiniteLine(
+            angle=90,
+            movable=False,
+            pen=pg.mkPen("#ffffff", width=2, style=Qt.PenStyle.DashLine),
+        )
+        self._pw_duty.addItem(self._cursor_line, ignoreBounds=True)
+
+        # Top-right: per-period PWM zoom with window annotations.
+        self._pw_zoom = pg.PlotWidget(title="PWM Period Zoom – Acquisition Windows")
+        self._pw_zoom.setLabel("left", "High-side switch state")
+        self._pw_zoom.setLabel("bottom", "Time (µs)")
+        self._pw_zoom.showGrid(x=True, y=True, alpha=0.2)
+        self._pw_zoom.addLegend(offset=(5, 5))
+        self._pw_zoom.setAccessibleName("PWM period zoom plot")
+        self._pw_zoom.setAccessibleDescription(
+            "High-side PWM pulse shapes for one selected period with "
+            "W1 (green) and W2 (brown) acquisition windows highlighted. "
+            "Red shading: blind window. Use scroll wheel to zoom."
+        )
+        self._zoom_curves: dict[str, Optional[pg.PlotDataItem]] = {
+            "A": None,
+            "B": None,
+            "C": None,
+        }
+        self._w1_region: Optional[pg.LinearRegionItem] = None
+        self._w2_region: Optional[pg.LinearRegionItem] = None
+
+        # Bottom-left: effective window width over electrical cycle.
+        self._pw_windows = pg.PlotWidget(title="Effective Window Widths W₁ / W₂")
+        self._pw_windows.setLabel("left", "Width (µs)")
+        self._pw_windows.setLabel("bottom", "Time (s)")
+        self._pw_windows.showGrid(x=True, y=True, alpha=0.25)
+        self._pw_windows.addLegend(offset=(5, 5))
+        self._pw_windows.setAccessibleName("Acquisition window width plot")
+        self._pw_windows.setAccessibleDescription(
+            "Effective W1 (green) and W2 (orange) window widths per PWM period. "
+            "Blind zones shown in red. The horizontal dashed line marks t_acq_min."
+        )
+        self._w1_curve: Optional[pg.PlotDataItem] = None
+        self._w2_curve: Optional[pg.PlotDataItem] = None
+        self._t_acq_line = pg.InfiniteLine(
+            angle=0,
+            movable=False,
+            pen=pg.mkPen("#cc44cc", width=1, style=Qt.PenStyle.DashLine),
+        )
+        self._pw_windows.addItem(self._t_acq_line, ignoreBounds=True)
+        self._window_cursor = pg.InfiniteLine(
+            angle=90,
+            movable=False,
+            pen=pg.mkPen("#ffffff", width=2, style=Qt.PenStyle.DashLine),
+        )
+        self._pw_windows.addItem(self._window_cursor, ignoreBounds=True)
+
+        # Bottom-right: textual info panel.
+        self._info_box = QPlainTextEdit(readOnly=True)
+        self._info_box.setMinimumHeight(80)
+        self._info_box.setAccessibleName("SSCR period info text")
+        self._info_box.setAccessibleDescription(
+            "Displays duty cycle ordering, W1/W2 widths, sector, "
+            "and current reconstruction result for the selected period."
+        )
+
+        self._copy_btn = QtWidgets.QPushButton("Copy")
+        self._copy_btn.setAccessibleName("Copy SSCR info to clipboard")
+        self._copy_btn.setToolTip("Copy the period info text to the clipboard.")
+        self._copy_btn.clicked.connect(self._copy_info)
+
+        info_container = QtWidgets.QWidget()
+        info_vlay = QVBoxLayout(info_container)
+        info_vlay.setContentsMargins(0, 0, 0, 0)
+        info_vlay.addWidget(self._info_box, stretch=1)
+        info_vlay.addWidget(self._copy_btn)
+
+        grid_layout.addWidget(self._pw_duty, 0, 0)
+        grid_layout.addWidget(self._pw_zoom, 0, 1)
+        grid_layout.addWidget(self._pw_windows, 1, 0)
+        grid_layout.addWidget(info_container, 1, 1)
+        grid_layout.setColumnStretch(0, 1)
+        grid_layout.setColumnStretch(1, 1)
+        grid_layout.setRowStretch(0, 2)
+        grid_layout.setRowStretch(1, 1)
+
+        outer.addWidget(plots_widget, stretch=1)
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    def refresh(self, result: "object", config: "SimulatorConfig") -> None:
+        """Refresh all panels with a new simulation *result* and *config*.
+
+        Called by :class:`SvmShaperApp` whenever ``_on_simulation_finished``
+        fires and this dialog is visible.  The method runs the analysis in the
+        calling thread (which is the Qt GUI thread after the worker signals
+        back), so it must remain fast.  The per-period computation is
+        vectorised and completes in ≪ 1 ms for the default 10-cycle simulation.
+
+        Parameters
+        ----------
+        result : SimulationResult
+            Latest simulation output.
+        config : SimulatorConfig
+            Configuration used for the new simulation.
+        """
+        self._result = result
+        self._config = config
+        self._run_analysis(result, config)
+
+    # ------------------------------------------------------------------
+    # Internal helpers – analysis
+    # ------------------------------------------------------------------
+
+    def _current_compensation(self) -> CompensationStrategy:
+        """Return the ``CompensationStrategy`` currently selected in the combo."""
+        return self._comp_combo.currentData()
+
+    def _run_analysis(self, result: "object", config: "SimulatorConfig") -> None:
+        """Compute the SSCR analysis and redraw all panels."""
+        if result is None:
+            return
+        t_acq = float(self._t_acq_spin.value())
+        comp = self._current_compensation()
+        self._analysis = compute_single_shunt_analysis(
+            config,
+            result,
+            t_acq_min_us=t_acq,
+            compensation=comp,
+        )
+        self._draw_all()
+
+    def _draw_all(self) -> None:
+        """Draw all four panels from ``self._analysis``."""
+        if self._analysis is None:
+            return
+        a = self._analysis
+        self._draw_duty_panel(a)
+        self._draw_window_panel(a)
+        self._update_zoom_panel(self._selected_period)
+        self._update_info_panel(self._selected_period)
+        # Blind fraction label.
+        pct = a.blind_fraction * 100.0
+        self._blind_label.setText(f"Blind: {pct:.1f}%")
+        if pct > 20.0:
+            self._blind_label.setStyleSheet("color: #e05252; font-weight: bold;")
+        else:
+            self._blind_label.setStyleSheet("")
+
+    # ------------------------------------------------------------------
+    # Panel drawers
+    # ------------------------------------------------------------------
+
+    def _draw_duty_panel(self, a: "SingleShuntAnalysis") -> None:
+        """Redraw the duty-cycle envelope panel with sector shading."""
+        # Remove old sector region items.
+        for rgn in self._sector_regions:
+            self._pw_duty.removeItem(rgn)
+        self._sector_regions.clear()
+
+        t = a.time
+        if t.size == 0:
+            return
+
+        # Sector shading: group consecutive periods with the same sector.
+        sector_arr = a.sector
+        _prev_s = int(sector_arr[0])
+        _start_k = 0
+        for k in range(1, len(sector_arr) + 1):
+            s = int(sector_arr[k]) if k < len(sector_arr) else -1
+            if s != _prev_s:
+                col = self._sector_colors[(_prev_s - 1) % 6]
+                # Convert hex to RGBA with alpha.
+                rgn = pg.LinearRegionItem(
+                    values=(float(t[_start_k]), float(t[k - 1])),
+                    movable=False,
+                    brush=pg.mkBrush(col + "55"),
+                    pen=pg.mkPen(col + "00"),
+                )
+                rgn.setZValue(-10)
+                self._pw_duty.addItem(rgn)
+                self._sector_regions.append(rgn)
+                _start_k = k
+                _prev_s = s
+
+        # Phase curves (ZOH staircase via step_edges).
+        if t.size > 1:
+            dt = t[1] - t[0]
+        else:
+            dt = 1.0
+        edges = np.empty(t.size + 1)
+        edges[:-1] = t - dt / 2.0
+        edges[-1] = t[-1] + dt / 2.0
+
+        colors = {"A": "#1f77b4", "B": "#ff7f0e", "C": "#2ca02c"}
+        duty_map = {"A": a.d_max, "B": a.d_mid, "C": a.d_min}
+        # Use the actual per-period duty cycles not the sorted ones.
+        if self._result is not None:
+            duty_map = {
+                "A": np.asarray(self._result.duty_cycle_a) * 100.0,
+                "B": np.asarray(self._result.duty_cycle_b) * 100.0,
+                "C": np.asarray(self._result.duty_cycle_c) * 100.0,
+            }
+        else:
+            duty_map = {
+                "A": a.d_max * 100.0,
+                "B": a.d_mid * 100.0,
+                "C": a.d_min * 100.0,
+            }
+
+        for phase, col in colors.items():
+            pct = duty_map[phase]
+            if self._duty_curves[phase] is None:
+                self._duty_curves[phase] = self._pw_duty.plot(
+                    edges,
+                    pct,
+                    name=f"Phase {phase}",
+                    pen=pg.mkPen(color=col, width=1.5),
+                    stepMode=True,
+                )
+            else:
+                self._duty_curves[phase].setData(edges, pct)
+
+        self._pw_duty.setYRange(0, 100, padding=0.05)
+
+        # Reposition cursor.
+        if a.time.size > 0:
+            self._cursor_line.setPos(
+                float(a.time[min(self._selected_period, a.num_periods - 1)])
+            )
+
+    def _draw_window_panel(self, a: "SingleShuntAnalysis") -> None:
+        """Redraw the W₁/W₂ effective window-width panel."""
+        t = a.time
+        if t.size == 0:
+            return
+
+        t_acq = float(self._t_acq_spin.value())
+        self._t_acq_line.setValue(t_acq)
+
+        # Use fill_between-style by plotting two curves per window: an
+        # observable segment (green/orange) and a blind segment (red).
+        w1 = a.w1_eff
+        w2 = a.w2_eff
+        w1_obs = np.where(a.w1_blind, np.nan, w1)
+        w1_bnd = np.where(a.w1_blind, w1, np.nan)
+        w2_obs = np.where(a.w2_blind, np.nan, w2)
+        w2_bnd = np.where(a.w2_blind, w2, np.nan)
+
+        if self._w1_curve is None:
+            self._w1_curve = self._pw_windows.plot(
+                t,
+                w1_obs,
+                name="W₁_eff (obs.)",
+                pen=pg.mkPen(color="#00aa44", width=1.5),
+            )
+            self._pw_windows.plot(
+                t,
+                w1_bnd,
+                name="W₁_eff (blind)",
+                pen=pg.mkPen(color="#e04040", width=1.5),
+            )
+            self._w2_curve = self._pw_windows.plot(
+                t,
+                w2_obs,
+                name="W₂_eff (obs.)",
+                pen=pg.mkPen(color="#ff8844", width=1.5),
+            )
+            self._pw_windows.plot(
+                t,
+                w2_bnd,
+                name="W₂_eff (blind)",
+                pen=pg.mkPen(color="#e04040", width=1.5, style=Qt.PenStyle.DashLine),
+            )
+        else:
+            self._w1_curve.setData(t, w1_obs)
+            self._w2_curve.setData(t, w2_obs)
+
+        self._pw_windows.setYRange(
+            0,
+            max(float(np.nanmax(np.concatenate([w1, w2]))), t_acq) * 1.2,
+            padding=0.02,
+        )
+
+        # Cursor line on window panel.
+        if t.size > 0:
+            self._window_cursor.setPos(
+                float(t[min(self._selected_period, a.num_periods - 1)])
+            )
+
+    def _update_zoom_panel(self, period_idx: int) -> None:
+        """Redraw the per-period PWM zoom panel for *period_idx*."""
+        if self._analysis is None or self._analysis.num_periods == 0:
+            return
+        a = self._analysis
+        period_idx = max(0, min(period_idx, a.num_periods - 1))
+        period = a.periods[period_idx]
+
+        from .single_shunt import build_pwm_period_pulse_shapes
+
+        if self._result is None:
+            da = period.d_max
+            db = period.d_mid
+            dc = period.d_min
+        else:
+            da = float(np.asarray(self._result.duty_cycle_a)[period_idx])
+            db = float(np.asarray(self._result.duty_cycle_b)[period_idx])
+            dc = float(np.asarray(self._result.duty_cycle_c)[period_idx])
+
+        shapes = build_pwm_period_pulse_shapes(
+            da,
+            db,
+            dc,
+            pwm_freq_hz=a.pwm_frequency_hz,
+            dead_time_us=a.dead_time_us,
+            alignment=a.alignment,
+        )
+
+        t_us = shapes["time_us"]
+        phase_pulses = {
+            "A": shapes["pulse_a"],
+            "B": shapes["pulse_b"],
+            "C": shapes["pulse_c"],
+        }
+        colors = {"A": "#1f77b4", "B": "#ff7f0e", "C": "#2ca02c"}
+
+        self._pw_zoom.clear()
+
+        # Draw window regions first (behind pulses).
+        w1_col = "#e0404088" if shapes["w1_blind"] else "#00aa4444"
+        w2_col = "#e0404088" if shapes["w2_blind"] else "#aa550044"
+        w1_rgn = pg.LinearRegionItem(
+            values=(shapes["w1_start_us"], shapes["w1_end_us"]),
+            movable=False,
+            brush=pg.mkBrush(w1_col),
+            pen=pg.mkPen(w1_col[:7] + "88"),
+        )
+        w1_rgn.setZValue(-5)
+        self._pw_zoom.addItem(w1_rgn)
+
+        w2_rgn = pg.LinearRegionItem(
+            values=(shapes["w2_start_us"], shapes["w2_end_us"]),
+            movable=False,
+            brush=pg.mkBrush(w2_col),
+            pen=pg.mkPen(w2_col[:7] + "88"),
+        )
+        w2_rgn.setZValue(-5)
+        self._pw_zoom.addItem(w2_rgn)
+
+        # Offset each phase pulse vertically for clarity (0, 1.3, 2.6).
+        for i, (phase, col) in enumerate(colors.items()):
+            offset = i * 1.3
+            self._pw_zoom.plot(
+                t_us,
+                phase_pulses[phase] + offset,
+                name=f"Phase {phase}",
+                pen=pg.mkPen(color=col, width=2.0),
+            )
+
+        # W₁/W₂ labels.
+        txt_w1 = pg.TextItem(
+            f"W₁ {shapes['w1_eff_us']:.1f}µs {'⚠' if shapes['w1_blind'] else '✓'}",
+            color="#00aa44" if not shapes["w1_blind"] else "#e04040",
+            anchor=(0, 1),
+        )
+        txt_w1.setPos(shapes["w1_start_us"], 3.2)
+        self._pw_zoom.addItem(txt_w1)
+
+        txt_w2 = pg.TextItem(
+            f"W₂ {shapes['w2_eff_us']:.1f}µs {'⚠' if shapes['w2_blind'] else '✓'}",
+            color="#aa5500" if not shapes["w2_blind"] else "#e04040",
+            anchor=(0, 1),
+        )
+        txt_w2.setPos(shapes["w2_start_us"], 2.0)
+        self._pw_zoom.addItem(txt_w2)
+
+        self._pw_zoom.setYRange(-0.2, 3.5, padding=0)
+        self._pw_zoom.setTitle(
+            f"PWM Period #{period_idx}  |  "
+            f"D_max={period.d_max:.3f}({period.phase_max})  "
+            f"D_mid={period.d_mid:.3f}({period.phase_mid})  "
+            f"D_min={period.d_min:.3f}({period.phase_min})"
+        )
+
+    def _update_info_panel(self, period_idx: int) -> None:
+        """Update the textual info panel for the selected PWM period."""
+        if self._analysis is None or self._analysis.num_periods == 0:
+            self._info_box.setPlainText("No analysis available.")
+            return
+        a = self._analysis
+        period_idx = max(0, min(period_idx, a.num_periods - 1))
+        p = a.periods[period_idx]
+
+        blind_str = []
+        if p.w1_blind:
+            blind_str.append("W₁ BLIND")
+        if p.w2_blind:
+            blind_str.append("W₂ BLIND")
+        blind_info = " | ".join(blind_str) if blind_str else "All windows observable"
+
+        def _fmt(v: float) -> str:
+            return f"{v:.4f}" if not (v != v) else "NaN (blind)"  # noqa: PLR0124
+
+        text = (
+            f"Period index : {p.period_index}\n"
+            f"Sector       : {p.sector}\n"
+            f"Phase order  : {p.phase_max} > {p.phase_mid} > {p.phase_min}\n"
+            f"D_max        : {p.d_max:.4f}  ({p.phase_max})\n"
+            f"D_mid        : {p.d_mid:.4f}  ({p.phase_mid})\n"
+            f"D_min        : {p.d_min:.4f}  ({p.phase_min})\n"
+            f"\n"
+            f"W₁ ideal     : {p.w1_ideal_us:.2f} µs\n"
+            f"W₁ effective : {p.w1_eff_us:.2f} µs  "
+            f"{'(BLIND)' if p.w1_blind else '(OK)'}\n"
+            f"W₂ ideal     : {p.w2_ideal_us:.2f} µs\n"
+            f"W₂ effective : {p.w2_eff_us:.2f} µs  "
+            f"{'(BLIND)' if p.w2_blind else '(OK)'}\n"
+            f"\n"
+            f"Status       : {blind_info}\n"
+            f"\n"
+            f"Reconstructed currents (A/A_peak):\n"
+            f"  î_{p.phase_max} (W₁)  : {_fmt(p.i_max_reconstructed)}\n"
+            f"  î_{p.phase_min} (W₂)  : {_fmt(p.i_min_reconstructed)}\n"
+            f"  î_{p.phase_mid} (KCL) : {_fmt(p.i_mid_reconstructed)}\n"
+            f"\n"
+            f"Compensation : {'Applied (' + a.compensation.value + ')' if p.compensation_applied else 'None'}\n"
+        )
+        if p.compensation_applied:
+            text += (
+                f"  D_max_comp : {p.d_max_compensated:.4f}\n"
+                f"  D_mid_comp : {p.d_mid_compensated:.4f}\n"
+            )
+        text += (
+            f"\n"
+            f"─── Global stats ───\n"
+            f"Blind fraction : {a.blind_fraction * 100:.1f}%\n"
+            f"W₁_eff mean    : {a.w1_eff_mean_us:.2f} µs\n"
+            f"W₂_eff mean    : {a.w2_eff_mean_us:.2f} µs\n"
+            f"W₁_eff min     : {a.w1_eff_min_us:.2f} µs\n"
+            f"W₂_eff min     : {a.w2_eff_min_us:.2f} µs\n"
+            f"Dead time      : {a.dead_time_us:.2f} µs\n"
+            f"t_acq_min      : {a.t_acq_min_us:.2f} µs\n"
+            f"Alignment      : {a.alignment}\n"
+        )
+        self._info_box.setPlainText(text)
+
+    # ------------------------------------------------------------------
+    # Event handlers
+    # ------------------------------------------------------------------
+
+    def _on_duty_plot_clicked(self, event: "object") -> None:
+        """Select the closest PWM period when the user clicks the duty plot."""
+        if self._analysis is None or self._analysis.num_periods == 0:
+            return
+        try:
+            pos = event.scenePos()
+        except AttributeError:
+            return
+        if not self._pw_duty.sceneBoundingRect().contains(pos):
+            return
+        vb = self._pw_duty.plotItem.vb
+        view_pos = vb.mapSceneToView(pos)
+        t_click = float(view_pos.x())
+        t_arr = self._analysis.time
+        if t_arr.size == 0:
+            return
+        idx = int(np.argmin(np.abs(t_arr - t_click)))
+        self._selected_period = idx
+        self._cursor_line.setPos(float(t_arr[idx]))
+        self._window_cursor.setPos(float(t_arr[idx]))
+        self._update_zoom_panel(idx)
+        self._update_info_panel(idx)
+
+    def _on_compensation_changed(self) -> None:
+        """Re-run the analysis with the newly selected compensation strategy."""
+        if self._result is not None and self._config is not None:
+            self._run_analysis(self._result, self._config)
+
+    def _on_t_acq_changed(self) -> None:
+        """Re-run analysis when t_acq_min changes."""
+        if self._result is not None and self._config is not None:
+            self._run_analysis(self._result, self._config)
+
+    def _on_refresh_clicked(self) -> None:
+        """Manual refresh button handler."""
+        if self._result is not None and self._config is not None:
+            self._run_analysis(self._result, self._config)
+
+    def _copy_info(self) -> None:
+        """Copy info panel text to clipboard."""
+        QtWidgets.QApplication.clipboard().setText(self._info_box.toPlainText())
+
+
 class SvmShaperApp(QtWidgets.QMainWindow):
     """Main window for the SVM Analyst application.
 
@@ -1330,6 +1982,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         self._ref_result = None
         self._ref_display_signals: dict = {}
         self._dq_dialog: Optional[DqPhasorDialog] = None
+        self._sscr_dialog: Optional[SingleShuntDialog] = None
 
         self._build_ui()
         self._apply_config_to_ui(self._config)
@@ -1506,12 +2159,20 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         view_menu.addAction(svm_hex)
 
         dq_phasor_action = QtGui.QAction("dq-frame Phasor Diagram", self)
-        dq_phasor_action.setAccessibleName("Open dq phasor diagram")
         dq_phasor_action.setToolTip(
             "Show the voltage space-vector trajectory (αβ) and fundamental dq phasors"
         )
         dq_phasor_action.triggered.connect(self._show_dq_phasor)
         view_menu.addAction(dq_phasor_action)
+
+        sscr_action = QtGui.QAction("Single Shunt Current Reconstruction...", self)
+        sscr_action.setToolTip(
+            "Open the pedagogical viewer for single-shunt DC-bus current reconstruction.\n"
+            "Shows per-period acquisition windows W1/W2, blind zones, duty-cycle ordering,\n"
+            "and reconstructed phase currents for each PWM period."
+        )
+        sscr_action.triggered.connect(self._show_sscr_viewer)
+        view_menu.addAction(sscr_action)
 
         tools_menu = self._menu_bar.addMenu("&Tools")
         sweep_action = QtGui.QAction("Sweep THD...", self)
@@ -2069,6 +2730,10 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         if self._dq_dialog is not None and self._dq_dialog.isVisible():
             self._dq_dialog.refresh(self._sim_result, self._config)
 
+        # Refresh the SSCR viewer if it is currently open.
+        if self._sscr_dialog is not None and self._sscr_dialog.isVisible():
+            self._sscr_dialog.refresh(self._sim_result, self._config)
+
         # Set an appropriate scroll step to simulate an oscilloscope sweep.
         self._scroll_step = max(1, int(self._window_samples / 20))
         self._scroll_plot()
@@ -2243,7 +2908,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
                 else ""
             )
             + "\n"
-            f"Top harmonics (freq -> magnitude):\n"
+            "Top harmonics (freq -> magnitude):\n"
             + "\n".join(top_harmonics_lines)
             + "\n\n"
             f"Show switching edges: {'Yes' if self._config.show_switching_edges else 'No'}\n\n"
@@ -2572,6 +3237,29 @@ class SvmShaperApp(QtWidgets.QMainWindow):
             self._dq_dialog.raise_()
             self._dq_dialog.activateWindow()
 
+    def _show_sscr_viewer(self) -> None:
+        """Open (or bring to front) the Single Shunt Current Reconstruction viewer.
+
+        The viewer analyses the current :attr:`_sim_result` and keeps itself
+        synchronised with the main window via the :meth:`SingleShuntDialog.refresh`
+        call in :meth:`_on_simulation_finished`.
+        """
+        if self._sim_result is None:
+            QtWidgets.QMessageBox.information(
+                self,
+                "No simulation result",
+                "Run the simulation first before opening the SSCR viewer.",
+            )
+            return
+        if self._sscr_dialog is None or not self._sscr_dialog.isVisible():
+            self._sscr_dialog = SingleShuntDialog(
+                self._sim_result, self._config, parent=self
+            )
+            self._sscr_dialog.show()
+        else:
+            self._sscr_dialog.raise_()
+            self._sscr_dialog.activateWindow()
+
     def _show_about(self) -> None:
         QtWidgets.QMessageBox.information(
             self,
@@ -2587,6 +3275,9 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         if self._worker_thread is not None and self._worker_thread.isRunning():
             self._worker_thread.quit()
             self._worker_thread.wait(100)
+
+        if self._sscr_dialog is not None:
+            self._sscr_dialog.close()
 
         super().closeEvent(event)
 

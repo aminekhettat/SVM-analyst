@@ -62,6 +62,13 @@ Educational simulator for PWM and space-vector modulations focused on PMSM drive
   - "Save Reference" button freezes a simulation snapshot as a grey dashed overlay on the waveform, FFT, and duty cycle plots
   - "Clear Reference" button removes all overlays
   - Info box shows ΔTHD, ΔCMV peak-to-peak, and ΔDC bus peak-to-peak against the saved reference
+- Single Shunt Current Reconstruction (SSCR) viewer:
+  - Pedagogical viewer for DC-bus single-shunt current reconstruction (View → Single Shunt Current Reconstruction…)
+  - Shows per-period PWM acquisition windows W1/W2, blind zones, duty-cycle ordering, and reconstructed phase currents
+  - Three compensation strategies: None, Min-pulse compensation, Hold strategy
+  - Configurable minimum ADC acquisition time (t_acq_min)
+  - Acquisition window width chart and per-period info text with clipboard copy
+  - Auto-refreshes on every simulation update
 
 ## Running
 

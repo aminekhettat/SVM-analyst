@@ -1,6 +1,43 @@
 SVM Analyst – Changelog
 ========================
 
+v1.4.3 – 2026-06-10
+--------------------
+Bug-fix and feature release – Single Shunt Current Reconstruction (SSCR)
+pedagogical viewer (Roadmap Feature #7).
+
+New features:
+- single_shunt: new pure-numpy module svm_shaper/single_shunt.py implementing
+  the full SSCR analysis pipeline: CompensationStrategy enum (NONE, MIN_PULSE,
+  HOLD), PeriodAnalysis / SingleShuntAnalysis dataclasses, and public helpers
+  get_sector_from_angle(), get_duty_ordering(), compute_window_widths(),
+  compute_shunt_current_norm(), build_pwm_period_pulse_shapes(), and
+  compute_single_shunt_analysis().
+- gui: SingleShuntDialog – a multi-panel pedagogical viewer with:
+    • Duty-cycle envelope (phase A/B/C), with current sector and blind-zone
+      fraction readout.
+    • Per-period PWM zoom: toggle between Center / Left / Right alignment and
+      visualise W1/W2 acquisition windows.
+    • Acquisition window width chart (W1/W2 in µs vs electrical angle).
+    • SSCR per-period info text (sector, duties, widths, observable flag)
+      with clipboard copy.
+    • Three-strategy selector (None / Min-pulse compensation / Hold strategy)
+      and adjustable minimum ADC acquisition time t_acq_min.
+    • Auto-refresh on simulation update; manual Refresh button.
+  Accessible via View → Single Shunt Current Reconstruction…
+- tests: 80 new tests in tests/test_feature_single_shunt.py achieving 100%
+  branch coverage of single_shunt.py.
+
+Bug fixes:
+- gui: Removed erroneous QAction.setAccessibleName() calls in _build_menu().
+  QAction in PySide6/Qt6 does not inherit from QWidget, so setAccessibleName()
+  does not exist on it.  This caused an AttributeError at application start-up
+  that crashed every test instantiating SvmShaperApp (59 test errors in CI).
+- gui: Removed extraneous f-string prefix from a non-interpolated string
+  (ruff F541) in _build_report_text().
+- tests: Renamed unused variable t → _ in test_feature_single_shunt.py
+  (ruff F841).
+
 v1.4.2 – 2026-06-09
 --------------------
 Feature release — overmodulation region, MI > 1 (Roadmap Feature #6).
