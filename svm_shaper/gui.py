@@ -65,7 +65,13 @@ from .single_shunt import (
     SingleShuntAnalysis,
     compute_single_shunt_analysis,
 )
-from .losses import MOSFET_PRESETS, LossParameters, LossThermalResult, compute_switch_losses
+from .losses import (
+    MOSFET_PRESETS,
+    LossParameters,
+    LossThermalResult,
+    compute_switch_losses,
+)
+from .codegen import CCodeGenerator, CodegenOptions
 from .sweep import sweep_thd
 from .visualization import svm_hexagon_vertices, svm_reference_vector
 
@@ -2133,14 +2139,20 @@ class LossThermalDialog(QtWidgets.QDialog):
         mk = self._make_double_edit  # shorthand
 
         self._ed_rds = mk(
-            grp, 0.001, 100_000.0, 3,
+            grp,
+            0.001,
+            100_000.0,
+            3,
             "RDS on resistance milliohms",
             "On-state drain-source resistance at 25 degrees Celsius in milliohms.",
         )
         form.addRow("Rds(on) [m\u03a9]:", self._ed_rds)
 
         self._ed_rds_coeff = mk(
-            grp, 1.0, 5.0, 2,
+            grp,
+            1.0,
+            5.0,
+            2,
             "RDS on temperature coefficient",
             "Ratio of R_ds(on) at 125 degrees Celsius to R_ds(on) at 25 degrees. "
             "Typically 1.5 to 2.1 for silicon MOSFETs. Shown for reference.",
@@ -2148,7 +2160,10 @@ class LossThermalDialog(QtWidgets.QDialog):
         form.addRow("Rds coeff @125\u00b0C:", self._ed_rds_coeff)
 
         self._ed_eon = mk(
-            grp, 0.0, 1_000_000.0, 3,
+            grp,
+            0.0,
+            1_000_000.0,
+            3,
             "Turn-on switching energy microjoules",
             "MOSFET turn-on energy E_on at the reference test conditions "
             "listed in the datasheet, in microjoules.",
@@ -2156,7 +2171,10 @@ class LossThermalDialog(QtWidgets.QDialog):
         form.addRow("Eon [\u03bcJ]:", self._ed_eon)
 
         self._ed_eoff = mk(
-            grp, 0.0, 1_000_000.0, 3,
+            grp,
+            0.0,
+            1_000_000.0,
+            3,
             "Turn-off switching energy microjoules",
             "MOSFET turn-off energy E_off at the reference test conditions "
             "listed in the datasheet, in microjoules.",
@@ -2164,7 +2182,10 @@ class LossThermalDialog(QtWidgets.QDialog):
         form.addRow("Eoff [\u03bcJ]:", self._ed_eoff)
 
         self._ed_vref = mk(
-            grp, 1.0, 1_200.0, 1,
+            grp,
+            1.0,
+            1_200.0,
+            1,
             "Reference test voltage volts",
             "DC-bus voltage at which E_on and E_off were measured "
             "in the datasheet, in volts.",
@@ -2172,7 +2193,10 @@ class LossThermalDialog(QtWidgets.QDialog):
         form.addRow("V_ref [V]:", self._ed_vref)
 
         self._ed_iref = mk(
-            grp, 0.1, 2_000.0, 2,
+            grp,
+            0.1,
+            2_000.0,
+            2,
             "Reference test current amperes",
             "Phase current amplitude at which E_on and E_off were "
             "measured in the datasheet, in amperes.",
@@ -2180,7 +2204,10 @@ class LossThermalDialog(QtWidgets.QDialog):
         form.addRow("I_ref [A]:", self._ed_iref)
 
         self._ed_rthja = mk(
-            grp, 0.01, 500.0, 2,
+            grp,
+            0.01,
+            500.0,
+            2,
             "Junction to ambient thermal resistance",
             "Thermal resistance from chip junction to ambient air "
             "in degrees Celsius per watt.",
@@ -2188,7 +2215,10 @@ class LossThermalDialog(QtWidgets.QDialog):
         form.addRow("Rth,ja [\u00b0C/W]:", self._ed_rthja)
 
         self._ed_tjmax = mk(
-            grp, 50.0, 300.0, 1,
+            grp,
+            50.0,
+            300.0,
+            1,
             "Maximum junction temperature degrees Celsius",
             "Maximum allowable junction temperature from the datasheet "
             "in degrees Celsius.",
@@ -2209,35 +2239,50 @@ class LossThermalDialog(QtWidgets.QDialog):
         mk = self._make_double_edit  # shorthand
 
         self._ed_vdc = mk(
-            grp, 1.0, 1_200.0, 1,
+            grp,
+            1.0,
+            1_200.0,
+            1,
             "DC bus voltage volts",
             "DC link voltage of the inverter in volts.",
         )
         form.addRow("Vdc [V]:", self._ed_vdc)
 
         self._ed_ipk = mk(
-            grp, 0.0, 10_000.0, 2,
+            grp,
+            0.0,
+            10_000.0,
+            2,
             "Phase peak current amperes",
             "Fundamental peak phase current in amperes.",
         )
         form.addRow("I_peak [A]:", self._ed_ipk)
 
         self._ed_irms = mk(
-            grp, 0.0, 10_000.0, 2,
+            grp,
+            0.0,
+            10_000.0,
+            2,
             "Phase RMS current amperes",
             "Root-mean-square phase current in amperes.",
         )
         form.addRow("I_rms [A]:", self._ed_irms)
 
         self._ed_fpwm = mk(
-            grp, 100.0, 200_000.0, 0,
+            grp,
+            100.0,
+            200_000.0,
+            0,
             "PWM switching frequency hertz",
             "Carrier frequency of the PWM modulator in hertz.",
         )
         form.addRow("f_pwm [Hz]:", self._ed_fpwm)
 
         self._ed_tamb = mk(
-            grp, -40.0, 125.0, 1,
+            grp,
+            -40.0,
+            125.0,
+            1,
             "Ambient temperature degrees Celsius",
             "Ambient temperature around the device heatsink in degrees Celsius.",
         )
@@ -2374,9 +2419,7 @@ class LossThermalDialog(QtWidgets.QDialog):
     # Results display
     # ------------------------------------------------------------------
 
-    def _update_results(
-        self, res: LossThermalResult, params: LossParameters
-    ) -> None:
+    def _update_results(self, res: LossThermalResult, params: LossParameters) -> None:
         """Refresh the text summary and bar chart from *res*."""
 
         # ── Helper for thermal margin string ────────────────────────────
@@ -2438,13 +2481,15 @@ class LossThermalDialog(QtWidgets.QDialog):
         width = 0.45
 
         bars_cond = ax.bar(
-            x, [p_cond_mw, p_cond_mw],
+            x,
+            [p_cond_mw, p_cond_mw],
             width,
             label="Conduction",
             color="#4472C4",
         )
         bars_sw = ax.bar(
-            x, p_sw_vals,
+            x,
+            p_sw_vals,
             width,
             bottom=[p_cond_mw, p_cond_mw],
             label="Switching",
@@ -2458,8 +2503,10 @@ class LossThermalDialog(QtWidgets.QDialog):
                     bar.get_x() + bar.get_width() / 2.0,
                     p_cond_mw / 2.0,
                     f"{p_cond_mw:.1f}",
-                    ha="center", va="center",
-                    fontsize=8, color="white",
+                    ha="center",
+                    va="center",
+                    fontsize=8,
+                    color="white",
                 )
 
         max_total = max(totals_mw) if max(totals_mw) > 0 else 1.0
@@ -2469,15 +2516,19 @@ class LossThermalDialog(QtWidgets.QDialog):
                     bar.get_x() + bar.get_width() / 2.0,
                     p_cond_mw + sw_val / 2.0,
                     f"{sw_val:.1f}",
-                    ha="center", va="center",
-                    fontsize=8, color="white",
+                    ha="center",
+                    va="center",
+                    fontsize=8,
+                    color="white",
                 )
             ax.text(
                 bar.get_x() + bar.get_width() / 2.0,
                 total_val + max_total * 0.03,
                 f"Total\n{total_val:.1f} mW",
-                ha="center", va="bottom",
-                fontsize=7, color="black",
+                ha="center",
+                va="bottom",
+                fontsize=7,
+                color="black",
             )
 
         ax.set_xticks(x)
@@ -2488,6 +2539,174 @@ class LossThermalDialog(QtWidgets.QDialog):
         ax.set_ylim(0, max_total * 1.30)
 
         self._canvas.draw()
+
+
+# ---------------------------------------------------------------------------
+# C Code Generator Dialog
+# ---------------------------------------------------------------------------
+
+
+class CCodeDialog(QtWidgets.QDialog):
+    """Dialog that displays generated MISRA-C embedded code for the active modulation.
+
+    Two read-only tabs show the header (.h) and source (.c) files.
+    Save and clipboard buttons allow the user to export the files.
+    """
+
+    def __init__(
+        self,
+        modulation: ModulationMode,
+        modulation_index: float,
+        project_name: str,
+        author_name: str,
+        injection_percent: float = 100.0,
+        parent: Optional[QtWidgets.QWidget] = None,
+    ) -> None:
+        """Build the dialog and generate the code immediately."""
+        super().__init__(parent)
+
+        self._modulation = modulation
+        self._modulation_index = modulation_index
+        self._project_name = project_name
+        self._author_name = author_name
+        self._injection_percent = injection_percent
+
+        self.setWindowTitle(
+            f"SVM Analyst — Generate C Code: {modulation.value}"
+        )
+        self.setAccessibleName("C code generator dialog")
+        self.setAccessibleDescription(
+            "Displays MISRA C:2012-compliant embedded C code for the selected "
+            "modulation algorithm.  Use the Save buttons to export header and "
+            "source files."
+        )
+        self.setMinimumSize(900, 680)
+
+        # Generate the code
+        opts = CodegenOptions(
+            project_name=project_name or "MyProject",
+            author=author_name or "Amine KHETTAT",
+            organization=author_name or "Amine KHETTAT",
+            svm_analyst_version=__version__,
+            custom_injection_percent=injection_percent,
+        )
+        gen = CCodeGenerator()
+        self._header_code, self._source_code = gen.generate(modulation, opts)
+
+        self._build_ui()
+
+    def _build_ui(self) -> None:
+        """Construct layout: tab widget + action buttons."""
+        layout = QtWidgets.QVBoxLayout(self)
+
+        # Info label
+        info = QtWidgets.QLabel(
+            f"Modulation: <b>{self._modulation.value}</b> — "
+            "MISRA C:2012 compliant — Doxygen annotated"
+        )
+        info.setAccessibleName("Modulation info label")
+        layout.addWidget(info)
+
+        # Tab widget
+        self._tabs = QtWidgets.QTabWidget()
+        self._tabs.setAccessibleName("Code tabs")
+
+        font = QtGui.QFont("Courier New", 9)
+        font.setFixedPitch(True)
+
+        self._header_edit = QPlainTextEdit()
+        self._header_edit.setReadOnly(True)
+        self._header_edit.setFont(font)
+        self._header_edit.setPlainText(self._header_code)
+        self._header_edit.setAccessibleName("Header file content")
+        self._header_edit.setAccessibleDescription(
+            "Generated C header file (.h) with Doxygen documentation, "
+            "MISRA compliance statement, type definitions, and function declarations."
+        )
+        self._tabs.addTab(self._header_edit, "Header (.h)")
+
+        self._source_edit = QPlainTextEdit()
+        self._source_edit.setReadOnly(True)
+        self._source_edit.setFont(font)
+        self._source_edit.setPlainText(self._source_code)
+        self._source_edit.setAccessibleName("Source file content")
+        self._source_edit.setAccessibleDescription(
+            "Generated C implementation file (.c) with full algorithm, "
+            "helper functions, and Doxygen annotations."
+        )
+        self._tabs.addTab(self._source_edit, "Source (.c)")
+
+        layout.addWidget(self._tabs)
+
+        # Button row
+        btn_layout = QtWidgets.QHBoxLayout()
+
+        self._save_header_btn = QPushButton("Save Header (.h)…")
+        self._save_header_btn.setAccessibleName("Save header file")
+        self._save_header_btn.setToolTip(
+            "Save the generated header file to disk."
+        )
+        self._save_header_btn.clicked.connect(self._save_header)
+        btn_layout.addWidget(self._save_header_btn)
+
+        self._save_source_btn = QPushButton("Save Source (.c)…")
+        self._save_source_btn.setAccessibleName("Save source file")
+        self._save_source_btn.setToolTip(
+            "Save the generated C implementation file to disk."
+        )
+        self._save_source_btn.clicked.connect(self._save_source)
+        btn_layout.addWidget(self._save_source_btn)
+
+        self._copy_header_btn = QPushButton("Copy Header")
+        self._copy_header_btn.setAccessibleName("Copy header to clipboard")
+        self._copy_header_btn.clicked.connect(
+            lambda: QtWidgets.QApplication.clipboard().setText(self._header_code)
+        )
+        btn_layout.addWidget(self._copy_header_btn)
+
+        self._copy_source_btn = QPushButton("Copy Source")
+        self._copy_source_btn.setAccessibleName("Copy source to clipboard")
+        self._copy_source_btn.clicked.connect(
+            lambda: QtWidgets.QApplication.clipboard().setText(self._source_code)
+        )
+        btn_layout.addWidget(self._copy_source_btn)
+
+        btn_layout.addStretch()
+
+        close_btn = QPushButton("Close")
+        close_btn.setAccessibleName("Close dialog")
+        close_btn.clicked.connect(self.close)
+        btn_layout.addWidget(close_btn)
+
+        layout.addLayout(btn_layout)
+
+    def _save_header(self) -> None:
+        """Prompt the user for a file path and write the header file."""
+        from .codegen import _MODULATION_NAMES  # local import to avoid circular at top
+        mod_name = _MODULATION_NAMES.get(self._modulation, "pwm").lower()
+        default_name = f"pwm_{mod_name}.h"
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save Header File",
+            default_name,
+            "C Header Files (*.h);;All Files (*)",
+        )
+        if path:
+            Path(path).write_text(self._header_code, encoding="utf-8")
+
+    def _save_source(self) -> None:
+        """Prompt the user for a file path and write the C source file."""
+        from .codegen import _MODULATION_NAMES
+        mod_name = _MODULATION_NAMES.get(self._modulation, "pwm").lower()
+        default_name = f"pwm_{mod_name}.c"
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save Source File",
+            default_name,
+            "C Source Files (*.c);;All Files (*)",
+        )
+        if path:
+            Path(path).write_text(self._source_code, encoding="utf-8")
 
 
 class SvmShaperApp(QtWidgets.QMainWindow):
@@ -2535,6 +2754,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         self._dq_dialog: Optional[DqPhasorDialog] = None
         self._sscr_dialog: Optional[SingleShuntDialog] = None
         self._loss_dialog: Optional[LossThermalDialog] = None
+        self._codegen_dialog: Optional[CCodeDialog] = None
 
         self._build_ui()
         self._apply_config_to_ui(self._config)
@@ -2743,6 +2963,20 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         )
         loss_action.triggered.connect(self._show_loss_dialog)
         tools_menu.addAction(loss_action)
+
+        codegen_action = QtGui.QAction("Generate C Code\u2026", self)
+        codegen_action.setToolTip(
+            "Generate MISRA C:2012-compliant embedded C code for the selected "
+            "modulation algorithm.\nThe output is ready for direct integration "
+            "into microcontroller firmware."
+        )
+        codegen_action.setWhatsThis(
+            "Opens a dialog showing the generated C header and source files for "
+            "the currently selected modulation.  Files can be saved to disk or "
+            "copied to clipboard."
+        )
+        codegen_action.triggered.connect(self._show_codegen_dialog)
+        tools_menu.addAction(codegen_action)
 
         help_menu = self._menu_bar.addMenu("&Help")
         about_action = QtGui.QAction("&About", self)
@@ -3833,6 +4067,19 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         else:
             self._loss_dialog.raise_()
             self._loss_dialog.activateWindow()
+
+    def _show_codegen_dialog(self) -> None:
+        """Open (or bring to front) the C Code Generator dialog."""
+        config = self._read_ui_to_config()
+        self._codegen_dialog = CCodeDialog(
+            modulation=config.modulation,
+            modulation_index=config.modulation_index,
+            project_name=config.project_name,
+            author_name=config.author_name,
+            injection_percent=config.injection_percent,
+            parent=self,
+        )
+        self._codegen_dialog.show()
 
     def _show_about(self) -> None:
         QtWidgets.QMessageBox.information(

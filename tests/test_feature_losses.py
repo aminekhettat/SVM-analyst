@@ -242,7 +242,7 @@ class TestConductionLoss:
         i_rms = 10.0
         p = _make_params(rds_mohm=rds_mohm)
         res = compute_switch_losses(p, 400.0, 14.14, i_rms, 10_000.0, 25.0)
-        expected = (i_rms ** 2) * (rds_mohm * 1e-3) / 2.0
+        expected = (i_rms**2) * (rds_mohm * 1e-3) / 2.0
         assert abs(res.p_cond_w - expected) < 1e-9
 
     def test_conduction_loss_scales_with_rds(self):
@@ -622,6 +622,7 @@ class TestLossThermalDialogCalculate:
         loss_dialog._ed_ipk.setText("10.0")
         loss_dialog._ed_irms.setText("7.07")
         from PySide6.QtCore import Qt
+
         qtbot.mouseClick(loss_dialog._btn_calc, Qt.MouseButton.LeftButton)
         qtbot.wait(100)
         text = loss_dialog._results_text.toPlainText()
@@ -634,14 +635,13 @@ class TestLossThermalDialogCalculate:
         loss_dialog._ed_ipk.setText("10.0")
         loss_dialog._ed_irms.setText("7.07")
         from PySide6.QtCore import Qt
+
         qtbot.mouseClick(loss_dialog._btn_calc, Qt.MouseButton.LeftButton)
         qtbot.wait(100)
         assert loss_dialog._result is not None
         assert isinstance(loss_dialog._result, LossThermalResult)
 
-    def test_calculate_with_missing_field_shows_warning(
-        self, loss_dialog, qtbot, qapp
-    ):
+    def test_calculate_with_missing_field_shows_warning(self, loss_dialog, qtbot, qapp):
         # Clear a required field so Calculate shows a warning.
         loss_dialog._ed_ipk.clear()
         loss_dialog._ed_irms.clear()

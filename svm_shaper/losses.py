@@ -188,7 +188,7 @@ MOSFET_PRESETS: dict[str, LossParameters] = {
         vds_max_v=600.0,
         id_max_a=20.0,
         rds_on_mohm=99.0,
-        rds_on_temp_coeff=1.76,   # 174 mΩ @ 150 °C / 99 mΩ @ 25 °C
+        rds_on_temp_coeff=1.76,  # 174 mΩ @ 150 °C / 99 mΩ @ 25 °C
         e_on_uj=186.0,
         e_off_uj=81.0,
         v_ref_v=400.0,
@@ -205,7 +205,7 @@ MOSFET_PRESETS: dict[str, LossParameters] = {
         vds_max_v=650.0,
         id_max_a=16.0,
         rds_on_mohm=110.0,
-        rds_on_temp_coeff=1.86,   # 205 mΩ @ 150 °C / 110 mΩ @ 25 °C
+        rds_on_temp_coeff=1.86,  # 205 mΩ @ 150 °C / 110 mΩ @ 25 °C
         e_on_uj=165.0,
         e_off_uj=110.0,
         v_ref_v=400.0,
@@ -222,7 +222,7 @@ MOSFET_PRESETS: dict[str, LossParameters] = {
         vds_max_v=100.0,
         id_max_a=100.0,
         rds_on_mohm=2.3,
-        rds_on_temp_coeff=2.10,   # Ultra-low Rds(on) → higher thermal ratio
+        rds_on_temp_coeff=2.10,  # Ultra-low Rds(on) → higher thermal ratio
         e_on_uj=32.0,
         e_off_uj=20.0,
         v_ref_v=50.0,
@@ -324,7 +324,7 @@ def compute_switch_losses(
     # approximately half the fundamental cycle.
     #   P_cond ≈ I_rms² × R_ds(on) / 2
     rds_ohm = params.rds_on_mohm * 1e-3
-    p_cond = (i_phase_rms ** 2) * rds_ohm / 2.0
+    p_cond = (i_phase_rms**2) * rds_ohm / 2.0
 
     # ------------------------------------------------------------------
     # Switching energy scaling
@@ -353,7 +353,7 @@ def compute_switch_losses(
     p_total_spwm = p_cond + p_sw_spwm
     p_total_dpwm = p_cond + p_sw_dpwm
 
-    p_inv_spwm = p_total_spwm * 6.0   # 6-switch 3-phase bridge
+    p_inv_spwm = p_total_spwm * 6.0  # 6-switch 3-phase bridge
     p_inv_dpwm = p_total_dpwm * 6.0
 
     # ------------------------------------------------------------------

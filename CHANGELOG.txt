@@ -1,6 +1,45 @@
 SVM Analyst – Changelog
 ========================
 
+v1.4.5 – 2026-06-10
+--------------------
+Feature release – Embedded C Code Generator (Roadmap Feature #11).
+
+New features:
+- codegen: new module svm_shaper/codegen.py implementing a MISRA C:2012-compliant
+  C code generator for all 11 supported PWM modulation strategies.
+  · CodegenOptions dataclass: project_name, author, organization,
+    svm_analyst_version, custom_injection_percent.
+  · CCodeGenerator.generate(modulation, options) returns a (header, source) tuple.
+  · Generated header (.h): include guard, Doxygen \file / \brief / \author /
+    \version / \copyright / \license blocks, full copyright + MIT license text,
+    disclaimer, explicit MISRA C:2012 compliance section listing satisfied rules
+    (1.3, 2.2, 5.x, 8.4, 10.x, 14.4, 15.5, 17.3, 18.1, 20.1, 21.1), PC-lint /
+    FlexeLint compliance statement.
+  · Generated source (.c): Doxygen block, static helper wrappers for fmaxf/fminf
+    with modulation-namespaced identifiers (avoids symbol collisions in TUs),
+    main PWM_<MOD>_ComputeDuty() API with full NULL-pointer check, MI range
+    validation, MISRA-conformant single return point (status variable pattern,
+    Rule 15.5), /* */ comments only (no // C99-only style).
+  · Dedicated numeric constants per modulation (#define TWO_PI, TWO_PI_OVER_3,
+    SVM_NORM, PREGAIN, INJ_COEFF, PHASE_SHIFT, SQRT3_OVER_2 etc.) with
+    high-precision floating-point literals.
+  · All 11 modulation algorithms supported: SINUSOIDAL (SPWM), THIPWM 1/6,
+    THIPWM 1/4, CUSTOM_THIPWM, SVM, DPWM_120_MAX/MIN, DPWM_60_0/1/2, DPWM_30_3.
+  · CUSTOM_THIPWM: generates an extra inj_ratio parameter (float32_t, [0,1])
+    with its own range validation guard.
+- gui: CCodeDialog – a modal dialog accessible from Tools → Generate C Code…
+    • Two-tab QTabWidget: "Header (.h)" and "Source (.c)", each with a
+      read-only monospace QPlainTextEdit.
+    • Save Header / Save Source buttons (QFileDialog with .h/.c filters).
+    • Copy Header / Copy Source buttons for clipboard workflow.
+    • All widgets carry accessibleName and accessibleDescription.
+    • Pre-filled with current simulator configuration (modulation, MI,
+      project name, author).
+- tests: 580 new tests in tests/test_feature_codegen.py achieving 100%
+  branch coverage of codegen.py, including parametrized checks for all
+  11 modulations and Qt smoke tests for CCodeDialog.
+
 v1.4.4 – 2026-04-09
 --------------------
 Feature release – Switching Loss & Junction Temperature Estimator (Roadmap Feature #9).

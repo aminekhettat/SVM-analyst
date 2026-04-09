@@ -29,11 +29,12 @@ being developed in the current sprint.
 
 ## Batch 3 — Differentiators
 
-| #   | Feature                                                                                                                                          | Status  | Target version |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------- | -------------- |
+| #   | Feature                                                                                                                                          | Status    | Target version |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------ | --------- | -------------- |
 | 8   | **Audible PWM preview** — stream one cycle of the PWM output through `sounddevice` so acoustic-noise differences between strategies can be heard | Postponed | TBD            |
-| 9   | **Switching loss + junction temperature estimation** — MOSFET/IGBT Eon/Eoff model, per-switch loss, junction temperature rise estimator          | In Progress | v1.4.4      |
-| 10  | **Custom modulation via Python script** — allow users to define their own `compute_duty(theta, mi)` function as a plugin loaded at runtime       | Planned | TBD            |
+| 9   | **Switching loss + junction temperature estimation** — MOSFET/IGBT Eon/Eoff model, per-switch loss, junction temperature rise estimator          | ✅ Done   | v1.4.4         |
+| 10  | **Custom modulation via Python script** — allow users to define their own `compute_duty(theta, mi)` function as a plugin loaded at runtime       | Postponed | TBD            |
+| 11  | **Embedded C code generator (MISRA C:2012)** — generate a ready-to-integrate `.h` / `.c` file pair for any selected modulation, fully Doxygen-annotated, MISRA C:2012 + PC-lint compliant | ✅ Done | v1.4.5 |
 
 ---
 
@@ -43,4 +44,4 @@ being developed in the current sprint.
 
 ---
 
-_Last updated: v1.2.4_
+_Last updated: v1.4.5_
