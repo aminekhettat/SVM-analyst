@@ -65,6 +65,7 @@ from .single_shunt import (
     SingleShuntAnalysis,
     compute_single_shunt_analysis,
 )
+from .losses import MOSFET_PRESETS, LossParameters, LossThermalResult, compute_switch_losses
 from .sweep import sweep_thd
 from .visualization import svm_hexagon_vertices, svm_reference_vector
 
@@ -1939,6 +1940,556 @@ class SingleShuntDialog(QtWidgets.QDialog):
         QtWidgets.QApplication.clipboard().setText(self._info_box.toPlainText())
 
 
+# ---------------------------------------------------------------------------
+# Feature #9 — Switching Loss & Junction Temperature Estimator
+# ---------------------------------------------------------------------------
+
+
+class LossThermalDialog(QtWidgets.QDialog):
+    """Dialog for MOSFET switching-loss and junction-temperature estimation.
+
+    Provides validated presets from Infineon and Nexperia datasheets.
+    All numeric input fields are protected by :class:`QDoubleValidator` so
+    that only well-formed floating-point numbers are accepted.
+
+    Accessibility
+    -------------
+    Every interactive widget carries an accessible name and description
+    suitable for screen-reader narration.  The results area is a read-only
+    ``QTextEdit`` containing a plain-text summary that can be vocalised in
+    full by assistive technology.
+    """
+
+    def __init__(
+        self,
+        config: "SimulatorConfig",
+        parent: Optional[QtWidgets.QWidget] = None,
+    ) -> None:
+        """Initialise the dialog, build the UI, and pre-fill from *config*."""
+        super().__init__(parent)
+        self.setWindowTitle("Loss & Thermal Estimator \u2013 SVM Analyst")
+        self.setAccessibleName("Loss and thermal estimator dialog")
+        self.setAccessibleDescription(
+            "Estimates MOSFET switching losses and junction temperature for a "
+            "3-phase half-bridge inverter. Select a device preset or enter "
+            "custom parameters, set the operating conditions, then press "
+            "Calculate."
+        )
+        self.setMinimumSize(920, 740)
+
+        self._config = config
+        self._result: Optional[LossThermalResult] = None
+        self._current_preset: LossParameters = list(MOSFET_PRESETS.values())[1]
+
+        self._build_ui()
+
+        # Pre-fill operating conditions from the simulation configuration.
+        self._ed_vdc.setText(f"{config.battery_voltage:.1f}")
+        self._ed_fpwm.setText(f"{config.pwm_frequency_hz:.0f}")
+        self._ed_tamb.setText("25.0")
+        # Select DPWM in the modulation combo when the config uses a DPWM mode.
+        if "DPWM" in str(config.modulation):
+            self._combo_mod.setCurrentIndex(1)
+        else:
+            self._combo_mod.setCurrentIndex(0)
+
+        # Default to the first real datasheet preset (index 1 skips "Custom").
+        first_real = list(MOSFET_PRESETS.keys())[1]
+        self._combo_preset.setCurrentText(first_real)
+        self._load_preset(first_real)
+
+    # ------------------------------------------------------------------
+    # UI construction helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _make_double_edit(
+        parent: QtWidgets.QWidget,
+        lo: float,
+        hi: float,
+        decimals: int,
+        acc_name: str,
+        acc_desc: str,
+    ) -> QLineEdit:
+        """Return a :class:`QLineEdit` with a :class:`QDoubleValidator` attached.
+
+        The validator uses *StandardNotation* so that only ordinary decimal
+        numbers (not scientific notation) are accepted, and rejects any
+        character that cannot form a valid value within [*lo*, *hi*].
+        """
+        edit = QLineEdit(parent)
+        validator = QtGui.QDoubleValidator(lo, hi, decimals, edit)
+        validator.setNotation(QtGui.QDoubleValidator.Notation.StandardNotation)
+        edit.setValidator(validator)
+        edit.setAccessibleName(acc_name)
+        edit.setAccessibleDescription(acc_desc)
+        return edit
+
+    def _build_ui(self) -> None:
+        """Build the full dialog layout."""
+        root = QVBoxLayout(self)
+        root.setSpacing(8)
+        root.setContentsMargins(10, 10, 10, 10)
+
+        # ── Preset selector ──────────────────────────────────────────────
+        preset_row = QtWidgets.QHBoxLayout()
+        lbl_preset = QtWidgets.QLabel("Device preset:")
+        lbl_preset.setAccessibleName("Device preset label")
+
+        self._combo_preset = QtWidgets.QComboBox()
+        self._combo_preset.setAccessibleName("MOSFET device preset selector")
+        self._combo_preset.setAccessibleDescription(
+            "Choose a known MOSFET from Infineon or Nexperia presets. "
+            "Selecting a preset automatically fills all device parameter "
+            "fields. Choose Custom device to enter your own values."
+        )
+        for key in MOSFET_PRESETS:
+            self._combo_preset.addItem(key)
+        self._combo_preset.currentTextChanged.connect(self._on_preset_changed)
+        lbl_preset.setBuddy(self._combo_preset)
+
+        # Info label — shows Vds_max / Id_max from the selected preset.
+        self._lbl_device_info = QtWidgets.QLabel("")
+        self._lbl_device_info.setAccessibleName("Device specification label")
+        self._lbl_device_info.setAccessibleDescription(
+            "Shows the maximum drain-source voltage and continuous drain "
+            "current from the selected datasheet preset."
+        )
+
+        preset_row.addWidget(lbl_preset)
+        preset_row.addWidget(self._combo_preset, stretch=1)
+        preset_row.addWidget(self._lbl_device_info)
+        root.addLayout(preset_row)
+
+        # ── Two-column parameter panels ──────────────────────────────────
+        params_row = QtWidgets.QHBoxLayout()
+        params_row.addWidget(self._build_device_group())
+        params_row.addWidget(self._build_operating_group())
+        root.addLayout(params_row)
+
+        # ── Calculate button ─────────────────────────────────────────────
+        btn_row = QtWidgets.QHBoxLayout()
+        btn_row.addStretch()
+        self._btn_calc = QPushButton("Calculate")
+        self._btn_calc.setAccessibleName("Calculate losses button")
+        self._btn_calc.setAccessibleDescription(
+            "Compute switching and conduction losses, total inverter "
+            "dissipation, and estimated junction temperature from the "
+            "parameters entered above."
+        )
+        self._btn_calc.setDefault(True)
+        self._btn_calc.clicked.connect(self._calculate)
+        btn_row.addWidget(self._btn_calc)
+        btn_row.addStretch()
+        root.addLayout(btn_row)
+
+        # ── Results section ──────────────────────────────────────────────
+        results_grp = QtWidgets.QGroupBox("Results")
+        results_grp.setAccessibleName("Results group")
+        results_grp.setAccessibleDescription(
+            "Displays computed loss figures and junction temperature estimates "
+            "for both SPWM and DPWM strategies after pressing Calculate."
+        )
+        results_layout = QVBoxLayout(results_grp)
+
+        self._results_text = QtWidgets.QTextEdit()
+        self._results_text.setReadOnly(True)
+        self._results_text.setMaximumHeight(170)
+        self._results_text.setFontFamily("Courier New")
+        self._results_text.setAccessibleName("Loss and thermal results text")
+        self._results_text.setAccessibleDescription(
+            "Plain-text summary of computed conduction losses, switching "
+            "losses, total inverter dissipation, and junction temperature "
+            "for SPWM and DPWM strategies."
+        )
+        self._results_text.setPlaceholderText(
+            "Press \u2018Calculate\u2019 to compute losses and thermal estimates."
+        )
+        results_layout.addWidget(self._results_text)
+
+        # Matplotlib bar chart comparing SPWM vs DPWM.
+        self._fig = Figure(figsize=(7, 3), tight_layout=True)
+        self._canvas = FigureCanvas(self._fig)
+        self._canvas.setMinimumHeight(220)
+        self._canvas.setAccessibleName("Loss comparison bar chart")
+        self._canvas.setAccessibleDescription(
+            "Stacked bar chart showing conduction loss in blue and switching "
+            "loss in orange per switch, comparing SPWM and DPWM strategies."
+        )
+        results_layout.addWidget(self._canvas)
+
+        root.addWidget(results_grp, stretch=1)
+
+    def _build_device_group(self) -> QtWidgets.QGroupBox:
+        """Build the 'Device Parameters' form group."""
+        grp = QtWidgets.QGroupBox("Device Parameters")
+        grp.setAccessibleName("Device parameters group")
+        grp.setAccessibleDescription(
+            "Editable MOSFET datasheet parameters. Values are auto-filled "
+            "when a preset is selected and can be freely modified."
+        )
+        form = QtWidgets.QFormLayout(grp)
+
+        mk = self._make_double_edit  # shorthand
+
+        self._ed_rds = mk(
+            grp, 0.001, 100_000.0, 3,
+            "RDS on resistance milliohms",
+            "On-state drain-source resistance at 25 degrees Celsius in milliohms.",
+        )
+        form.addRow("Rds(on) [m\u03a9]:", self._ed_rds)
+
+        self._ed_rds_coeff = mk(
+            grp, 1.0, 5.0, 2,
+            "RDS on temperature coefficient",
+            "Ratio of R_ds(on) at 125 degrees Celsius to R_ds(on) at 25 degrees. "
+            "Typically 1.5 to 2.1 for silicon MOSFETs. Shown for reference.",
+        )
+        form.addRow("Rds coeff @125\u00b0C:", self._ed_rds_coeff)
+
+        self._ed_eon = mk(
+            grp, 0.0, 1_000_000.0, 3,
+            "Turn-on switching energy microjoules",
+            "MOSFET turn-on energy E_on at the reference test conditions "
+            "listed in the datasheet, in microjoules.",
+        )
+        form.addRow("Eon [\u03bcJ]:", self._ed_eon)
+
+        self._ed_eoff = mk(
+            grp, 0.0, 1_000_000.0, 3,
+            "Turn-off switching energy microjoules",
+            "MOSFET turn-off energy E_off at the reference test conditions "
+            "listed in the datasheet, in microjoules.",
+        )
+        form.addRow("Eoff [\u03bcJ]:", self._ed_eoff)
+
+        self._ed_vref = mk(
+            grp, 1.0, 1_200.0, 1,
+            "Reference test voltage volts",
+            "DC-bus voltage at which E_on and E_off were measured "
+            "in the datasheet, in volts.",
+        )
+        form.addRow("V_ref [V]:", self._ed_vref)
+
+        self._ed_iref = mk(
+            grp, 0.1, 2_000.0, 2,
+            "Reference test current amperes",
+            "Phase current amplitude at which E_on and E_off were "
+            "measured in the datasheet, in amperes.",
+        )
+        form.addRow("I_ref [A]:", self._ed_iref)
+
+        self._ed_rthja = mk(
+            grp, 0.01, 500.0, 2,
+            "Junction to ambient thermal resistance",
+            "Thermal resistance from chip junction to ambient air "
+            "in degrees Celsius per watt.",
+        )
+        form.addRow("Rth,ja [\u00b0C/W]:", self._ed_rthja)
+
+        self._ed_tjmax = mk(
+            grp, 50.0, 300.0, 1,
+            "Maximum junction temperature degrees Celsius",
+            "Maximum allowable junction temperature from the datasheet "
+            "in degrees Celsius.",
+        )
+        form.addRow("Tj_max [\u00b0C]:", self._ed_tjmax)
+
+        return grp
+
+    def _build_operating_group(self) -> QtWidgets.QGroupBox:
+        """Build the 'Operating Conditions' form group."""
+        grp = QtWidgets.QGroupBox("Operating Conditions")
+        grp.setAccessibleName("Operating conditions group")
+        grp.setAccessibleDescription(
+            "Inverter operating point parameters used in the loss computation."
+        )
+        form = QtWidgets.QFormLayout(grp)
+
+        mk = self._make_double_edit  # shorthand
+
+        self._ed_vdc = mk(
+            grp, 1.0, 1_200.0, 1,
+            "DC bus voltage volts",
+            "DC link voltage of the inverter in volts.",
+        )
+        form.addRow("Vdc [V]:", self._ed_vdc)
+
+        self._ed_ipk = mk(
+            grp, 0.0, 10_000.0, 2,
+            "Phase peak current amperes",
+            "Fundamental peak phase current in amperes.",
+        )
+        form.addRow("I_peak [A]:", self._ed_ipk)
+
+        self._ed_irms = mk(
+            grp, 0.0, 10_000.0, 2,
+            "Phase RMS current amperes",
+            "Root-mean-square phase current in amperes.",
+        )
+        form.addRow("I_rms [A]:", self._ed_irms)
+
+        self._ed_fpwm = mk(
+            grp, 100.0, 200_000.0, 0,
+            "PWM switching frequency hertz",
+            "Carrier frequency of the PWM modulator in hertz.",
+        )
+        form.addRow("f_pwm [Hz]:", self._ed_fpwm)
+
+        self._ed_tamb = mk(
+            grp, -40.0, 125.0, 1,
+            "Ambient temperature degrees Celsius",
+            "Ambient temperature around the device heatsink in degrees Celsius.",
+        )
+        form.addRow("T_amb [\u00b0C]:", self._ed_tamb)
+
+        self._combo_mod = QtWidgets.QComboBox()
+        self._combo_mod.setAccessibleName("Modulation strategy selector")
+        self._combo_mod.setAccessibleDescription(
+            "SPWM or SVM applies switching every carrier period. "
+            "DPWM clamps one phase per sector, reducing switching losses "
+            "by approximately one third."
+        )
+        self._combo_mod.addItem("SPWM / SVM  (full switching)")
+        self._combo_mod.addItem("DPWM  (120\u00b0 clamping,  \u221233 % Psw)")
+        form.addRow("Modulation:", self._combo_mod)
+
+        return grp
+
+    # ------------------------------------------------------------------
+    # Preset management
+    # ------------------------------------------------------------------
+
+    def _load_preset(self, key: str) -> None:
+        """Populate device parameter fields from the preset identified by *key*."""
+        p = MOSFET_PRESETS.get(key)
+        if p is None:
+            return
+        self._current_preset = p
+        self._ed_rds.setText(f"{p.rds_on_mohm:.3f}")
+        self._ed_rds_coeff.setText(f"{p.rds_on_temp_coeff:.2f}")
+        self._ed_eon.setText(f"{p.e_on_uj:.3f}")
+        self._ed_eoff.setText(f"{p.e_off_uj:.3f}")
+        self._ed_vref.setText(f"{p.v_ref_v:.1f}")
+        self._ed_iref.setText(f"{p.i_ref_a:.2f}")
+        self._ed_rthja.setText(f"{p.rth_ja_k_w:.2f}")
+        self._ed_tjmax.setText(f"{p.tj_max_c:.1f}")
+        self._lbl_device_info.setText(
+            f"Vds_max: {p.vds_max_v:.0f} V   Id_max: {p.id_max_a:.0f} A"
+        )
+
+    def _on_preset_changed(self, key: str) -> None:
+        """Slot: repopulate fields when the preset combo changes."""
+        self._load_preset(key)
+
+    # ------------------------------------------------------------------
+    # Field reading
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _read_float(edit: QLineEdit) -> Optional[float]:
+        """Return the float value from *edit*, or ``None`` if blank / invalid."""
+        text = edit.text().strip().replace(",", ".")
+        try:
+            return float(text)
+        except ValueError:
+            return None
+
+    # ------------------------------------------------------------------
+    # Calculation
+    # ------------------------------------------------------------------
+
+    def _calculate(self) -> None:
+        """Read all form fields, run :func:`compute_switch_losses`, update display."""
+        # Collect device parameters.
+        rds = self._read_float(self._ed_rds)
+        rds_coeff = self._read_float(self._ed_rds_coeff)
+        eon = self._read_float(self._ed_eon)
+        eoff = self._read_float(self._ed_eoff)
+        vref = self._read_float(self._ed_vref)
+        iref = self._read_float(self._ed_iref)
+        rthja = self._read_float(self._ed_rthja)
+        tjmax = self._read_float(self._ed_tjmax)
+
+        # Collect operating conditions.
+        vdc = self._read_float(self._ed_vdc)
+        ipk = self._read_float(self._ed_ipk)
+        irms = self._read_float(self._ed_irms)
+        fpwm = self._read_float(self._ed_fpwm)
+        tamb = self._read_float(self._ed_tamb)
+
+        missing = [
+            name
+            for name, val in [
+                ("Rds(on) [m\u03a9]", rds),
+                ("Rds coeff @125\u00b0C", rds_coeff),
+                ("Eon [\u03bcJ]", eon),
+                ("Eoff [\u03bcJ]", eoff),
+                ("V_ref [V]", vref),
+                ("I_ref [A]", iref),
+                ("Rth,ja [\u00b0C/W]", rthja),
+                ("Tj_max [\u00b0C]", tjmax),
+                ("Vdc [V]", vdc),
+                ("I_peak [A]", ipk),
+                ("I_rms [A]", irms),
+                ("f_pwm [Hz]", fpwm),
+                ("T_amb [\u00b0C]", tamb),
+            ]
+            if val is None
+        ]
+        if missing:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Missing or invalid input",
+                "The following fields are empty or contain invalid values:\n"
+                + "\n".join(f"  \u2022 {m}" for m in missing),
+            )
+            return
+
+        params = LossParameters(
+            device_name=self._combo_preset.currentText(),
+            manufacturer=self._current_preset.manufacturer,
+            vds_max_v=self._current_preset.vds_max_v,
+            id_max_a=self._current_preset.id_max_a,
+            rds_on_mohm=rds,
+            rds_on_temp_coeff=rds_coeff,
+            e_on_uj=eon,
+            e_off_uj=eoff,
+            v_ref_v=vref,
+            i_ref_a=iref,
+            rth_ja_k_w=rthja,
+            tj_max_c=tjmax,
+        )
+
+        try:
+            res = compute_switch_losses(params, vdc, ipk, irms, fpwm, tamb)
+        except ValueError as exc:
+            QtWidgets.QMessageBox.critical(self, "Computation error", str(exc))
+            return
+
+        self._result = res
+        self._update_results(res, params)
+
+    # ------------------------------------------------------------------
+    # Results display
+    # ------------------------------------------------------------------
+
+    def _update_results(
+        self, res: LossThermalResult, params: LossParameters
+    ) -> None:
+        """Refresh the text summary and bar chart from *res*."""
+
+        # ── Helper for thermal margin string ────────────────────────────
+        def margin_str(t_j: float) -> str:
+            margin = res.tj_max_c - t_j
+            if margin > 20.0:
+                status = "OK"
+            elif margin > 0.0:
+                status = "MARGINAL"
+            else:
+                status = "EXCEEDED"
+            return (
+                f"{t_j:.1f} \u00b0C  "
+                f"[{status}, margin {margin:.1f} \u00b0C vs "
+                f"Tj_max = {res.tj_max_c:.0f} \u00b0C]"
+            )
+
+        # ── Text summary ─────────────────────────────────────────────────
+        sw_reduction = (
+            (res.p_sw_spwm_w - res.p_sw_dpwm_w) / res.p_sw_spwm_w * 100.0
+            if res.p_sw_spwm_w > 1e-12
+            else 0.0
+        )
+        lines = [
+            f"Device : {params.device_name}  "
+            f"(Rds(on) = {params.rds_on_mohm:.3f} m\u03a9, "
+            f"Eon = {params.e_on_uj:.1f} \u03bcJ, "
+            f"Eoff = {params.e_off_uj:.1f} \u03bcJ)",
+            "",
+            "\u2500\u2500 Per-switch losses \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+            f"  Conduction (both strategies)  : {res.p_cond_w * 1000:.2f} mW",
+            f"  Switching \u2013 SPWM              : {res.p_sw_spwm_w * 1000:.2f} mW",
+            f"  Switching \u2013 DPWM              : {res.p_sw_dpwm_w * 1000:.2f} mW"
+            f"  (\u2212{sw_reduction:.0f}% vs SPWM)",
+            f"  Total per switch \u2013 SPWM       : {res.p_total_spwm_w * 1000:.2f} mW",
+            f"  Total per switch \u2013 DPWM       : {res.p_total_dpwm_w * 1000:.2f} mW",
+            "",
+            "\u2500\u2500 6-switch inverter totals \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+            f"  SPWM total  : {res.p_inv_spwm_w:.3f} W",
+            f"  DPWM total  : {res.p_inv_dpwm_w:.3f} W",
+            "",
+            "\u2500\u2500 Junction temperature (steady-state, Rth,ja model) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+            f"  SPWM  : {margin_str(res.t_junction_spwm_c)}",
+            f"  DPWM  : {margin_str(res.t_junction_dpwm_c)}",
+        ]
+        self._results_text.setPlainText("\n".join(lines))
+
+        # ── Bar chart ─────────────────────────────────────────────────────
+        self._fig.clear()
+        ax = self._fig.add_subplot(111)
+
+        p_cond_mw = res.p_cond_w * 1000.0
+        p_sw_vals = [res.p_sw_spwm_w * 1000.0, res.p_sw_dpwm_w * 1000.0]
+        totals_mw = [
+            res.p_total_spwm_w * 1000.0,
+            res.p_total_dpwm_w * 1000.0,
+        ]
+        x = [0, 1]
+        width = 0.45
+
+        bars_cond = ax.bar(
+            x, [p_cond_mw, p_cond_mw],
+            width,
+            label="Conduction",
+            color="#4472C4",
+        )
+        bars_sw = ax.bar(
+            x, p_sw_vals,
+            width,
+            bottom=[p_cond_mw, p_cond_mw],
+            label="Switching",
+            color="#ED7D31",
+        )
+
+        # Annotate each bar segment with its power value.
+        for bar in bars_cond:
+            if p_cond_mw > 0:
+                ax.text(
+                    bar.get_x() + bar.get_width() / 2.0,
+                    p_cond_mw / 2.0,
+                    f"{p_cond_mw:.1f}",
+                    ha="center", va="center",
+                    fontsize=8, color="white",
+                )
+
+        max_total = max(totals_mw) if max(totals_mw) > 0 else 1.0
+        for bar, sw_val, total_val in zip(bars_sw, p_sw_vals, totals_mw):
+            if sw_val > 0:
+                ax.text(
+                    bar.get_x() + bar.get_width() / 2.0,
+                    p_cond_mw + sw_val / 2.0,
+                    f"{sw_val:.1f}",
+                    ha="center", va="center",
+                    fontsize=8, color="white",
+                )
+            ax.text(
+                bar.get_x() + bar.get_width() / 2.0,
+                total_val + max_total * 0.03,
+                f"Total\n{total_val:.1f} mW",
+                ha="center", va="bottom",
+                fontsize=7, color="black",
+            )
+
+        ax.set_xticks(x)
+        ax.set_xticklabels(["SPWM", "DPWM"])
+        ax.set_ylabel("Power per switch [mW]")
+        ax.set_title("Per-switch loss breakdown \u2014 SPWM vs DPWM")
+        ax.legend(loc="upper right")
+        ax.set_ylim(0, max_total * 1.30)
+
+        self._canvas.draw()
+
+
 class SvmShaperApp(QtWidgets.QMainWindow):
     """Main window for the SVM Analyst application.
 
@@ -1983,6 +2534,7 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         self._ref_display_signals: dict = {}
         self._dq_dialog: Optional[DqPhasorDialog] = None
         self._sscr_dialog: Optional[SingleShuntDialog] = None
+        self._loss_dialog: Optional[LossThermalDialog] = None
 
         self._build_ui()
         self._apply_config_to_ui(self._config)
@@ -2178,6 +2730,19 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         sweep_action = QtGui.QAction("Sweep THD...", self)
         sweep_action.triggered.connect(self._open_sweep_dialog)
         tools_menu.addAction(sweep_action)
+
+        loss_action = QtGui.QAction("Loss && Thermal Estimator...", self)
+        loss_action.setToolTip(
+            "Open the MOSFET switching-loss and junction-temperature estimator.\n"
+            "Provides Infineon and Nexperia device presets; compares SPWM vs DPWM losses."
+        )
+        loss_action.setWhatsThis(
+            "Opens a dialog to estimate MOSFET switching losses, conduction losses, "
+            "total inverter dissipation, and junction temperature for the current "
+            "simulation operating point."
+        )
+        loss_action.triggered.connect(self._show_loss_dialog)
+        tools_menu.addAction(loss_action)
 
         help_menu = self._menu_bar.addMenu("&Help")
         about_action = QtGui.QAction("&About", self)
@@ -3259,6 +3824,15 @@ class SvmShaperApp(QtWidgets.QMainWindow):
         else:
             self._sscr_dialog.raise_()
             self._sscr_dialog.activateWindow()
+
+    def _show_loss_dialog(self) -> None:
+        """Open (or bring to front) the Loss & Thermal Estimator dialog."""
+        if self._loss_dialog is None or not self._loss_dialog.isVisible():
+            self._loss_dialog = LossThermalDialog(self._config, parent=self)
+            self._loss_dialog.show()
+        else:
+            self._loss_dialog.raise_()
+            self._loss_dialog.activateWindow()
 
     def _show_about(self) -> None:
         QtWidgets.QMessageBox.information(

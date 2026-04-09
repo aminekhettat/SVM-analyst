@@ -19,11 +19,11 @@ being developed in the current sprint.
 
 ## Batch 2 — Medium effort
 
-| #   | Feature                                                                                                                                                        | Status  | Target version |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | -------------- |
-| 5   | **dq-frame phasor diagram** — voltage and current vectors in d-q plane; enhanced in v1.4.1 with θ_e/θ_mech sawtooth, αβ/dq metrics, real-time pyqtgraph dialog | Done    | v1.4.1         |
-| 6   | **Overmodulation region (MI > 1)** — extend core duty cycle computation beyond unity modulation index, visualise saturation and six-step transition            | Done    | v1.4.2         |
-| 7   | **Interleaved dual-inverter mode** — two sets of phase-shifted carriers, DC bus ripple cancellation analysis                                                   | Planned | TBD            |
+| #   | Feature                                                                                                                                                        | Status    | Target version |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | -------------- |
+| 5   | **dq-frame phasor diagram** — voltage and current vectors in d-q plane; enhanced in v1.4.1 with θ_e/θ_mech sawtooth, αβ/dq metrics, real-time pyqtgraph dialog | Done      | v1.4.1         |
+| 6   | **Overmodulation region (MI > 1)** — extend core duty cycle computation beyond unity modulation index, visualise saturation and six-step transition            | Done      | v1.4.2         |
+| 7   | **Interleaved dual-inverter mode** — two sets of phase-shifted carriers, DC bus ripple cancellation analysis                                                   | Cancelled | —              |
 
 ---
 
@@ -31,8 +31,8 @@ being developed in the current sprint.
 
 | #   | Feature                                                                                                                                          | Status  | Target version |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------- | -------------- |
-| 8   | **Audible PWM preview** — stream one cycle of the PWM output through `sounddevice` so acoustic-noise differences between strategies can be heard | Planned | TBD            |
-| 9   | **Switching loss + junction temperature estimation** — MOSFET/IGBT Eon/Eoff model, per-switch loss, junction temperature rise estimator          | Planned | TBD            |
+| 8   | **Audible PWM preview** — stream one cycle of the PWM output through `sounddevice` so acoustic-noise differences between strategies can be heard | Postponed | TBD            |
+| 9   | **Switching loss + junction temperature estimation** — MOSFET/IGBT Eon/Eoff model, per-switch loss, junction temperature rise estimator          | In Progress | v1.4.4      |
 | 10  | **Custom modulation via Python script** — allow users to define their own `compute_duty(theta, mi)` function as a plugin loaded at runtime       | Planned | TBD            |
 
 ---

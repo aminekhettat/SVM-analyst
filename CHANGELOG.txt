@@ -1,6 +1,38 @@
 SVM Analyst – Changelog
 ========================
 
+v1.4.4 – 2026-04-09
+--------------------
+Feature release – Switching Loss & Junction Temperature Estimator (Roadmap Feature #9).
+
+New features:
+- losses: new pure-Python module svm_shaper/losses.py implementing the full
+  loss estimation model: LossParameters / LossThermalResult dataclasses,
+  MOSFET_PRESETS dict with 6 validated devices (3 Infineon + 2 Nexperia +
+  1 custom placeholder), and compute_switch_losses() which returns per-switch
+  and 6-switch inverter losses for both SPWM and DPWM in one call.
+- gui: LossThermalDialog – a two-panel estimator dialog with:
+    • Device preset combo (Infineon IPP60R099P7 CoolMOS P7, IPP65R110CFD
+      CoolMOS CFD2, IPP023N10N5 OptiMOS 5; Nexperia PSMN1R5-40YLD,
+      BUK7M24-100EX; Custom device).
+    • Auto-fill of all device parameter fields on preset selection.
+    • All input fields protected by QDoubleValidator — only valid
+      floating-point numbers are accepted; letters and invalid characters
+      are silently rejected.
+    • Editable device parameters: Rds(on), temp coefficient, Eon, Eoff,
+      V_ref, I_ref, Rth,ja, Tj_max.
+    • Pre-filled operating conditions from the current simulator config
+      (Vdc, f_pwm) plus user-entered I_peak, I_rms, T_amb, modulation.
+    • Results: plain-text summary (screen-reader naratable) with per-switch
+      and inverter totals for SPWM and DPWM, plus junction temperature
+      with OK / MARGINAL / EXCEEDED margin annotation.
+    • Stacked bar chart (matplotlib) comparing SPWM vs DPWM conduction +
+      switching loss breakdown per switch.
+    • All GUI widgets carry accessibleName and accessibleDescription.
+  Accessible via Tools → Loss & Thermal Estimator…
+- tests: 73 new tests in tests/test_feature_losses.py achieving 100%
+  branch coverage of losses.py.
+
 v1.4.3 – 2026-06-10
 --------------------
 Bug-fix and feature release – Single Shunt Current Reconstruction (SSCR)
